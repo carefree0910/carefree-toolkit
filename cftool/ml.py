@@ -270,6 +270,35 @@ class Metrics(LoggingMixin):
         return thresholds[np.argmax(metric)]
 
 
+class Estimator:
+    def __init__(self, metric: str, **kwargs):
+        self._metric = Metrics(metric, **kwargs)
+
+    def estimate(self,
+                 x: np.ndarray,
+                 y: np.ndarray,
+                 methods: Dict[str, Union[None, Callable]]):
+        scores = {
+            name: None if method is None else self._metric.score(y, method(x))
+            for name, method in methods.items()
+        }
+        msg_list = []
+        best_idx, best_score = -1, -math.inf
+        for i, name in enumerate(sorted(scores)):
+            score = scores[name]
+            if score is None:
+                continue
+            msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
+            new_score = score * self._metric.sign
+            if new_score > best_score:
+                best_idx, best_score = i, new_score
+        msg_list[best_idx] += "  <-  "
+        width = max(map(len, msg_list))
+        msg_list.insert(0, "=" * width)
+        msg_list.append("-" * width)
+        print("\n".join(msg_list))
+
+
 class ScalarEMA:
     """
     Util class to record Exponential Moving Average (EMA) for scalar value
@@ -536,4 +565,4 @@ class Visualizer:
         return show_or_return(return_canvas)
 
 
-__all__ = ["Anneal", "Metrics", "ScalarEMA", "Grid", "Visualizer"]
+__all__ = ["Anneal", "Metrics", "Estimator", "ScalarEMA", "Grid", "Visualizer"]

@@ -8,3 +8,4 @@ _*/
 build/*
 carefree_toolkit.egg-info
 pip-wheel-metadata
+dist/*

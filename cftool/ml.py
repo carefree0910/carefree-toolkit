@@ -11,7 +11,7 @@ from scipy import stats as ss
 from sklearn import metrics
 from itertools import product
 
-from .misc import LoggingMixin, get_one_hot
+from .misc import *
 
 
 class Anneal:
@@ -456,6 +456,27 @@ class Visualizer:
             if not overwrite:
                 save_name = self._get_save_name(save_name)
             plt.savefig(os.path.join(self.export_folder, f"{save_name}.png"))
+
+    @staticmethod
+    def visualize1d(method: Callable,
+                    x: np.ndarray,
+                    y: np.ndarray = None,
+                    *,
+                    title: str = None,
+                    num_samples: int = 100,
+                    expand_ratio: float = 0.25,
+                    return_canvas: bool = False) -> Union[None, np.ndarray]:
+        if x.shape[1] != 1:
+            raise ValueError("visualize1d only supports 1-dimensional features")
+        plt.figure()
+        plt.title(title)
+        if y is not None:
+            plt.scatter(x, y, c="g", s=20)
+        x_min, x_max = x.min(), x.max()
+        expand = expand_ratio * (x_max - x_min)
+        x0 = np.linspace(x_min - expand, x_max + expand, num_samples).reshape([-1, 1])
+        plt.plot(x0, method(x0).ravel())
+        return show_or_return(return_canvas)
 
 
 __all__ = ["Anneal", "Metrics", "ScalarEMA", "Grid", "Visualizer"]

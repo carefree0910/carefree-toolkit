@@ -1,3 +1,4 @@
+import io
 import os
 import sys
 import dill
@@ -20,6 +21,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import *
+from PIL import Image
 from functools import reduce
 from collections import Counter
 from abc import abstractmethod
@@ -190,6 +192,30 @@ def show_or_save(export_path: str,
     else:
         fig.savefig(export_path) if fig is not None else plt.savefig(export_path, **kwargs)
     plt.close()
+
+
+def show_or_return(return_canvas: bool) -> Union[None, np.ndarray]:
+    """
+    Utility function to deal with current plt
+
+    Parameters
+    ----------
+    return_canvas : bool, whether return canvas or not
+
+    """
+
+    if not return_canvas:
+        plt.show()
+        return
+
+    buffer_ = io.BytesIO()
+    plt.savefig(buffer_, format="png")
+    plt.close()
+    buffer_.seek(0)
+    image = Image.open(buffer_)
+    canvas = np.asarray(image)[..., :3]
+    buffer_.close()
+    return canvas
 
 
 def get_indices_from_another(base: np.ndarray,
@@ -1383,8 +1409,8 @@ class data_tuple_saving_controller(context_error_handler):
 
 __all__ = [
     "get_indices_from_another", "get_unique_indices", "get_one_hot", "hash_code", "prefix_dict",
-    "timestamp", "fix_float_to_length", "truncate_string_to_length", "grouped", "is_numeric", "show_or_save",
-    "update_dict", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "context_error_handler", "timeit",
-    "lock_manager", "batch_manager", "timing_context", "prod", "get_counter_from_arr",
-    "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
+    "timestamp", "fix_float_to_length", "truncate_string_to_length", "grouped", "is_numeric", "update_dict",
+    "show_or_save", "show_or_return", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin",
+    "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context", "prod",
+    "get_counter_from_arr", "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
 ]

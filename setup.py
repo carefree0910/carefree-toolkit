@@ -13,6 +13,8 @@ setup(
     ],
     author="carefree0910",
     author_email="syameimaru_kurumi@pku.edu.cn",
+    url="https://github.com/carefree0910/carefree-toolkit",
+    download_url="https://github.com/carefree0910/carefree-toolkit/archive/v0.1.0.tar.gz",
     description="Some commonly used functions and modules",
     keywords="python numpy data-science"
 )

@@ -8,6 +8,12 @@
 `carefree-toolkit` requires Python 3.6 or higher.
 
 ```bash
+pip install carefree-toolkit
+```
+
+or
+
+```bash
 git clone https://github.com/carefree0910/carefree-toolkit.git
 cd carefree-toolkit
 pip install -e .

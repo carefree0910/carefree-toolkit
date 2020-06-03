@@ -11,6 +11,7 @@ setup(
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
     install_requires=[
+        "pathos", "joblib",
         "dill", "future", "psutil", "pillow",
         "cython>=0.29.12", "numpy>=1.16.2", "scipy>=1.2.1",
         "scikit-learn>=0.20.3", "matplotlib>=3.0.3",

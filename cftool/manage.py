@@ -106,6 +106,8 @@ class ResourceManager:
     """
     Util class which can monitor & manage resources
     * It utilizes `PCManager` & `GPUManager` defined above
+    * It is currently used in cftool.dist.core.Parallel only
+
     """
 
     def __init__(self, config, get_task_name, refresh_patience):

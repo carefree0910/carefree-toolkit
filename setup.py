@@ -21,7 +21,7 @@ setup(
     author="carefree0910",
     author_email="syameimaru_kurumi@pku.edu.cn",
     url="https://github.com/carefree0910/carefree-toolkit",
-    download_url="https://github.com/carefree0910/carefree-toolkit/archive/v0.1.2.tar.gz",
+    download_url=f"https://github.com/carefree0910/carefree-toolkit/archive/v{VERSION}.tar.gz",
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",

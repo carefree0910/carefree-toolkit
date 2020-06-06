@@ -323,6 +323,19 @@ def get_counter_from_arr(arr: np.ndarray) -> Counter:
 
 
 def allclose(*arrays: np.ndarray, **kwargs) -> bool:
+    """
+    Perform `np.allclose` to `arrays` one by one
+
+    Parameters
+    ----------
+    arrays : np.ndarray, target arrays
+    **kwargs : keyword arguments which will be passed into `np.allclose`
+
+    Returns
+    -------
+    allclose : bool
+
+    """
     for i, arr in enumerate(arrays[:1]):
         if not np.allclose(arr, arrays[i + 1], **kwargs):
             return False

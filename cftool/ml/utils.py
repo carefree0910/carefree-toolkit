@@ -300,7 +300,7 @@ class Estimator:
                  y: np.ndarray,
                  methods: Dict[str, Union[None, Callable]],
                  *,
-                 verbose: bool = True):
+                 verbose: bool = True) -> None:
         self.scores = {
             name: None if method is None else self._metric.score(y, method(x))
             for name, method in methods.items()

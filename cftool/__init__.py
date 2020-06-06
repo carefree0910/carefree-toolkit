@@ -10,5 +10,5 @@ __all__ = [
     "LoggingMixin", "PureLoggingMixin", "SavingMixin", "context_error_handler", "timeit", "lock_manager",
     "batch_manager", "timing_context", "prod", "shallow_copy_dict", "register_core",
     "data_tuple_saving_controller", "PCManager", "GPUManager", "ResourceManager",
-    "get_counter_from_arr", "allclose"
+    "get_counter_from_arr", "allclose", "Sampler"
 ]

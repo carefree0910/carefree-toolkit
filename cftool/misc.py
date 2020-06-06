@@ -1028,6 +1028,31 @@ class Saving(LoggingMixin):
         return _manager()
 
 
+class Sampler:
+    def __init__(self,
+                 method: str,
+                 probabilities: np.ndarray):
+        self.method = method
+        self.p = probabilities
+        self._p_shape = list(self.p.shape)
+
+    def __str__(self):
+        return f"Sampler({self.method})"
+
+    __repr__ = __str__
+
+    def _reshape(self, n: int, samples: np.ndarray) -> np.ndarray:
+        return samples.reshape([n] + self._p_shape[:-1]).astype(np.int64)
+
+    def sample(self, n: int) -> np.ndarray:
+        return getattr(self, self.method)(n)
+
+    def multinomial(self, n: int) -> np.ndarray:
+        samples = np.random.multinomial(n, self.p.ravel())
+        sampled_indices = np.repeat(np.arange(n), samples)
+        return self._reshape(n, sampled_indices)
+
+
 # contexts
 
 class context_error_handler:
@@ -1417,7 +1442,7 @@ class data_tuple_saving_controller(context_error_handler):
 __all__ = [
     "get_indices_from_another", "get_unique_indices", "get_one_hot", "hash_code", "prefix_dict",
     "timestamp", "fix_float_to_length", "truncate_string_to_length", "grouped", "is_numeric", "update_dict",
-    "show_or_save", "show_or_return", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin",
+    "show_or_save", "show_or_return", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Sampler",
     "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context", "prod",
     "get_counter_from_arr", "allclose", "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
 ]

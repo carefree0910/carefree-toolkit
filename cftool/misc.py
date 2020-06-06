@@ -282,12 +282,14 @@ def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
     -------
     >>> import numpy as np
     >>> arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
-    >>> # [0, 1, 2, 3, 4]
-    >>> # [1, 3, 2, 1, 1]
-    >>> # [6, 0, 5, 7, 1, 3, 2, 4]
-    >>> # [1, 4, 6, 7]
-    >>> # [ [6], [0, 5, 7], [1, 3], [2], [4] ]
-    >>> print(get_unique_indices(arr, return_raw=True), get_unique_indices(arr)[-1])
+    >>> # UniqueIndices(
+    >>> #   unique          = array([0, 1, 2, 3, 4], dtype=int64),
+    >>> #   unique_cnt      = array([1, 3, 2, 1, 1], dtype=int64),
+    >>> #   sorting_indices = array([6, 0, 5, 7, 1, 3, 2, 4], dtype=int64),
+    >>> #   split_arr       = array([1, 4, 6, 7], dtype=int64))
+    >>> #   split_indices   = [array([6], dtype=int64), array([0, 5, 7], dtype=int64), array([1, 3], dtype=int64),
+    >>> #                      array([2], dtype=int64), array([4], dtype=int64)]
+    >>> print(get_unique_indices(arr))
 
     """
     unique, unique_inv, unique_cnt = np.unique(arr, return_inverse=True, return_counts=True)

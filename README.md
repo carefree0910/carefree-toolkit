@@ -418,12 +418,14 @@ from cftool.misc import get_unique_indices
 
 arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
 unique_indices = get_unique_indices(arr)
-# [0, 1, 2, 3, 4]
-# [1, 3, 2, 1, 1]
-# [6, 0, 5, 7, 1, 3, 2, 4]
-# [1, 4, 6, 7]
-# [ [6], [0, 5, 7], [1, 3], [2], [4] ]
-print(*unique_indices, unique_indices.split_indices)
+# UniqueIndices(
+#   unique          = array([0, 1, 2, 3, 4], dtype=int64),
+#   unique_cnt      = array([1, 3, 2, 1, 1], dtype=int64),
+#   sorting_indices = array([6, 0, 5, 7, 1, 3, 2, 4], dtype=int64),
+#   split_arr       = array([1, 4, 6, 7], dtype=int64))
+#   split_indices   = [array([6], dtype=int64), array([0, 5, 7], dtype=int64), array([1, 3], dtype=int64),
+#                      array([2], dtype=int64), array([4], dtype=int64)]
+print(get_unique_indices(arr))
 ```
 
 

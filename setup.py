@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.1.3"
+VERSION = "0.1.4"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:
@@ -11,8 +11,7 @@ setup(
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
     install_requires=[
-        "pathos", "joblib",
-        "dill", "future", "psutil", "pillow",
+        "dill", "future", "psutil", "pillow", "pathos",
         "cython>=0.29.12", "numpy>=1.16.2", "scipy>=1.2.1",
         "scikit-learn>=0.20.3", "matplotlib>=3.0.3",
         "mkdocs", "mkdocs-material", "mkdocs-minify-plugin",

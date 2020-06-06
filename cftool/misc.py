@@ -297,7 +297,26 @@ def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
     return UniqueIndices(unique, unique_cnt, sorting_indices, split_arr)
 
 
-def get_counter_from_arr(arr):
+def get_counter_from_arr(arr: np.ndarray) -> Counter:
+    """
+    Get `Counter` of an array
+
+    Parameters
+    ----------
+    arr : np.ndarray, target array which we wish to get `Counter` from
+
+    Returns
+    -------
+    Counter
+
+    Examples
+    -------
+    >>> import numpy as np
+    >>> arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
+    >>> # Counter({1: 3, 2: 2, 0: 1, 3: 1, 4: 1})
+    >>> print(get_counter_from_arr(arr))
+
+    """
     if isinstance(arr, np.ndarray):
         arr = dict(zip(*np.unique(arr, return_counts=True)))
     return Counter(arr)

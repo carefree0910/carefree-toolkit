@@ -11,7 +11,7 @@ from scipy import stats as ss
 from sklearn import metrics
 from itertools import product
 
-from .misc import *
+from ..misc import *
 
 
 class Anneal:
@@ -42,6 +42,11 @@ class Anneal:
         self._floor, self._ceiling = floor, ceiling
         self._cache = self._rs = self._cursor = 0
         self._initialize()
+
+    def __str__(self):
+        return f"Anneal({self._method})"
+
+    __repr__ = __str__
 
     def _initialize(self):
         n_anneal = max(1, self._n_iter - 1)
@@ -122,6 +127,11 @@ class Metrics(LoggingMixin):
         if config is None:
             config = {}
         self.type, self.config, self._verbose_level = metric_type, config, verbose_level
+
+    def __str__(self):
+        return f"Metrics({self.type})"
+
+    __repr__ = __str__
 
     @property
     def sign(self):
@@ -274,6 +284,11 @@ class Estimator:
     def __init__(self, metric: str, **kwargs):
         self._metric = Metrics(metric, **kwargs)
 
+    def __str__(self):
+        return f"Estimator({self._metric.type})"
+
+    __repr__ = __str__
+
     def estimate(self,
                  x: np.ndarray,
                  y: np.ndarray,
@@ -319,6 +334,11 @@ class ScalarEMA:
     def __init__(self, decay):
         self._decay = decay
         self._ema_records = {}
+
+    def __str__(self):
+        return f"ScalarEMA({self._decay})"
+
+    __repr__ = __str__
 
     def get(self, name):
         return self._ema_records.get(name)

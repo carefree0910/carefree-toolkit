@@ -285,9 +285,13 @@ class Estimator:
         self._metric = Metrics(metric, **kwargs)
 
     def __str__(self):
-        return f"Estimator({self._metric.type})"
+        return f"Estimator({self.type})"
 
     __repr__ = __str__
+
+    @property
+    def type(self) -> str:
+        return self._metric.type
 
     def estimate(self,
                  x: np.ndarray,

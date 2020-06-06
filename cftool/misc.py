@@ -1063,6 +1063,24 @@ class Saving(LoggingMixin):
 
 
 class Sampler:
+    """
+    Util class which can help sampling indices from probabilities
+
+    Parameters
+    ----------
+    method : str, sampling method
+    * currently only 'multinomial' is supported
+    probabilities : np.ndarray, probabilities we'll use
+
+    Examples
+    ----------
+    >>> import numpy as np
+    >>> probabilities = np.array([[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]], np.float32)
+    >>> sampler = Sampler("multinomial", probabilities)
+    >>> print(sampler.sample(10))
+
+    """
+
     def __init__(self,
                  method: str,
                  probabilities: np.ndarray):

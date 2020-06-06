@@ -301,6 +301,13 @@ def get_counter_from_arr(arr):
     return Counter(arr)
 
 
+def allclose(*arrays: np.ndarray, **kwargs) -> bool:
+    for i, arr in enumerate(arrays[:1]):
+        if not np.allclose(arr, arrays[i + 1], **kwargs):
+            return False
+    return True
+
+
 def register_core(name: str,
                   global_dict: Dict[str, type], *,
                   before_register: callable = None,
@@ -1412,5 +1419,5 @@ __all__ = [
     "timestamp", "fix_float_to_length", "truncate_string_to_length", "grouped", "is_numeric", "update_dict",
     "show_or_save", "show_or_return", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin",
     "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context", "prod",
-    "get_counter_from_arr", "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
+    "get_counter_from_arr", "allclose", "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
 ]

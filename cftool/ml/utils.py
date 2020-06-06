@@ -348,6 +348,139 @@ class Estimator:
             print("\n".join(msg_list))
 
 
+class ModelPattern(LoggingMixin):
+    """
+    Util class to create an interface for users to leverage `Comparer` (and more in the future)
+
+    Parameters
+    ----------
+    init_method : Callable[[], object]
+    * If None, then `ModelPattern` will not perform model creation
+    * If Callable, then `ModelPattern` will initialize a model with it
+    train_method : Callable[[object], None]
+    * If None, then `ModelPattern` will not perform model training
+    * If Callable, then `ModelPattern` will train the created model (from `init_method`) with it
+    predict_method : Union[str, Callable[[np.ndarray], np.ndarray]]
+    * If str, then `ModelPattern` will use `getattr` to get the predict method of the model obtained from above
+        In this case, `init_method` must be provided (`train_method` is still optional, because you can create a
+      trained model in `init_method`)
+    * If Callable, then `ModelPattern` will use it for prediction
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
+    >>> predict_method = lambda x_: x_ - 1
+    >>> init_method = lambda: type("Test", (), {"predict": lambda self, x_: predict_method(x_)})()
+    >>> # Will both be [[0., 1., 2.]]
+    >>> ModelPattern(init_method=init_method).predict(x)
+    >>> ModelPattern(predict_method=predict_method).predict(x)
+
+    """
+
+    def __init__(self,
+                 *,
+                 init_method: Callable[[], object] = None,
+                 train_method: Callable[[object], None] = None,
+                 predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
+                 trigger_logging: bool = False,
+                 verbose_level: int = 2):
+        if init_method is None:
+            self.model = None
+        else:
+            self.model = init_method()
+        if train_method is not None:
+            train_method(self.model)
+        self._predict_method = predict_method
+        self._init_logging(verbose_level, trigger_logging)
+
+    def predict(self,
+                x: np.ndarray) -> np.ndarray:
+        predict_method = self._predict_method
+        if isinstance(predict_method, str):
+            if self.model is None:
+                raise ValueError("Either init_method or Callable predict_method is required in ModelPattern")
+            predict_method = getattr(self.model, predict_method)
+        elif self.model is not None:
+            self.log_msg(
+                "predict_method is Callable but model is also created, which has no effect",
+                self.warning_prefix, 2, logging.WARNING
+            )
+        return predict_method(x)
+
+
+class Comparer:
+    """
+    Util class to compare a group of `ModelPattern`s on a group of estimators
+
+    Parameters
+    ----------
+    model_patterns : Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]]
+    * If values are `ModelPattern`, then all estimators will use this only `ModelPattern` make predictions
+    * If values are Dict[str, ModelPattern], then each estimator will use values.get(estimator.type) to
+      make predictions. If corresponding `ModelPattern` does not exist (values.get(estimator.type) is None),
+      then corresponding estimation will be skipped
+    estimators : List[Estimator], list of estimators which we are interested in
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
+    >>> identical = lambda x_: x_
+    >>> minus_one = lambda x_: x_ - 1
+    >>> patterns = {
+    >>>     "identical": ModelPattern(predict_method=identical),
+    >>>     "minus_one": ModelPattern(predict_method=minus_one)
+    >>> }
+    >>> estimators = [Estimator("mse"), Estimator("mae")]
+    >>> #==========================================================
+    >>> # |             identical  |    mse     |  1.666667  |
+    >>> # |             minus_one  |    mse     |  0.666667  |  <-
+    >>> # ----------------------------------------------------------
+    >>> # ==========================================================
+    >>> # |             identical  |    mae     |  1.000000  |
+    >>> # |             minus_one  |    mae     |  0.666667  |  <-
+    >>> # ----------------------------------------------------------
+    >>> comparer = Comparer(patterns, estimators).compare(x, y)
+    >>> # {'mse': {'identical': 1.666667, 'minus_one': 0.666666},
+    >>> # 'mae': {'identical': 1.0, 'minus_one': 0.666666}}
+    >>> print(comparer.scores)
+    >>> # {'mse': 'minus_one', 'mae': 'minus_one'}
+    >>> print(comparer.best_methods)
+
+    """
+
+    def __init__(self,
+                 model_patterns: Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]],
+                 estimators: List[Estimator]):
+        self.model_patterns = model_patterns
+        self.estimators = dict(zip([estimator.type for estimator in estimators], estimators))
+
+    @property
+    def scores(self) -> Dict[str, Dict[str, Union[float, None]]]:
+        return {k: v.scores for k, v in self.estimators.items()}
+
+    @property
+    def best_methods(self) -> Dict[str, str]:
+        return {k: v.best_method for k, v in self.estimators.items()}
+
+    def compare(self,
+                x: np.ndarray,
+                y: np.ndarray,
+                *,
+                verbose: bool = True) -> "Comparer":
+        for estimator in self.estimators.values():
+            methods = {}
+            for model_name, pattern in self.model_patterns.items():
+                if isinstance(pattern, dict):
+                    pattern = pattern.get(estimator.type)
+                if pattern is None:
+                    continue
+                methods[model_name] = pattern.predict
+            estimator.estimate(x, y, methods, verbose=verbose)
+        return self
+
+
 class ScalarEMA:
     """
     Util class to record Exponential Moving Average (EMA) for scalar value
@@ -619,4 +752,7 @@ class Visualizer:
         return show_or_return(return_canvas)
 
 
-__all__ = ["Anneal", "Metrics", "Estimator", "ScalarEMA", "Grid", "Visualizer"]
+__all__ = [
+    "Anneal", "Metrics", "ScalarEMA", "Grid", "Visualizer",
+    "Estimator", "ModelPattern", "Comparer"
+]

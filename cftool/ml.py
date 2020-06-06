@@ -336,7 +336,7 @@ class ScalarEMA:
 class Grid:
     """
     Util class provides permutation of simple, flattened param dicts
-    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` below
+    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`
 
     Parameters
     ----------

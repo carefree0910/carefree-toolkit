@@ -411,7 +411,7 @@ class ModelPattern(LoggingMixin):
 
 class Comparer:
     """
-    Util class to compare a group of `ModelPattern`s on a group of estimators
+    Util class to compare a group of `ModelPattern`s on a group of `Estimator`s
 
     Parameters
     ----------

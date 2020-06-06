@@ -1069,11 +1069,16 @@ class Sampler:
         self.method = method
         self.p = probabilities
         self._p_shape = list(self.p.shape)
+        self._p_block = self.p if self.is_flat else self.p.reshape([-1, self._p_shape[-1]])
 
     def __str__(self):
         return f"Sampler({self.method})"
 
     __repr__ = __str__
+
+    @property
+    def is_flat(self):
+        return len(self._p_shape) == 1
 
     def _reshape(self, n: int, samples: np.ndarray) -> np.ndarray:
         return samples.reshape([n] + self._p_shape[:-1]).astype(np.int64)
@@ -1081,9 +1086,16 @@ class Sampler:
     def sample(self, n: int) -> np.ndarray:
         return getattr(self, self.method)(n)
 
+    @staticmethod
+    def _multinomial_flat(n: int, p: np.ndarray) -> np.ndarray:
+        samples = np.random.multinomial(n, p)
+        return np.repeat(np.arange(len(p)), samples)
+
     def multinomial(self, n: int) -> np.ndarray:
-        samples = np.random.multinomial(n, self.p.ravel())
-        sampled_indices = np.repeat(np.arange(n), samples)
+        if self.is_flat:
+            sampled_indices = self._multinomial_flat(n, self.p)
+        else:
+            sampled_indices = np.vstack([self._multinomial_flat(n, p) for p in self._p_block]).T
         return self._reshape(n, sampled_indices)
 
 

@@ -383,7 +383,6 @@ class ModelPattern(LoggingMixin):
                  init_method: Callable[[], object] = None,
                  train_method: Callable[[object], None] = None,
                  predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
-                 trigger_logging: bool = False,
                  verbose_level: int = 2):
         if init_method is None:
             self.model = None
@@ -392,7 +391,7 @@ class ModelPattern(LoggingMixin):
         if train_method is not None:
             train_method(self.model)
         self._predict_method = predict_method
-        self._init_logging(verbose_level, trigger_logging)
+        self._verbose_level = verbose_level
 
     def predict(self,
                 x: np.ndarray) -> np.ndarray:

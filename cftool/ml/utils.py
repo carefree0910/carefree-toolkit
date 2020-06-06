@@ -281,10 +281,10 @@ class Metrics(LoggingMixin):
 
 
 class Estimator:
-    def __init__(self, metric: str, **kwargs):
+    def __init__(self, metric_type: str, **kwargs):
         self.scores = {}
         self.best_method = None
-        self._metric = Metrics(metric, **kwargs)
+        self._metric = Metrics(metric_type, **kwargs)
 
     def __str__(self):
         return f"Estimator({self.type})"

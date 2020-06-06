@@ -281,6 +281,28 @@ class Metrics(LoggingMixin):
 
 
 class Estimator:
+    """
+    Util class to estimate the performances of a group of methods, on specific dataset & metric
+
+    Parameters
+    ----------
+    metric_type : str, indicates which kind of metric is to be calculated
+    **kwargs : used to initialize `Metrics` instance
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
+    >>> identical = lambda x_: x_
+    >>> minus_one = lambda x_: x_ - 1
+    >>> # ==========================================================
+    >>> # |             identical  |    mae     |  1.000000  |
+    >>> # |             minus_one  |    mae     |  0.666667  |  <-
+    >>> # ----------------------------------------------------------
+    >>> Estimator("mae").estimate(x, y, {"identical": identical, "minus_one": minus_one})
+
+    """
+
     def __init__(self, metric_type: str, **kwargs):
         self.scores = {}
         self.best_method = None

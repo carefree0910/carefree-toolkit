@@ -282,6 +282,8 @@ class Metrics(LoggingMixin):
 
 class Estimator:
     def __init__(self, metric: str, **kwargs):
+        self.scores = {}
+        self.best_method = None
         self._metric = Metrics(metric, **kwargs)
 
     def __str__(self):
@@ -296,26 +298,32 @@ class Estimator:
     def estimate(self,
                  x: np.ndarray,
                  y: np.ndarray,
-                 methods: Dict[str, Union[None, Callable]]):
-        scores = {
+                 methods: Dict[str, Union[None, Callable]],
+                 *,
+                 verbose: bool = True):
+        self.scores = {
             name: None if method is None else self._metric.score(y, method(x))
             for name, method in methods.items()
         }
         msg_list = []
         best_idx, best_score = -1, -math.inf
-        for i, name in enumerate(sorted(scores)):
-            score = scores[name]
+        sorted_method_names = sorted(self.scores)
+        for i, name in enumerate(sorted_method_names):
+            score = self.scores[name]
             if score is None:
                 continue
-            msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
+            if verbose:
+                msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
             new_score = score * self._metric.sign
             if new_score > best_score:
                 best_idx, best_score = i, new_score
-        msg_list[best_idx] += "  <-  "
-        width = max(map(len, msg_list))
-        msg_list.insert(0, "=" * width)
-        msg_list.append("-" * width)
-        print("\n".join(msg_list))
+        self.best_method = sorted_method_names[best_idx]
+        if verbose:
+            msg_list[best_idx] += "  <-  "
+            width = max(map(len, msg_list))
+            msg_list.insert(0, "=" * width)
+            msg_list.append("-" * width)
+            print("\n".join(msg_list))
 
 
 class ScalarEMA:

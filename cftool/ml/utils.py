@@ -427,7 +427,7 @@ class ModelPattern(LoggingMixin):
         return self.predict_method(requires_prob)(x)
 
 
-class Comparer:
+class Comparer(LoggingMixin):
     """
     Util class to compare a group of `ModelPattern`s on a group of `Estimator`s.
 
@@ -439,6 +439,7 @@ class Comparer:
       make predictions. If corresponding `ModelPattern` does not exist (values.get(estimator.type) is None),
       then corresponding estimation will be skipped.
     estimators : List[Estimator], list of estimators which we are interested in.
+    verbose_level : int, verbose level used in `LoggingMixin`.
 
     Examples
     --------
@@ -470,7 +471,10 @@ class Comparer:
 
     def __init__(self,
                  model_patterns: Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]],
-                 estimators: List[Estimator]):
+                 estimators: List[Estimator],
+                 *,
+                 verbose_level: int = 2):
+        self._verbose_level = verbose_level
         self.model_patterns = model_patterns
         self.estimators = dict(zip([estimator.type for estimator in estimators], estimators))
 
@@ -494,7 +498,16 @@ class Comparer:
                     pattern = pattern.get(estimator.type)
                 if pattern is None:
                     continue
-                methods[model_name] = pattern.predict
+                requires_prob = estimator.requires_prob
+                predict_method = pattern.predict_method(requires_prob)
+                if predict_method is None:
+                    self.log_msg(
+                        f"{estimator} requires probability predictions but {model_name} "
+                        f"does not have probability predicting method, skipping",
+                        self.warning_prefix, verbose_level, logging.WARNING
+                    )
+                    continue
+                methods[model_name] = predict_method
             estimator.estimate(x, y, methods, verbose_level=verbose_level)
         return self
 

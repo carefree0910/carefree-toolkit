@@ -113,7 +113,7 @@ class Metrics(LoggingMixin):
     >>> from cftool.ml.utils import Metrics
     >>>
     >>> predictions, y_true = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
-    >>> print(Metrics("mae", {}).score(y_true.T, predictions.T))  # will be 1.
+    >>> print(Metrics("mae", {}).metric(y_true.T, predictions.T))  # will be 1.
 
     """
 
@@ -176,7 +176,7 @@ class Metrics(LoggingMixin):
         if requires_prob:
             cls.requires_prob_metrics.add(name)
 
-    def score(self, y, pred):
+    def metric(self, y, pred):
         if self.type is None:
             raise ValueError("`score` method was called but type is not specified in Metrics")
         y, pred = self._handle_nan(y, pred)

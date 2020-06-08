@@ -419,7 +419,8 @@ class ModelPattern(LoggingMixin):
         self._predict_prob_method = predict_prob_method
         self._verbose_level = verbose_level
 
-    def predict_method(self, requires_prob) -> Callable[[np.ndarray], np.ndarray]:
+    def predict_method(self,
+                       requires_prob: bool) -> Callable[[np.ndarray], np.ndarray]:
         predict_method = self._predict_prob_method if requires_prob else self._predict_method
         if isinstance(predict_method, str):
             if self.model is None:

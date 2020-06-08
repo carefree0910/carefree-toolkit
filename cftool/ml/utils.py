@@ -382,6 +382,7 @@ class ModelPattern(LoggingMixin):
         from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can
         create a trained model in `init_method`).
     * If Callable, then `ModelPattern` will use it for label prediction.
+    * Notice that predict_method should return a column vector (e.g. out.shape = [n, 1])
     predict_prob_method : Union[str, Callable[[np.ndarray], np.ndarray]]
     * If str, then `ModelPattern` will use `getattr` to get the probability prediction method of the model obtained
         from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can

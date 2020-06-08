@@ -279,13 +279,14 @@ class Metrics(LoggingMixin):
         return thresholds[np.argmax(metric)]
 
 
-class Estimator:
+class Estimator(LoggingMixin):
     """
     Util class to estimate the performances of a group of methods, on specific dataset & metric.
 
     Parameters
     ----------
     metric_type : str, indicates which kind of metric is to be calculated.
+    verbose_level : int, verbose level used in LoggingMixin
     **kwargs : used to initialize `Metrics` instance.
 
     Examples
@@ -302,9 +303,14 @@ class Estimator:
 
     """
 
-    def __init__(self, metric_type: str, **kwargs):
+    def __init__(self,
+                 metric_type: str,
+                 *,
+                 verbose_level: int = 2,
+                 **kwargs):
         self.scores = {}
         self.best_method = None
+        self._verbose_level = verbose_level
         self._metric = Metrics(metric_type, **kwargs)
 
     def __str__(self):
@@ -321,7 +327,7 @@ class Estimator:
                  y: np.ndarray,
                  methods: Dict[str, Union[None, Callable]],
                  *,
-                 verbose: bool = True) -> None:
+                 verbose_level: int = 3) -> None:
         self.scores = {
             name: None if method is None else self._metric.score(y, method(x))
             for name, method in methods.items()
@@ -333,18 +339,16 @@ class Estimator:
             score = self.scores[name]
             if score is None:
                 continue
-            if verbose:
-                msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
+            msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
             new_score = score * self._metric.sign
             if new_score > best_score:
                 best_idx, best_score = i, new_score
         self.best_method = sorted_method_names[best_idx]
-        if verbose:
-            msg_list[best_idx] += "  <-  "
-            width = max(map(len, msg_list))
-            msg_list.insert(0, "=" * width)
-            msg_list.append("-" * width)
-            print("\n".join(msg_list))
+        msg_list[best_idx] += "  <-  "
+        width = max(map(len, msg_list))
+        msg_list.insert(0, "=" * width)
+        msg_list.append("-" * width)
+        self.log_block_msg("\n".join(msg_list), self.info_prefix, "Results", verbose_level)
 
 
 class ModelPattern(LoggingMixin):
@@ -466,7 +470,7 @@ class Comparer:
                 x: np.ndarray,
                 y: np.ndarray,
                 *,
-                verbose: bool = True) -> "Comparer":
+                verbose_level: int = 3) -> "Comparer":
         for estimator in self.estimators.values():
             methods = {}
             for model_name, pattern in self.model_patterns.items():
@@ -475,7 +479,7 @@ class Comparer:
                 if pattern is None:
                     continue
                 methods[model_name] = pattern.predict
-            estimator.estimate(x, y, methods, verbose=verbose)
+            estimator.estimate(x, y, methods, verbose_level=verbose_level)
         return self
 
 

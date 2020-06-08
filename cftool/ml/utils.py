@@ -9,6 +9,7 @@ from typing import *
 from scipy import interp
 from scipy import stats as ss
 from sklearn import metrics
+from functools import partial
 from itertools import product
 
 from ..misc import *
@@ -440,6 +441,71 @@ class ModelPattern(LoggingMixin):
         return self.predict_method(requires_prob)(x)
 
 
+collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
+
+
+class EnsemblePattern:
+    def __init__(self,
+                 model_patterns: List[ModelPattern],
+                 ensemble_method: Union[str, collate_fn_type] = "default"):
+        self._patterns = model_patterns
+        self._ensemble_method = ensemble_method
+
+    def __len__(self):
+        return len(self._patterns)
+
+    @property
+    def collate_fn(self) -> collate_fn_type:
+        if callable(self._ensemble_method):
+            return self._ensemble_method
+        return getattr(self, f"_{self._ensemble_method}_collate")
+
+    # Core
+
+    @staticmethod
+    def _default_collate(arrays: List[np.ndarray],
+                         requires_prob: bool) -> np.ndarray:
+        predictions = np.array(arrays)
+        if not requires_prob and np.issubdtype(predictions.dtype, np.integer):
+            max_class = predictions.max()
+            predictions = predictions.squeeze(2).T
+            counts = np.apply_along_axis(partial(np.bincount, minlength=max_class), 1, predictions)
+            return counts.argmax(1).reshape([-1, 1])
+        return predictions.mean(0)
+
+    # API
+
+    def predict_method(self,
+                       requires_prob: bool) -> Callable[[np.ndarray], np.ndarray]:
+        predict_methods = list(map(ModelPattern.predict_method, self._patterns, len(self) * [requires_prob]))
+        def _predict(x: np.ndarray):
+            predictions = [method(x) for method in predict_methods]
+            return self.collate_fn(predictions, requires_prob)
+        return _predict
+
+    def predict(self,
+                x: np.ndarray,
+                *,
+                requires_prob: bool = False) -> np.ndarray:
+        return self.predict_method(requires_prob)(x)
+
+    @classmethod
+    def from_methods(cls,
+                     n: int,
+                     ensemble_method: Union[str, collate_fn_type] = "default",
+                     *,
+                     init_method: Callable[[], object] = None,
+                     train_method: Callable[[object], None] = None,
+                     predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
+                     predict_prob_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict_prob",
+                     verbose_level: int = 2):
+        return cls([ModelPattern(
+            init_method=init_method, train_method=train_method,
+            predict_method=predict_method, predict_prob_method=predict_prob_method,
+            verbose_level=verbose_level
+        ) for _ in range(n)], ensemble_method)
+
+
 class Comparer(LoggingMixin):
     """
     Util class to compare a group of `ModelPattern`s on a group of `Estimator`s.
@@ -805,5 +871,5 @@ class Visualizer:
 
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Grid", "Visualizer",
-    "Estimator", "ModelPattern", "Comparer"
+    "Estimator", "ModelPattern", "EnsemblePattern", "Comparer"
 ]

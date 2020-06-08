@@ -506,16 +506,19 @@ class EnsemblePattern:
         ) for _ in range(n)], ensemble_method)
 
 
+patterns_type = Union[ModelPattern, EnsemblePattern]
+
+
 class Comparer(LoggingMixin):
     """
-    Util class to compare a group of `ModelPattern`s on a group of `Estimator`s.
+    Util class to compare a group of `patterns_type`s on a group of `Estimator`s.
 
     Parameters
     ----------
-    model_patterns : Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]]
-    * If values are `ModelPattern`, then all estimators will use this only `ModelPattern` make predictions.
-    * If values are Dict[str, ModelPattern], then each estimator will use values.get(estimator.type) to
-      make predictions. If corresponding `ModelPattern` does not exist (values.get(estimator.type) is None),
+    patterns : Dict[str, Union[patterns_type, Dict[str, patterns_type]]]
+    * If values are `patterns_type`, then all estimators will use this only `patterns_type` make predictions.
+    * If values are Dict[str, patterns_type], then each estimator will use values.get(estimator.type) to
+      make predictions. If corresponding `patterns` does not exist (values.get(estimator.type) is None),
       then corresponding estimation will be skipped.
     estimators : List[Estimator], list of estimators which we are interested in.
     verbose_level : int, verbose level used in `LoggingMixin`.
@@ -554,13 +557,13 @@ class Comparer(LoggingMixin):
     """
 
     def __init__(self,
-                 model_patterns: Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]],
+                 patterns: Dict[str, Union[patterns_type, Dict[str, patterns_type]]],
                  estimators: List[Estimator],
                  *,
                  verbose_level: int = 2):
-        self._verbose_level = verbose_level
-        self.model_patterns = model_patterns
+        self.patterns = patterns
         self.estimators = dict(zip([estimator.type for estimator in estimators], estimators))
+        self._verbose_level = verbose_level
 
     @property
     def scores(self) -> Dict[str, Dict[str, Union[float, None]]]:
@@ -577,7 +580,7 @@ class Comparer(LoggingMixin):
                 verbose_level: int = 1) -> "Comparer":
         for estimator in self.estimators.values():
             methods = {}
-            for model_name, pattern in self.model_patterns.items():
+            for model_name, pattern in self.patterns.items():
                 if isinstance(pattern, dict):
                     pattern = pattern.get(estimator.type)
                 if pattern is None:

@@ -490,15 +490,15 @@ class EnsemblePattern:
         return self.predict_method(requires_prob)(x)
 
     @classmethod
-    def from_methods(cls,
-                     n: int,
-                     ensemble_method: Union[str, collate_fn_type] = "default",
-                     *,
-                     init_method: Callable[[], object] = None,
-                     train_method: Callable[[object], None] = None,
-                     predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
-                     predict_prob_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict_prob",
-                     verbose_level: int = 2):
+    def from_same_methods(cls,
+                          n: int,
+                          ensemble_method: Union[str, collate_fn_type] = "default",
+                          *,
+                          init_method: Callable[[], object] = None,
+                          train_method: Callable[[object], None] = None,
+                          predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
+                          predict_prob_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict_prob",
+                          verbose_level: int = 2):
         return cls([ModelPattern(
             init_method=init_method, train_method=train_method,
             predict_method=predict_method, predict_prob_method=predict_prob_method,

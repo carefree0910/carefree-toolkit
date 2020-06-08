@@ -364,10 +364,15 @@ class ModelPattern(LoggingMixin):
     * If None, then `ModelPattern` will not perform model training.
     * If Callable, then `ModelPattern` will train the created model (from `init_method`) with it.
     predict_method : Union[str, Callable[[np.ndarray], np.ndarray]]
-    * If str, then `ModelPattern` will use `getattr` to get the predict method of the model obtained from above.
-        In this case, `init_method` must be provided (`train_method` is still optional, because you can create a
-      trained model in `init_method`).
-    * If Callable, then `ModelPattern` will use it for prediction.
+    * If str, then `ModelPattern` will use `getattr` to get the label predict method of the model obtained
+        from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can
+        create a trained model in `init_method`).
+    * If Callable, then `ModelPattern` will use it for label prediction.
+    predict_prob_method : Union[str, Callable[[np.ndarray], np.ndarray]]
+    * If str, then `ModelPattern` will use `getattr` to get the probability prediction method of the model obtained
+        from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can
+        create a trained model in `init_method`).
+    * If Callable, then `ModelPattern` will use it for probability prediction.
 
     Examples
     --------
@@ -386,6 +391,7 @@ class ModelPattern(LoggingMixin):
                  init_method: Callable[[], object] = None,
                  train_method: Callable[[object], None] = None,
                  predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
+                 predict_prob_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict_prob",
                  verbose_level: int = 2):
         if init_method is None:
             self.model = None
@@ -394,11 +400,11 @@ class ModelPattern(LoggingMixin):
         if train_method is not None:
             train_method(self.model)
         self._predict_method = predict_method
+        self._predict_prob_method = predict_prob_method
         self._verbose_level = verbose_level
 
-    def predict(self,
-                x: np.ndarray) -> np.ndarray:
-        predict_method = self._predict_method
+    def predict_method(self, requires_prob) -> Callable[[np.ndarray], np.ndarray]:
+        predict_method = self._predict_prob_method if requires_prob else self._predict_method
         if isinstance(predict_method, str):
             if self.model is None:
                 raise ValueError("Either init_method or Callable predict_method is required in ModelPattern")
@@ -408,7 +414,13 @@ class ModelPattern(LoggingMixin):
                 "predict_method is Callable but model is also created, which has no effect",
                 self.warning_prefix, 2, logging.WARNING
             )
-        return predict_method(x)
+        return predict_method
+
+    def predict(self,
+                x: np.ndarray,
+                *,
+                requires_prob: bool = False) -> np.ndarray:
+        return self.predict_method(requires_prob)(x)
 
 
 class Comparer:

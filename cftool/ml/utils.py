@@ -388,7 +388,7 @@ class Estimator(LoggingMixin):
 
 class ModelPattern(LoggingMixin):
     """
-    Util class to create an interface for users to leverage `Comparer` (and more in the future).
+    Util class to create an interface for users to leverage `Comparer` & `HPO` (and more in the future).
 
     Parameters
     ----------
@@ -468,7 +468,7 @@ collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 
 class EnsemblePattern:
     """
-    Util class to create an interface for users to leverage `Comparer` (and more in the future) in an ensembled way.
+    Util class to create an interface for users to leverage `Comparer` & `HPO` in an ensembled way.
 
     Parameters
     ----------

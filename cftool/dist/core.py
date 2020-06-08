@@ -22,23 +22,23 @@ dill._dill._reverse_typemap["ClassType"] = type
 
 class Parallel(PureLoggingMixin):
     """
-    Util class which can help running tasks in parallel
+    Util class which can help running tasks in parallel.
 
     Warnings
     ----------
     On Windows platform, functions are dramatically reduced because Windows does not well support pickling.
-    * In this occasion, `Parallel` will simply leverage `pathos` to do the jobs
+    * In this occasion, `Parallel` will simply leverage `pathos` to do the jobs.
 
     Parameters
     ----------
-    num_jobs : int, number of jobs run in parallel
-    sleep : float, idle duration of new jobs
-    use_cuda: bool, whether tasks need CUDA or not
-    name : str, summary name of these tasks
-    meta_name : str, name of the meta information
-    logging_folder : str, where the logging will be placed
-    task_names : List[str], names of each task
-    resource_config : Dict[str, Any], config used in `ResourceManager`
+    num_jobs : int, number of jobs run in parallel.
+    sleep : float, idle duration of new jobs.
+    use_cuda: bool, whether tasks need CUDA or not.
+    name : str, summary name of these tasks.
+    meta_name : str, name of the meta information.
+    logging_folder : str, where the logging will be placed.
+    task_names : List[str], names of each task.
+    resource_config : Dict[str, Any], config used in `ResourceManager`.
 
     Examples
     ----------

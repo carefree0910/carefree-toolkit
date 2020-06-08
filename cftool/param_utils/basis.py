@@ -11,16 +11,16 @@ from ..misc import prod
 
 class ParamsGenerator:
     """
-    Parameter generator for param searching, see ./dist/bases.py -> class SearchBase for usage
+    Parameter generator for param searching, see ./dist/bases.py -> class SearchBase for usage.
 
     Parameters
     ----------
-    params : {DataType, Iterable, dict}, parameter settings
-        * DataType: distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
-        through the config choices
-        * Iterable: each element should be a DataType. It could be nested
-        * dict: each key should correspond to a config key, and its value should correspond to the
-        desired value distribution. It could be nested
+    params : {DataType, Iterable, dict}, parameter settings.
+    * if DataType, then distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
+    through the config choices.
+    * if Iterable, then each element should be a DataType. It could be nested.
+    * if dict, then each key should correspond to a config key, and its value should correspond to the
+    desired value distribution. It could be nested.
 
     Examples
     ----------
@@ -39,7 +39,7 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self, params):
+    def __init__(self, params: Union[DataType, Iterable, dict]):
         self._params = params
         self._delim, self._idx_start = "^_^", "$$$"
         if isinstance(self._params, DataType):

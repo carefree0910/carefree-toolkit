@@ -34,12 +34,12 @@ dill._dill._reverse_typemap["ClassType"] = type
 def timestamp(simplify: bool = False,
               ensure_different: bool = False) -> str:
     """
-    Return current timestamp
+    Return current timestamp.
 
     Parameters
     ----------
-    simplify : bool. If True, format will be simplified to 'year-month-day'
-    ensure_different : bool. If True, format will include millisecond
+    simplify : bool. If True, format will be simplified to 'year-month-day'.
+    ensure_different : bool. If True, format will include millisecond.
 
     Returns
     -------
@@ -56,20 +56,20 @@ def timestamp(simplify: bool = False,
 
 
 def prod(iterable: Iterable) -> float:
-    """ return cumulative production of an iterable """
+    """ Return cumulative production of an iterable. """
 
     return float(reduce(operator.mul, iterable, 1))
 
 
 def hash_code(code: str) -> str:
-    """ return hash code for a string """
+    """ Return hash code for a string. """
 
     code = code.encode()
     return hashlib.md5(code).hexdigest()[:8]
 
 
 def prefix_dict(d: Dict[str, Any], prefix: str):
-    """ prefix every key in dict `d` with `prefix` """
+    """ Prefix every key in dict `d` with `prefix`. """
 
     return {f"{prefix}_{k}": v for k, v in d.items()}
 
@@ -84,8 +84,8 @@ def shallow_copy_dict(d: dict) -> dict:
 
 def update_dict(src_dict: dict, tgt_dict: dict) -> dict:
     """
-    Update tgt_dict with src_dict
-    * Notice that changes will happen only on keys which src_dict holds
+    Update tgt_dict with src_dict.
+    * Notice that changes will happen only on keys which src_dict holds.
 
     Parameters
     ----------
@@ -110,7 +110,7 @@ def update_dict(src_dict: dict, tgt_dict: dict) -> dict:
 
 
 def fix_float_to_length(num: float, length: int) -> str:
-    """ change a float number to string format with fixed length """
+    """ Change a float number to string format with fixed length. """
 
     str_num = f"{num:f}"
     if str_num == "nan":
@@ -120,7 +120,7 @@ def fix_float_to_length(num: float, length: int) -> str:
 
 
 def truncate_string_to_length(string: str, length: int) -> str:
-    """ truncate a string to make sure its length not exceeding a given length """
+    """ Truncate a string to make sure its length not exceeding a given length. """
 
     if len(string) <= length:
         return string
@@ -129,7 +129,7 @@ def truncate_string_to_length(string: str, length: int) -> str:
 
 
 def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
-    """ group an iterable every `n` elements """
+    """ Group an iterable every `n` elements. """
 
     if not keep_tail:
         return list(zip(*[iter(iterable)] * n))
@@ -138,7 +138,7 @@ def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
 
 
 def is_numeric(s: str) -> bool:
-    """ check whether `s` is a number """
+    """ Check whether `s` is a number. """
 
     try:
         s = float(s)
@@ -153,12 +153,12 @@ def is_numeric(s: str) -> bool:
 
 def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
     """
-    Get one-hot representation
+    Get one-hot representation.
 
     Parameters
     ----------
-    feature : array-like, source data of one-hot representation
-    dim : int, dimension of the one-hot representation
+    feature : array-like, source data of one-hot representation.
+    dim : int, dimension of the one-hot representation.
 
     Returns
     -------
@@ -174,16 +174,16 @@ def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
 def show_or_save(export_path: str,
                  fig: plt.figure = None, **kwargs) -> None:
     """
-    Utility function to deal with figure
+    Utility function to deal with figure.
 
     Parameters
     ----------
     export_path : {None, str}
-        * None : the figure will be shown
-        * str  : it represents the path where the figure should be saved to
+    * if None, the figure will be shown.
+    * if str, it represents the path where the figure should be saved to.
     fig : {None, plt.Figure}
-        * None       : default figure contained in plt will be executed
-        * plt.Figure : it will be executed
+    * if None, default figure contained in plt will be executed.
+    * if plt.figure, it will be executed
 
     """
 
@@ -196,11 +196,11 @@ def show_or_save(export_path: str,
 
 def show_or_return(return_canvas: bool) -> Union[None, np.ndarray]:
     """
-    Utility function to deal with current plt
+    Utility function to deal with current plt.
 
     Parameters
     ----------
-    return_canvas : bool, whether return canvas or not
+    return_canvas : bool, whether return canvas or not.
 
     """
 
@@ -221,16 +221,16 @@ def show_or_return(return_canvas: bool) -> Union[None, np.ndarray]:
 def get_indices_from_another(base: np.ndarray,
                              segment: np.ndarray) -> np.ndarray:
     """
-    Get `segment` elements' indices in `base`
+    Get `segment` elements' indices in `base`.
 
     Warnings
     ----------
-    All elements in segment should appear in base to ensure validity
+    All elements in segment should appear in base to ensure validity.
 
     Parameters
     ----------
-    base : np.ndarray, base array
-    segment : np.ndarray, segment array
+    base : np.ndarray, base array.
+    segment : np.ndarray, segment array.
 
     Returns
     -------
@@ -250,11 +250,11 @@ def get_indices_from_another(base: np.ndarray,
 
 class UniqueIndices(NamedTuple):
     """
-    unique           : np.ndarray, unique values of the given array (`arr`)
-    unique_cnt       : np.ndarray, counts of each unique value
-    sorting_indices  : np.ndarray, indices which can (stably) sort the given array by its value
-    split_arr        : np.ndarray, array which can split the `sorting_indices` to make sure that
-                       each portion of the split indices belong & only belong to one of the unique values
+    unique           : np.ndarray, unique values of the given array (`arr`).
+    unique_cnt       : np.ndarray, counts of each unique value.
+    sorting_indices  : np.ndarray, indices which can (stably) sort the given array by its value.
+    split_arr        : np.ndarray, array which can split the `sorting_indices` to make sure that.
+                       each portion of the split indices belong & only belong to one of the unique values.
     """
     unique: np.ndarray
     unique_cnt: np.ndarray
@@ -268,11 +268,11 @@ class UniqueIndices(NamedTuple):
 
 def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
     """
-    Get indices for unique values of an array
+    Get indices for unique values of an array.
 
     Parameters
     ----------
-    arr : np.ndarray, target array which we wish to find indices of each unique value
+    arr : np.ndarray, target array which we wish to find indices of each unique value.
 
     Returns
     -------
@@ -299,11 +299,11 @@ def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
 
 def get_counter_from_arr(arr: np.ndarray) -> Counter:
     """
-    Get `Counter` of an array
+    Get `Counter` of an array.
 
     Parameters
     ----------
-    arr : np.ndarray, target array which we wish to get `Counter` from
+    arr : np.ndarray, target array which we wish to get `Counter` from.
 
     Returns
     -------
@@ -324,12 +324,12 @@ def get_counter_from_arr(arr: np.ndarray) -> Counter:
 
 def allclose(*arrays: np.ndarray, **kwargs) -> bool:
     """
-    Perform `np.allclose` to `arrays` one by one
+    Perform `np.allclose` to `arrays` one by one.
 
     Parameters
     ----------
-    arrays : np.ndarray, target arrays
-    **kwargs : keyword arguments which will be passed into `np.allclose`
+    arrays : np.ndarray, target arrays.
+    **kwargs : keyword arguments which will be passed into `np.allclose`.
 
     Returns
     -------
@@ -365,12 +365,12 @@ def register_core(name: str,
 
 class Incrementer:
     """
-    Util class which can calculate running mean & running std efficiently
+    Util class which can calculate running mean & running std efficiently.
 
     Parameters
     ----------
-    window_size : {int, None}, window size of running statistics
-        * None : then all history records will be used for calculation
+    window_size : {int, None}, window size of running statistics.
+    * if None, then all history records will be used for calculation.
 
     Examples
     ----------
@@ -423,7 +423,7 @@ class Incrementer:
 
 
 class _Formatter(logging.Formatter):
-    """ formatter for logging, which supports millisecond """
+    """ Formatter for logging, which supports millisecond. """
 
     converter = datetime.datetime.fromtimestamp
 
@@ -439,29 +439,29 @@ class _Formatter(logging.Formatter):
 
 class LoggingMixin:
     """
-    Mixin class to provide logging methods for base class
+    Mixin class to provide logging methods for base class.
 
     Attributes
     ----------
     _triggered_ : bool
-        If not `_triggered_`, log file will not be created
+    * If not `_triggered_`, log file will not be created.
 
     _verbose_level_ : int
-        Preset verbose level of the whole logging process
+    * Preset verbose level of the whole logging process.
 
     Methods
     ----------
     log_msg(self, body, prefix="", verbose_level=1)
-        Log something either through console or to a file
+        Log something either through console or to a file.
         * body : str
-            main logging message
+            Main logging message.
         * prefix : str
-            prefix added to `body` when logging message goes through console
+            Prefix added to `body` when logging message goes through console.
         * verbose_level : int
-            if `self._verbose_level_` >= verbose_level, then logging message will go through console
+            If `self._verbose_level_` >= verbose_level, then logging message will go through console.
 
     log_block_msg(self, body, prefix="", title="", verbose_level=1)
-        Almost the same as `log_msg`, except adding `title` on top of `body`
+        Almost the same as `log_msg`, except adding `title` on top of `body`.
 
     """
 
@@ -654,23 +654,23 @@ class LoggingMixin:
 
 class PureLoggingMixin:
     """
-    Mixin class to provide (pure) logging method for base class
+    Mixin class to provide (pure) logging method for base class.
 
     Attributes
     ----------
     _loggers_ : dict(int, logging.Logger)
-        Recorded all loggers initialized
+        Recorded all loggers initialized.
 
     _formatter_ : _Formatter
-        Formatter for all loggers
+        Formatter for all loggers.
 
     Methods
     ----------
     log_msg(self, name, msg, msg_level=logging.INFO)
-        Log something to a file, with logger initialized by `name`
+        Log something to a file, with logger initialized by `name`.
 
     log_block_msg(self, name, title, body, msg_level=logging.INFO)
-        Almost the same as `log_msg`, except adding `title` on top of `body`
+        Almost the same as `log_msg`, except adding `title` on top of `body`.
 
     """
 
@@ -769,15 +769,15 @@ class PureLoggingMixin:
 
 class SavingMixin(LoggingMixin):
     """
-    Mixin class to provide logging & saving method for base class
+    Mixin class to provide logging & saving method for base class.
 
     Methods
     ----------
     save(self, folder)
-        Save `self` to folder
+        Save `self` to folder.
 
     def load(self, folder)
-        Load from folder
+        Load from folder.
 
     """
 
@@ -826,23 +826,23 @@ class SavingMixin(LoggingMixin):
 
 class Saving(LoggingMixin):
     """
-    Util class for saving instances
+    Util class for saving instances.
 
     Methods
     ----------
     save_instance(instance, folder, log_method=None)
-        Save instance to `folder`
-        * instance : object, instance to save
-        * folder : str, folder to save to
+        Save instance to `folder`.
+        * instance : object, instance to save.
+        * folder : str, folder to save to.
         * log_method : {None, function}, used as `log_method` parameter in
-        `log_with_external_method` method of `LoggingMixin`
+        `log_with_external_method` method of `LoggingMixin`.
 
     load_instance(instance, folder, log_method=None)
-        Load instance from `folder`
-        * instance : object, instance to load, need to be initialized
-        * folder : str, folder to load from
+        Load instance from `folder`.
+        * instance : object, instance to load, need to be initialized.
+        * folder : str, folder to load from.
         * log_method : {None, function}, used as `log_method` parameter in
-        `log_with_external_method` method of `LoggingMixin`
+        `log_with_external_method` method of `LoggingMixin`.
 
     """
 
@@ -1064,13 +1064,13 @@ class Saving(LoggingMixin):
 
 class Sampler:
     """
-    Util class which can help sampling indices from probabilities
+    Util class which can help sampling indices from probabilities.
 
     Parameters
     ----------
-    method : str, sampling method
-    * currently only 'multinomial' is supported
-    probabilities : np.ndarray, probabilities we'll use
+    method : str, sampling method.
+    * currently only 'multinomial' is supported.
+    probabilities : np.ndarray, probabilities we'll use.
 
     Examples
     ----------
@@ -1120,7 +1120,7 @@ class Sampler:
 # contexts
 
 class context_error_handler:
-    """ Util class which provides exception handling when using context manager """
+    """ Util class which provides exception handling when using context manager. """
 
     @property
     def exception_suffix(self):
@@ -1141,7 +1141,7 @@ class context_error_handler:
 
 class timeit(context_error_handler):
     """
-    Timing context manager
+    Timing context manager.
 
     Examples
     --------
@@ -1191,7 +1191,7 @@ class _lock_file_refresher(threading.Thread):
 
 class lock_manager(context_error_handler, LoggingMixin):
     """
-    Util class to make simultaneously-write process safe with some hacked (ugly) tricks
+    Util class to make simultaneously-write process safe with some hacked (ugly) tricks.
 
     Examples
     --------
@@ -1332,13 +1332,13 @@ class lock_manager(context_error_handler, LoggingMixin):
 
 class batch_manager(context_error_handler):
     """
-    Process data in batch
+    Process data in batch.
 
     Parameters
     ----------
     inputs : tuple(np.ndarray), auxiliary array inputs.
-    n_elem : {int, float}, indicates how many elements will be processed in a batch
-    batch_size : int, indicates the batch_size; if None, batch_size will be calculated by n_elem
+    n_elem : {int, float}, indicates how many elements will be processed in a batch.
+    batch_size : int, indicates the batch_size; if None, batch_size will be calculated by n_elem.
 
     Examples
     --------
@@ -1390,12 +1390,12 @@ class batch_manager(context_error_handler):
 
 class timing_context(context_error_handler):
     """
-    Wrap codes in any base class of `LoggingMixin` with this timing context to timeit
+    Wrap codes in any base class of `LoggingMixin` with this timing context to timeit.
 
     Parameters
     ----------
-    logging_mixin : LoggingMixin, arbitrary base classes of LoggingMixin
-    name : str, explain what the wrapped codes are doing
+    logging_mixin : LoggingMixin, arbitrary base classes of LoggingMixin.
+    name : str, explain what the wrapped codes are doing.
 
     Examples
     --------
@@ -1428,12 +1428,12 @@ class timing_context(context_error_handler):
 
 class data_tuple_saving_controller(context_error_handler):
     """
-    Help saving DataTuple of SavingMixin
+    Help saving DataTuple of SavingMixin.
 
     Parameters
     ----------
-    instance : SavingMixin, instance whose DataTuples are to be saved / loaded
-    is_saving : bool, whether it is a saving context or not
+    instance : SavingMixin, instance whose DataTuples are to be saved / loaded.
+    is_saving : bool, whether it is a saving context or not.
     """
 
     __prefix__ = "_Data_Tuple__"

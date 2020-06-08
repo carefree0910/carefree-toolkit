@@ -67,10 +67,10 @@ class GradientDescentMixin(ABC):
 
     @abstractmethod
     def parameter_names(self) -> List[str]:
-        """ this method returns all parameters' names, each name should correspond to a property
+        """ This method returns all parameters' names, each name should correspond to a property.
 
         e.g. in LinearRegression, if self._w & self._b are the parameters,
-        this method should return : ["_w", "_b"]
+        this method should return : ["_w", "_b"].
 
         Returns
         -------
@@ -83,18 +83,18 @@ class GradientDescentMixin(ABC):
                       x_batch: np.ndarray,
                       y_batch: np.ndarray,
                       batch_indices: np.ndarray) -> Dict[str, Any]:
-        """ this method calculate the loss of one batch
+        """ This method calculate the loss of one batch.
 
         Parameters
         ----------
-        x_batch : np.ndarray, one batch of training set features
-        y_batch : np.ndarray, one batch of training set labels
-        batch_indices : np.ndarray, indices of current batch
+        x_batch : np.ndarray, one batch of training set features.
+        y_batch : np.ndarray, one batch of training set labels.
+        batch_indices : np.ndarray, indices of current batch.
 
         Returns
         -------
-        results : Dict[str, Any], contains loss value and intermediate results which are critical
-        * must contains 'loss' key, whose value should be a float
+        results : Dict[str, Any], contains loss value and intermediate results which are critical.
+        * must contains 'loss' key, whose value should be a float.
 
         """
 
@@ -104,18 +104,18 @@ class GradientDescentMixin(ABC):
                           y_batch: np.ndarray,
                           batch_indices: np.ndarray,
                           loss_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
-        """ this method calculate the gradients of one batch
+        """ This method calculate the gradients of one batch.
 
         Parameters
         ----------
-        x_batch : np.ndarray, one batch of training set features
-        y_batch : np.ndarray, one batch of training set labels
-        batch_indices : np.ndarray, indices of current batch
-        loss_dict : Dict[str, Any], results from self.loss_function
+        x_batch : np.ndarray, one batch of training set features.
+        y_batch : np.ndarray, one batch of training set labels.
+        batch_indices : np.ndarray, indices of current batch.
+        loss_dict : Dict[str, Any], results from self.loss_function.
 
         Returns
         -------
-        results : Dict[str, np.ndarray], contains all gradients needed
+        results : Dict[str, np.ndarray], contains all gradients needed.
         * set(results.keys()) should be identical with set(self.parameter_names)
 
         """

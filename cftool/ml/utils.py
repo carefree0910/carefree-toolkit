@@ -16,15 +16,15 @@ from ..misc import *
 
 class Anneal:
     """
-    Util class which can provide annealed numbers with given `method`
-    * Formulas could be found in `_initialize` method
+    Util class which can provide annealed numbers with given `method`.
+    * Formulas could be found in `_initialize` method.
 
     Parameters
     ----------
-    method : str, indicates which anneal method to be used
-    n_iter : int, indicates how much 'steps' will be taken to reach `ceiling` from `floor`
-    floor : float, indicates the start point of the annealed number
-    ceiling : float, indicates the end point of the annealed number
+    method : str, indicates which anneal method to be used.
+    n_iter : int, indicates how much 'steps' will be taken to reach `ceiling` from `floor`.
+    floor : float, indicates the start point of the annealed number.
+    ceiling : float, indicates the end point of the annealed number.
 
     Examples
     --------
@@ -90,20 +90,19 @@ class Anneal:
 
 class Metrics(LoggingMixin):
     """
-    Util class to calculate a whole variety of metrics
+    Util class to calculate a whole variety of metrics.
 
     Warnings
     ----------
-    * Notice that 2-dimensional arrays are desired, not flattened arrays
-    * Notice that first two args of each metric method must be `y` & `pred`
+    * Notice that 2-dimensional arrays are desired, not flattened arrays.
+    * Notice that first two args of each metric method must be `y` & `pred`.
 
     Parameters
     ----------
-    metric_type : str, indicates which kind of metric is to be calculated
-    config : dict
-        Configuration for the specific metric
-        * e.g. for quantile metric, you need to specify which quantile is to be evaluated
-    verbose_level : int, verbose level of Metrics
+    metric_type : str, indicates which kind of metric is to be calculated.
+    config : dict, configuration for the specific metric.
+    * e.g. for quantile metric, you need to specify which quantile is to be evaluated.
+    verbose_level : int, verbose level of Metrics.
 
     Examples
     --------
@@ -282,12 +281,12 @@ class Metrics(LoggingMixin):
 
 class Estimator:
     """
-    Util class to estimate the performances of a group of methods, on specific dataset & metric
+    Util class to estimate the performances of a group of methods, on specific dataset & metric.
 
     Parameters
     ----------
-    metric_type : str, indicates which kind of metric is to be calculated
-    **kwargs : used to initialize `Metrics` instance
+    metric_type : str, indicates which kind of metric is to be calculated.
+    **kwargs : used to initialize `Metrics` instance.
 
     Examples
     --------
@@ -350,21 +349,21 @@ class Estimator:
 
 class ModelPattern(LoggingMixin):
     """
-    Util class to create an interface for users to leverage `Comparer` (and more in the future)
+    Util class to create an interface for users to leverage `Comparer` (and more in the future).
 
     Parameters
     ----------
     init_method : Callable[[], object]
-    * If None, then `ModelPattern` will not perform model creation
-    * If Callable, then `ModelPattern` will initialize a model with it
+    * If None, then `ModelPattern` will not perform model creation.
+    * If Callable, then `ModelPattern` will initialize a model with it.
     train_method : Callable[[object], None]
-    * If None, then `ModelPattern` will not perform model training
-    * If Callable, then `ModelPattern` will train the created model (from `init_method`) with it
+    * If None, then `ModelPattern` will not perform model training.
+    * If Callable, then `ModelPattern` will train the created model (from `init_method`) with it.
     predict_method : Union[str, Callable[[np.ndarray], np.ndarray]]
-    * If str, then `ModelPattern` will use `getattr` to get the predict method of the model obtained from above
+    * If str, then `ModelPattern` will use `getattr` to get the predict method of the model obtained from above.
         In this case, `init_method` must be provided (`train_method` is still optional, because you can create a
-      trained model in `init_method`)
-    * If Callable, then `ModelPattern` will use it for prediction
+      trained model in `init_method`).
+    * If Callable, then `ModelPattern` will use it for prediction.
 
     Examples
     --------
@@ -410,16 +409,16 @@ class ModelPattern(LoggingMixin):
 
 class Comparer:
     """
-    Util class to compare a group of `ModelPattern`s on a group of `Estimator`s
+    Util class to compare a group of `ModelPattern`s on a group of `Estimator`s.
 
     Parameters
     ----------
     model_patterns : Dict[str, Union[ModelPattern, Dict[str, ModelPattern]]]
-    * If values are `ModelPattern`, then all estimators will use this only `ModelPattern` make predictions
+    * If values are `ModelPattern`, then all estimators will use this only `ModelPattern` make predictions.
     * If values are Dict[str, ModelPattern], then each estimator will use values.get(estimator.type) to
       make predictions. If corresponding `ModelPattern` does not exist (values.get(estimator.type) is None),
-      then corresponding estimation will be skipped
-    estimators : List[Estimator], list of estimators which we are interested in
+      then corresponding estimation will be skipped.
+    estimators : List[Estimator], list of estimators which we are interested in.
 
     Examples
     --------
@@ -482,12 +481,12 @@ class Comparer:
 
 class ScalarEMA:
     """
-    Util class to record Exponential Moving Average (EMA) for scalar value
+    Util class to record Exponential Moving Average (EMA) for scalar value.
 
     Parameters
     ----------
-    decay : float, decay rate for EMA
-        * Formula: new = (1 - decay) * current + decay * history; history = new
+    decay : float, decay rate for EMA.
+    * new = (1 - decay) * current + decay * history; history = new
 
     Examples
     --------
@@ -521,13 +520,12 @@ class ScalarEMA:
 
 class Grid:
     """
-    Util class provides permutation of simple, flattened param dicts
-    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`
+    Util class provides permutation of simple, flattened param dicts.
+    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`.
 
     Parameters
     ----------
-    param_grid : dict[str, list(int)]
-        Indicates param names and corresponding possible values
+    param_grid : dict[str, list(int)], indicates param names and corresponding possible values.
 
     Examples
     ----------
@@ -558,51 +556,50 @@ class Grid:
 
 class Visualizer:
     """
-    Visualization class
+    Visualization class.
 
     Methods
     ----------
     bar(self, data, classes, categories, save_name="bar_plot", title="",
             padding=1e-3, expand_floor=5, replace=True)
-        Make bar plot with given `data`
-        * data : np.ndarray
-            Containing values for the bar plot, where data.shape =
-            * (len(categories), ), if len(classes) == 1
-            * (len(classes), len(categories)), otherwise
-        * classes : list(str), list of str which indicates each class
-            * each class will has its own color
-            * len(classes) indicates how many bars are there in one category (side by side)
-        * categories : list(str), list of str which indicates each category
-            * a category will be a tick along x-axis
-        * save_name : str, saving name of this bar plot
-        * title : str, title of this bar plot
-        * padding : float, minimum value of each bar
-        * expand_floor : int, when len(categories) > `expand_floor`, the width of the figure will expand
-            * for len(classes) == 1, `expand_floor` will be multiplied by 2 internally
+        Make bar plot with given `data`.
+        * data : np.ndarray, containing values for the bar plot, where data.shape =
+            * (len(categories), ), if len(classes) == 1.
+            * (len(classes), len(categories)), otherwise.
+        * classes : list(str), list of str which indicates each class.
+            * each class will has its own color.
+            * len(classes) indicates how many bars are there in one category (side by side).
+        * categories : list(str), list of str which indicates each category.
+            * a category will be a tick along x-axis.
+        * save_name : str, saving name of this bar plot.
+        * title : str, title of this bar plot.
+        * padding : float, minimum value of each bar.
+        * expand_floor : int, when len(categories) > `expand_floor`, the width of the figure will expand.
+            * for len(classes) == 1, `expand_floor` will be multiplied by 2 internally.
         * overwrite : bool
-            whether overwrite the existing file with the same file name of this plot's saving name
+            whether overwrite the existing file with the same file name of this plot's saving name.
 
     function(self, f, x_min, x_max, classes, categories, save_names=None,
              n_sample=1000, expand_floor=5, overwrite=True):
         Make multiple (len(categories)) line plots with given function (`f`)
         * f : function
-            * input should be an np.ndarray with shape == (n, n_categories)
-            * output should be an np.ndarray with shape == (n, n_categories, n_categories)
-        * x_min : np.ndarray, minimum x-values for each line plot
-            * len(x_min) should be len(categories)
-        * x_max : np.ndarray, maximum x-values for each line plot
-            * len(x_max) should be len(categories)
-        * classes : list(str), list of str which indicates each class
-            * each class will has its own color
-            * len(classes) indicates how many bars are there in one category (side by side)
-        * categories : list(str), list of str which indicates each category
-            * every category will correspond to a line plot
-        * save_names : list(str), saving names of these line plots
-        * n_sample : int, sample density along x-axis
+            * input should be an np.ndarray with shape == (n, n_categories).
+            * output should be an np.ndarray with shape == (n, n_categories, n_categories).
+        * x_min : np.ndarray, minimum x-values for each line plot.
+            * len(x_min) should be len(categories).
+        * x_max : np.ndarray, maximum x-values for each line plot.
+            * len(x_max) should be len(categories).
+        * classes : list(str), list of str which indicates each class.
+            * each class will has its own color.
+            * len(classes) indicates how many bars are there in one category (side by side).
+        * categories : list(str), list of str which indicates each category.
+            * every category will correspond to a line plot.
+        * save_names : list(str), saving names of these line plots.
+        * n_sample : int, sample density along x-axis.
         * expand_floor : int, the width of the figures will be expanded with ratios calculated by:
             expand_ratios = np.maximum(1., np.abs(x_min) / expand_floor, x_max / expand_floor)
         * overwrite : bool
-            whether overwrite the existing file with the same file name of this plot's saving name
+            whether overwrite the existing file with the same file name of this plot's saving name.
 
     """
 

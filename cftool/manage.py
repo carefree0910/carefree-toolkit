@@ -8,7 +8,7 @@ from .misc import PureLoggingMixin
 
 
 class PCManager:
-    """ Util class which can check PC status (unit: MB) """
+    """ Util class which can check PC status (unit: MB). """
 
     @staticmethod
     def get_available_ram():
@@ -25,14 +25,14 @@ class PCManager:
 
 class GPUManager:
     """
-    Util class which can check CUDA usages
+    Util class which can check CUDA usages.
 
     Parameters
     ----------
-    available_cuda_list : {None, list}, indicates CUDAs which are available
-        * None : then all CUDAs will be available
-    reuse : bool, indicates whether one CUDA could be used multiple times
-        * if `available_cuda_list` is None, then `reuse` will have no effect
+    available_cuda_list : {None, list}, indicates CUDAs which are available.
+    * if None, then all CUDAs will be available.
+    reuse : bool, indicates whether one CUDA could be used multiple times.
+    * if `available_cuda_list` is None, then `reuse` will have no effect.
 
     Examples
     --------
@@ -104,9 +104,9 @@ class GPUManager:
 
 class ResourceManager:
     """
-    Util class which can monitor & manage resources
-    * It utilizes `PCManager` & `GPUManager` defined above
-    * It is currently used in cftool.dist.core.Parallel only
+    Util class which can monitor & manage resources.
+    * It utilizes `PCManager` & `GPUManager` defined above.
+    * It is currently used in cftool.dist.core.Parallel only.
 
     """
 

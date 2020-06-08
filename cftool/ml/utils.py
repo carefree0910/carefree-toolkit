@@ -10,7 +10,6 @@ from scipy import interp
 from scipy import stats as ss
 from sklearn import metrics
 from functools import partial
-from itertools import product
 
 from ..misc import *
 
@@ -671,44 +670,6 @@ class ScalarEMA:
         return updated
 
 
-class Grid:
-    """
-    Util class provides permutation of simple, flattened param dicts.
-    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`.
-
-    Parameters
-    ----------
-    param_grid : dict[str, list(int)], indicates param names and corresponding possible values.
-
-    Examples
-    ----------
-    >>> from cftool.ml.utils import Grid
-    >>>
-    >>> grid = Grid({"a": [1, 2, 3], "b": [1, 2, 3]})
-    >>> for param in grid:
-    >>>     print(param)
-    >>> # output : {'a': 1, 'b': 1}, {'a': 1, 'b': 2}, {'a': 1, 'b': 3}
-    >>> #          {'a': 2, 'b': 1}, ..., {'a': 3, 'b': 3}
-
-    """
-
-    def __init__(self, param_grid):
-        self._grid = param_grid
-
-    def __iter__(self):
-        items = sorted(self._grid.items())
-        if not items:
-            yield {}
-        else:
-            keys, values = zip(*items)
-            for v in map(list, product(*values)):
-                for i, vv in enumerate(v):
-                    if isinstance(vv, tuple) and len(vv) == 1:
-                        v[i] = vv[0]
-                params = dict(zip(keys, v))
-                yield params
-
-
 class Visualizer:
     """
     Visualization class.
@@ -904,6 +865,6 @@ class Visualizer:
 
 
 __all__ = [
-    "Anneal", "Metrics", "ScalarEMA", "Grid", "Visualizer",
+    "Anneal", "Metrics", "ScalarEMA", "Visualizer",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer"
 ]

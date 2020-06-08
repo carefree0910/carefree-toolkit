@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from typing import *
 from PIL import Image
 from functools import reduce
+from itertools import product
 from collections import Counter
 from abc import abstractmethod
 
@@ -1062,6 +1063,44 @@ class Saving(LoggingMixin):
         return _manager()
 
 
+class Grid:
+    """
+    Util class provides permutation of simple, flattened param dicts.
+    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`.
+
+    Parameters
+    ----------
+    param_grid : dict[str, list(int)], indicates param names and corresponding possible values.
+
+    Examples
+    ----------
+    >>> from cftool.misc import Grid
+    >>>
+    >>> grid = Grid({"a": [1, 2, 3], "b": [1, 2, 3]})
+    >>> for param in grid:
+    >>>     print(param)
+    >>> # output : {'a': 1, 'b': 1}, {'a': 1, 'b': 2}, {'a': 1, 'b': 3}
+    >>> #          {'a': 2, 'b': 1}, ..., {'a': 3, 'b': 3}
+
+    """
+
+    def __init__(self, param_grid):
+        self._grid = param_grid
+
+    def __iter__(self):
+        items = sorted(self._grid.items())
+        if not items:
+            yield {}
+        else:
+            keys, values = zip(*items)
+            for v in map(list, product(*values)):
+                for i, vv in enumerate(v):
+                    if isinstance(vv, tuple) and len(vv) == 1:
+                        v[i] = vv[0]
+                params = dict(zip(keys, v))
+                yield params
+
+
 class Sampler:
     """
     Util class which can help sampling indices from probabilities.
@@ -1504,9 +1543,10 @@ class data_tuple_saving_controller(context_error_handler):
 
 
 __all__ = [
-    "get_indices_from_another", "get_unique_indices", "get_one_hot", "hash_code", "prefix_dict",
-    "timestamp", "fix_float_to_length", "truncate_string_to_length", "grouped", "is_numeric", "update_dict",
-    "show_or_save", "show_or_return", "Saving", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Sampler",
-    "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context", "prod",
-    "get_counter_from_arr", "allclose", "shallow_copy_dict", "register_core", "data_tuple_saving_controller"
+    "timestamp", "prod", "hash_code", "prefix_dict", "shallow_copy_dict", "update_dict", "fix_float_to_length",
+    "truncate_string_to_length", "grouped", "is_numeric", "get_one_hot", "show_or_save", "show_or_return",
+    "get_indices_from_another", "UniqueIndices", "get_unique_indices", "get_counter_from_arr", "allclose",
+    "register_core", "Incrementer", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Saving", "Grid",
+    "Sampler", "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context",
+    "data_tuple_saving_controller"
 ]

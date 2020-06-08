@@ -28,11 +28,13 @@ class Anneal:
 
     Examples
     --------
+    >>> from cftool.ml.utils import Anneal
+    >>>
     >>> anneal = Anneal("linear", 50, 0.01, 0.99)
     >>> for i in range(100):
     >>>     # for i == 0, 1, ..., 48, 49, it will pop 0.01, 0.03, ..., 0.97, 0.99
     >>>     # for i == 50, 51, ..., 98, 99, it will pop 0.99, 0.99, ..., 0.99, 0.99
-    >>>     anneal.pop()
+    >>>     print(anneal.pop())
 
     """
 
@@ -107,6 +109,9 @@ class Metrics(LoggingMixin):
     Examples
     --------
     >>> import numpy as np
+    >>>
+    >>> from cftool.ml.utils import Metrics
+    >>>
     >>> predictions, y_true = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> print(Metrics("mae", {}).score(y_true.T, predictions.T))  # will be 1.
 
@@ -292,9 +297,13 @@ class Estimator(LoggingMixin):
     Examples
     --------
     >>> import numpy as np
+    >>>
+    >>> from cftool.ml.utils import Estimator
+    >>>
     >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> identical = lambda x_: x_
     >>> minus_one = lambda x_: x_ - 1
+    >>> # ~~~  [ info ] Results
     >>> # ==========================================================
     >>> # |             identical  |    mae     |  1.000000  |
     >>> # |             minus_one  |    mae     |  0.666667  |  <-
@@ -381,6 +390,9 @@ class ModelPattern(LoggingMixin):
     Examples
     --------
     >>> import numpy as np
+    >>>
+    >>> from cftool.ml.utils import ModelPattern
+    >>>
     >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> predict_method = lambda x_: x_ - 1
     >>> init_method = lambda: type("Test", (), {"predict": lambda self, x_: predict_method(x_)})()
@@ -444,6 +456,9 @@ class Comparer(LoggingMixin):
     Examples
     --------
     >>> import numpy as np
+    >>>
+    >>> from cftool.ml.utils import ModelPattern, Estimator, Comparer
+    >>>
     >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> identical = lambda x_: x_
     >>> minus_one = lambda x_: x_ - 1
@@ -452,10 +467,12 @@ class Comparer(LoggingMixin):
     >>>     "minus_one": ModelPattern(predict_method=minus_one)
     >>> }
     >>> estimators = [Estimator("mse"), Estimator("mae")]
-    >>> #==========================================================
+    >>> # ~~~  [ info ] Results
+    >>> # ==========================================================
     >>> # |             identical  |    mse     |  1.666667  |
     >>> # |             minus_one  |    mse     |  0.666667  |  <-
     >>> # ----------------------------------------------------------
+    >>> # ~~~  [ info ] Results
     >>> # ==========================================================
     >>> # |             identical  |    mae     |  1.000000  |
     >>> # |             minus_one  |    mae     |  0.666667  |  <-
@@ -523,6 +540,8 @@ class ScalarEMA:
 
     Examples
     --------
+    >>> from cftool.ml.utils import ScalarEMA
+    >>>
     >>> ema = ScalarEMA(0.5)
     >>> for i in range(4):
     >>>     print(ema.update("score", 0.5 ** i))  # 1, 0.75, 0.5, 0.3125
@@ -562,6 +581,8 @@ class Grid:
 
     Examples
     ----------
+    >>> from cftool.ml.utils import Grid
+    >>>
     >>> grid = Grid({"a": [1, 2, 3], "b": [1, 2, 3]})
     >>> for param in grid:
     >>>     print(param)

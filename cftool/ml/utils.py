@@ -284,6 +284,10 @@ class Metrics(LoggingMixin):
         return thresholds[np.argmax(metric)]
 
 
+estimate_fn_type = Callable[[np.ndarray], np.ndarray]
+scoring_fn_type = Callable[[List[float], float, float], float]
+
+
 class Estimator(LoggingMixin):
     """
     Util class to estimate the performances of a group of methods, on specific dataset & metric.
@@ -317,7 +321,8 @@ class Estimator(LoggingMixin):
                  *,
                  verbose_level: int = 2,
                  **kwargs):
-        self.scores = {}
+        self.raw_metrics = {}
+        self.final_scores = {}
         self.best_method = None
         self._verbose_level = verbose_level
         self._metric = Metrics(metric_type, **kwargs)
@@ -332,28 +337,45 @@ class Estimator(LoggingMixin):
         return self._metric.type
 
     @property
+    def sign(self) -> int:
+        return self._metric.sign
+
+    @property
     def requires_prob(self) -> bool:
         return self._metric.requires_prob
+
+    # Core
+
+    def _default_scoring(self, raw_metrics, mean, std) -> float:
+        return mean - self.sign * std
+
+    # API
 
     def estimate(self,
                  x: np.ndarray,
                  y: np.ndarray,
-                 methods: Dict[str, Union[None, Callable]],
+                 methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
                  *,
+                 scoring_function: Union[str, scoring_fn_type] = "default",
                  verbose_level: int = 1) -> None:
-        self.scores = {
-            name: None if method is None else self._metric.score(y, method(x))
-            for name, method in methods.items()
+        if isinstance(scoring_function, str):
+            scoring_function = getattr(self, f"_{scoring_function}_scoring")
+        for k, v in methods.items():
+            if not isinstance(v, list):
+                methods[k] = [v]
+        self.raw_metrics = {
+            name: np.array([self._metric.metric(y, method(x)) for method in sub_methods], np.float32)
+            for name, sub_methods in methods.items()
         }
         msg_list = []
         best_idx, best_score = -1, -math.inf
-        sorted_method_names = sorted(self.scores)
+        sorted_method_names = sorted(self.raw_metrics)
         for i, name in enumerate(sorted_method_names):
-            score = self.scores[name]
-            if score is None:
-                continue
-            msg_list.append(f"|  {name:>20s}  |  {self._metric.type:^8s}  |  {score:8.6f}  |")
-            new_score = score * self._metric.sign
+            raw_metrics = self.raw_metrics[name]
+            mean, std = raw_metrics.mean().item(), raw_metrics.std().item()
+            msg_list.append(f"|  {name:>20s}  |  {self.type:^8s}  |  {mean:8.6f} ± {std:8.6f}  |")
+            new_score = scoring_function(raw_metrics, mean, std) * self.sign
+            self.final_scores[name] = new_score
             if new_score > best_score:
                 best_idx, best_score = i, new_score
         self.best_method = sorted_method_names[best_idx]
@@ -596,8 +618,12 @@ class Comparer(LoggingMixin):
         self._verbose_level = verbose_level
 
     @property
-    def scores(self) -> Dict[str, Dict[str, Union[float, None]]]:
-        return {k: v.scores for k, v in self.estimators.items()}
+    def raw_metrics(self) -> Dict[str, Dict[str, float]]:
+        return {k: v.raw_metrics for k, v in self.estimators.items()}
+
+    @property
+    def final_scores(self) -> Dict[str, Dict[str, float]]:
+        return {k: v.final_scores for k, v in self.estimators.items()}
 
     @property
     def best_methods(self) -> Dict[str, str]:

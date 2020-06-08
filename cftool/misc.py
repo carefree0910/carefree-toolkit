@@ -179,11 +179,11 @@ def show_or_save(export_path: str,
     Parameters
     ----------
     export_path : {None, str}
-    * if None, the figure will be shown.
-    * if str, it represents the path where the figure should be saved to.
+    * If None, the figure will be shown.
+    * If str, it represents the path where the figure should be saved to.
     fig : {None, plt.Figure}
-    * if None, default figure contained in plt will be executed.
-    * if plt.figure, it will be executed
+    * If None, default figure contained in plt will be executed.
+    * If plt.figure, it will be executed
 
     """
 
@@ -370,7 +370,7 @@ class Incrementer:
     Parameters
     ----------
     window_size : {int, None}, window size of running statistics.
-    * if None, then all history records will be used for calculation.
+    * If None, then all history records will be used for calculation.
 
     Examples
     ----------
@@ -1069,7 +1069,7 @@ class Sampler:
     Parameters
     ----------
     method : str, sampling method.
-    * currently only 'multinomial' is supported.
+    * Currently only 'multinomial' is supported.
     probabilities : np.ndarray, probabilities we'll use.
 
     Examples

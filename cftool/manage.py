@@ -30,9 +30,9 @@ class GPUManager:
     Parameters
     ----------
     available_cuda_list : {None, list}, indicates CUDAs which are available.
-    * if None, then all CUDAs will be available.
+    * If None, then all CUDAs will be available.
     reuse : bool, indicates whether one CUDA could be used multiple times.
-    * if `available_cuda_list` is None, then `reuse` will have no effect.
+    * If `available_cuda_list` is None, then `reuse` will have no effect.
 
     Examples
     --------

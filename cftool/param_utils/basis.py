@@ -16,10 +16,10 @@ class ParamsGenerator:
     Parameters
     ----------
     params : {DataType, Iterable, dict}, parameter settings.
-    * if DataType, then distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
+    * If DataType, then distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
     through the config choices.
-    * if Iterable, then each element should be a DataType. It could be nested.
-    * if dict, then each key should correspond to a config key, and its value should correspond to the
+    * If Iterable, then each element should be a DataType. It could be nested.
+    * If dict, then each key should correspond to a config key, and its value should correspond to the
     desired value distribution. It could be nested.
 
     Examples

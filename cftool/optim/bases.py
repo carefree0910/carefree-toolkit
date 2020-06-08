@@ -94,7 +94,7 @@ class GradientDescentMixin(ABC):
         Returns
         -------
         results : Dict[str, Any], contains loss value and intermediate results which are critical.
-        * must contains 'loss' key, whose value should be a float.
+        * Must contains 'loss' key, whose value should be a float.
 
         """
 

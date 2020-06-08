@@ -558,7 +558,8 @@ class EnsemblePattern:
         ) for _ in range(n)], ensemble_method)
 
 
-patterns_type = Union[ModelPattern, EnsemblePattern]
+pattern_type = Union[ModelPattern, EnsemblePattern]
+patterns_type = Union[pattern_type, List[pattern_type]]
 
 
 class Comparer(LoggingMixin):
@@ -636,21 +637,32 @@ class Comparer(LoggingMixin):
                 verbose_level: int = 1) -> "Comparer":
         for estimator in self.estimators.values():
             methods = {}
-            for model_name, pattern in self.patterns.items():
-                if isinstance(pattern, dict):
-                    pattern = pattern.get(estimator.type)
-                if pattern is None:
+            for model_name, patterns in self.patterns.items():
+                if isinstance(patterns, dict):
+                    patterns = patterns.get(estimator.type)
+                if patterns is None:
                     continue
+                if not isinstance(patterns, list):
+                    patterns = [patterns]
+                invalid = False
+                predict_methods = []
                 requires_prob = estimator.requires_prob
-                predict_method = pattern.predict_method(requires_prob)
-                if predict_method is None:
-                    self.log_msg(
-                        f"{estimator} requires probability predictions but {model_name} "
-                        f"does not have probability predicting method, skipping",
-                        self.warning_prefix, verbose_level, logging.WARNING
-                    )
+                for pattern in patterns:
+                    if pattern is None:
+                        invalid = True
+                        break
+                    predict_methods.append(pattern.predict_method(requires_prob))
+                    if predict_methods[-1] is None:
+                        invalid = True
+                        self.log_msg(
+                            f"{estimator} requires probability predictions but {model_name} "
+                            f"does not have probability predicting method, skipping",
+                            self.warning_prefix, verbose_level, logging.WARNING
+                        )
+                        break
+                if invalid:
                     continue
-                methods[model_name] = predict_method
+                methods[model_name] = predict_methods
             estimator.estimate(x, y, methods, verbose_level=verbose_level)
         return self
 

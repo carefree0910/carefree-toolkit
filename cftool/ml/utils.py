@@ -445,6 +445,36 @@ collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 
 
 class EnsemblePattern:
+    """
+    Util class to create an interface for users to leverage `Comparer` (and more in the future) in an ensembled way.
+
+    Parameters
+    ----------
+    model_patterns : List[ModelPattern], list of `ModelPattern` we want to ensemble from.
+    ensemble_method : Union[str, collate_fn_type], ensemble method we use to collate the results.
+    * If str, then `EnsemblePattern` will use `getattr` to get the collate function.
+        Currently only 'default' is supported, which implements voting for classification
+        and averaging for regression.
+    * If collate_fn_type, then `EnsemblePattern` will use it to collate the results directly.
+
+    Examples
+    --------
+    >>> import numpy as np
+    >>>
+    >>> from cftool.ml.utils import ModelPattern, EnsemblePattern
+    >>>
+    >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
+    >>> identical = lambda x_: x_
+    >>> minus_one = lambda x_: x_ - 1
+    >>> identical_pattern = ModelPattern(predict_method=identical)
+    >>> minus_one_pattern = ModelPattern(predict_method=minus_one)
+    >>> # Averaging 'identical' & 'minus_one' -> 'minus_0.5'
+    >>> ensemble = EnsemblePattern([identical_pattern, minus_one_pattern])
+    >>> # [[0.5 1.5 2.5]]
+    >>> print(ensemble.predict(x))
+
+    """
+
     def __init__(self,
                  model_patterns: List[ModelPattern],
                  ensemble_method: Union[str, collate_fn_type] = "default"):

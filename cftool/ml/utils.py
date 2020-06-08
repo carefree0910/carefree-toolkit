@@ -866,5 +866,5 @@ class Visualizer:
 
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer",
-    "Estimator", "ModelPattern", "EnsemblePattern", "Comparer"
+    "Estimator", "ModelPattern", "EnsemblePattern", "Comparer", "patterns_type"
 ]

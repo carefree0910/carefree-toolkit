@@ -340,7 +340,7 @@ class Estimator(LoggingMixin):
                  y: np.ndarray,
                  methods: Dict[str, Union[None, Callable]],
                  *,
-                 verbose_level: int = 3) -> None:
+                 verbose_level: int = 1) -> None:
         self.scores = {
             name: None if method is None else self._metric.score(y, method(x))
             for name, method in methods.items()
@@ -507,7 +507,7 @@ class Comparer(LoggingMixin):
                 x: np.ndarray,
                 y: np.ndarray,
                 *,
-                verbose_level: int = 3) -> "Comparer":
+                verbose_level: int = 1) -> "Comparer":
         for estimator in self.estimators.values():
             methods = {}
             for model_name, pattern in self.model_patterns.items():

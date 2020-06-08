@@ -47,7 +47,7 @@ class Parallel(PureLoggingMixin):
     >>>     time.sleep(1)
     >>>     return x + 1
     >>>
-    >>> print(Parallel(10)(add_one, list(range(10)))._rs)
+    >>> print(Parallel(10)(add_one, list(range(10))).parallel_results)
 
     """
 

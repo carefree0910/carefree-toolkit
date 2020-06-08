@@ -322,6 +322,10 @@ class Estimator(LoggingMixin):
     def type(self) -> str:
         return self._metric.type
 
+    @property
+    def requires_prob(self) -> bool:
+        return self._metric.requires_prob
+
     def estimate(self,
                  x: np.ndarray,
                  y: np.ndarray,

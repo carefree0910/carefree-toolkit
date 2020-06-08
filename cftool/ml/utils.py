@@ -102,7 +102,7 @@ class Metrics(LoggingMixin):
     metric_type : str, indicates which kind of metric is to be calculated.
     config : dict, configuration for the specific metric.
     * e.g. for quantile metric, you need to specify which quantile is to be evaluated.
-    verbose_level : int, verbose level of Metrics.
+    verbose_level : int, verbose level of `Metrics`.
 
     Examples
     --------
@@ -286,7 +286,7 @@ class Estimator(LoggingMixin):
     Parameters
     ----------
     metric_type : str, indicates which kind of metric is to be calculated.
-    verbose_level : int, verbose level used in LoggingMixin
+    verbose_level : int, verbose level used in `LoggingMixin`.
     **kwargs : used to initialize `Metrics` instance.
 
     Examples

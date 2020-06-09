@@ -126,4 +126,4 @@ class ParamsGenerator:
         return flattened
 
 
-__all__ = ["ParamsGenerator"]
+__all__ = ["ParamsGenerator", "params_type"]

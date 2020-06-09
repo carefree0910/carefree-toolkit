@@ -1,5 +1,6 @@
 from .core import (
-    ParamsGenerator
+    ParamsGenerator,
+    params_type
 )
 from .data_types import (
     DataType,
@@ -19,7 +20,7 @@ from .distributions import (
 
 
 __all__ = [
-    "ParamsGenerator",
+    "ParamsGenerator", "params_type",
     "DataType", "Iterable", "Any", "Int", "Float", "Bool", "String",
     "DistributionBase", "Uniform", "Exponential", "Choice"
 ]

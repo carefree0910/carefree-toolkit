@@ -52,7 +52,8 @@ class DataType(metaclass=ABCMeta):
 
     @property
     def bounds(self) -> bounds_type:
-        return self.dist.bounds
+        lower, upper = map(self._transform, self.dist.bounds)
+        return lower, upper
 
     @property
     def is_inf(self) -> bool:

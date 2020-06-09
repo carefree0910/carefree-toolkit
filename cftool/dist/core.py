@@ -204,19 +204,19 @@ class Parallel(PureLoggingMixin):
         return self
 
     @property
-    def meta(self):
+    def meta(self) -> Dict[str, Any]:
         return self._rs["__meta__"]
 
     @property
-    def exceptions(self):
+    def exceptions(self) -> Dict[str, Any]:
         return self._rs["__exceptions__"]
 
     @property
-    def terminated(self):
+    def terminated(self) -> bool:
         return self.meta["terminated"]
 
     @property
-    def parallel_results(self):
+    def parallel_results(self) -> Dict[str, Any]:
         return self._rs
 
     def __sleep(self, skip_check_finished):

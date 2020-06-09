@@ -5,7 +5,7 @@ from typing import Union
 
 from .data_types import *
 from .distributions import *
-from ..misc import prod, Grid
+from ...misc import prod, Grid
 
 
 class ParamsGenerator:

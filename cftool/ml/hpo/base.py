@@ -10,8 +10,8 @@ from abc import abstractmethod, ABCMeta
 
 from ..utils import *
 from ...misc import *
+from ..param_utils import *
 from ...dist import Parallel
-from ...param_utils import *
 
 hpo_dict: Dict[str, Type["HPOBase"]] = {}
 pattern_creator_type = Callable[[np.ndarray, np.ndarray, Dict[str, Any]], pattern_type]

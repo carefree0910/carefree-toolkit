@@ -4,7 +4,7 @@ import random
 from abc import *
 from typing import List, Tuple, Union
 
-from ..misc import prod, Grid
+from ...misc import prod, Grid
 from .distributions import DistributionBase
 
 

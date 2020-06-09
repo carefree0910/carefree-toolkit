@@ -614,7 +614,7 @@ class Comparer(LoggingMixin):
         self._verbose_level = verbose_level
 
     @property
-    def raw_metrics(self) -> Dict[str, Dict[str, float]]:
+    def raw_metrics(self) -> Dict[str, Dict[str, np.ndarray]]:
         return {k: v.raw_metrics for k, v in self.estimators.items()}
 
     @property

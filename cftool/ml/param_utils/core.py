@@ -134,7 +134,7 @@ class ParamsGenerator:
                 if isinstance(params, dict):
                     _flatten_params(params, next_pre_key)
                 elif isinstance(params, Iterable):
-                    for i, param in enumerate(params._values):
+                    for i, param in enumerate(params.values):
                         name = f"{next_pre_key}{self._delim}{self._idx_start}{i}"
                         if not use_ax:
                             flattened_params.append((name, param))

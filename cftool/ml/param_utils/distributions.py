@@ -18,9 +18,9 @@ class DistributionBase(metaclass=ABCMeta):
                  values: List[Any] = None,
                  **kwargs):
         number_types = (int, float)
-        if not isinstance(lower, number_types):
+        if lower is not None and not isinstance(lower, number_types):
             raise ValueError(f"lower should be a number, {type(lower)} found")
-        if not isinstance(upper, number_types):
+        if upper is not None and not isinstance(upper, number_types):
             raise ValueError(f"upper should be a number, {type(upper)} found")
         self.lower, self.upper, self.values, self.config = lower, upper, values, kwargs
 

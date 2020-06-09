@@ -9,6 +9,8 @@ from .distributions import *
 from ...misc import prod, Grid
 
 params_type = Union[DataType, Iterable, Dict[str, "params_type"]]
+union_nested_type = Union[nested_params_type, all_nested_params_type]
+union_flattened_type = Union[flattened_params_type, all_flattened_params_type]
 
 
 class ParamsGenerator:
@@ -84,19 +86,7 @@ class ParamsGenerator:
     @property
     def all_flattened_params(self) -> all_flattened_params_type:
         if self._all_flattened_params is None:
-            flattened_params = []
-            def _flatten_params(d, pre_key: Union[None, str]):
-                for name, params in d.items():
-                    if pre_key is None:
-                        next_pre_key = name
-                    else:
-                        next_pre_key = f"{pre_key}{self._delim}{name}"
-                    if isinstance(params, dict):
-                        _flatten_params(params, next_pre_key)
-                    else:
-                        flattened_params.append((next_pre_key, params))
-                return flattened_params
-            self._all_flattened_params = dict(_flatten_params(self.all_nested_params, None))
+            self._all_flattened_params = self.flatten_nested_params(self.all_nested_params)
         return self._all_flattened_params
 
     def pop(self) -> nested_params_type:
@@ -118,6 +108,22 @@ class ParamsGenerator:
         else:
             for flattened_params in Grid(self.all_flattened_params):
                 yield self.nest_flattened_params(flattened_params)
+
+    def flatten_nested_params(self,
+                              nested_params: union_nested_type) -> union_flattened_type:
+        flattened_params = []
+        def _flatten_params(d, pre_key: Union[None, str]):
+            for name, params in d.items():
+                if pre_key is None:
+                    next_pre_key = name
+                else:
+                    next_pre_key = f"{pre_key}{self._delim}{name}"
+                if isinstance(params, dict):
+                    _flatten_params(params, next_pre_key)
+                else:
+                    flattened_params.append((next_pre_key, params))
+            return flattened_params
+        return dict(_flatten_params(nested_params, None))
 
     def nest_flattened_params(self,
                               flattened_params: flattened_params_type) -> nested_params_type:

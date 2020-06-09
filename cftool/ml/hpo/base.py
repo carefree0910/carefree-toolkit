@@ -6,6 +6,7 @@ import logging
 import numpy as np
 
 from typing import *
+from tqdm import tqdm
 from abc import abstractmethod, ABCMeta
 
 from ..utils import *
@@ -61,6 +62,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                num_jobs: int = 4,
                num_retry: int = 5,
                num_search: Union[str, int, float] = 10,
+               use_tqdm: bool = True,
                verbose_level: int = 3) -> "HPOBase":
 
         if x_validation is None or y_validation is None:
@@ -88,21 +90,26 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             range_list = list(range(num_retry))
             _task = lambda _=0: self._creator(x, y, params_)
             if parallel_run:
-                parallel_ = Parallel(num_jobs, task_names=range_list)(_task, range_list)
+                parallel_ = Parallel(
+                    num_jobs,
+                    task_names=range_list,
+                    use_tqdm=use_tqdm,
+                    tqdm_config={"position": 1, "leave": False}
+                )(_task, range_list)
                 local_patterns = [parallel_.parallel_results[str(i_)] for i_ in range_list]
             else:
                 local_patterns = []
                 for _ in range_list:
                     local_patterns.append(_task())
-            print(".", end="", flush=True)
             return local_patterns
 
         with timeit("Generating Patterns"):
             if self.is_sequential:
-                counter = 0
                 self.patterns, self.param_mapping = {}, {}
-                while counter < num_search:
-                    counter += 1
+                iterator = list(range(num_search))
+                if use_tqdm:
+                    iterator = tqdm(iterator, position=0)
+                for _ in iterator:
                     params = self._sample_params()
                     self.last_code = hash_code(str(params))
                     self.param_mapping[self.last_code] = params

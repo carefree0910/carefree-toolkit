@@ -120,16 +120,18 @@ class Any(DataType):
 
 class Int(DataType):
     @property
-    def lower(self) -> int:
+    def lower(self) -> nullable_number_type:
+        dist_lower = self.dist.lower
+        if dist_lower is None:
+            return
         return int(math.ceil(self.dist.lower))
 
     @property
-    def upper(self) -> int:
+    def upper(self) -> nullable_number_type:
+        dist_lower = self.dist.upper
+        if dist_lower is None:
+            return
         return int(math.floor(self.dist.upper))
-
-    @property
-    def values(self) -> List[int]:
-        return list(range(self.lower, self.upper + 1))
 
     @property
     def n_params(self) -> int:
@@ -139,7 +141,7 @@ class Int(DataType):
 
     def _all(self) -> List[int]:
         if self.distribution_is_inf:
-            return self.values
+            return list(range(self.lower, self.upper + 1))
         return super()._all()
 
     def _transform(self, value) -> int:

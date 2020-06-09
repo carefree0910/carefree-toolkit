@@ -10,7 +10,7 @@ from ...misc import prod, Grid
 
 class ParamsGenerator:
     """
-    Parameter generator for param searching, see ./dist/bases.py -> class SearchBase for usage.
+    Parameter generator for param searching, see cftool.ml.hpo.base.HPOBase for usage.
 
     Parameters
     ----------

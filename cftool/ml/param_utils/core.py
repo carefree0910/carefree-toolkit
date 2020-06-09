@@ -8,7 +8,7 @@ from .data_types import *
 from .distributions import *
 from ...misc import prod, Grid
 
-params_type = Union[DataType, Iterable, Dict[str, "params_type"]]
+params_type = Dict[str, Union[DataType, Iterable, "params_type"]]
 
 
 class ParamsGenerator:
@@ -18,11 +18,6 @@ class ParamsGenerator:
     Parameters
     ----------
     params : params_type, parameter settings.
-    * If DataType, then distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
-    through the config choices.
-    * If Iterable, then each element should be a DataType. It could be nested.
-    * If Dict[str, "params_type"], then each key should correspond to a config key, and its value should
-    correspond to the desired value distribution. It could be nested.
 
     Examples
     ----------
@@ -44,16 +39,11 @@ class ParamsGenerator:
     def __init__(self, params: params_type):
         self._params = params
         self._delim, self._idx_start = "^_^", "$$$"
-        if isinstance(self._params, DataType):
-            assert_msg = "distribution must be `Choice` when DataType is used as `params`"
-            assert isinstance(self._params.dist, Choice), assert_msg
         self._all_nested_params = self._all_flattened_params = None
         self._sorted_flattened_keys = self._sorted_flattened_offsets = None
 
     @property
     def n_params(self) -> number_type:
-        if self.is_enumerate:
-            return self._params.n_params
         def _n_params(params):
             if isinstance(params, (DataType, Iterable)):
                 return params.n_params
@@ -63,10 +53,6 @@ class ParamsGenerator:
                 return n_params
             return int(n_params)
         return _n_params(self._params)
-
-    @property
-    def is_enumerate(self) -> bool:
-        return isinstance(self._params, (DataType, Iterable))
 
     @property
     def all_nested_params(self) -> all_nested_type:
@@ -114,8 +100,6 @@ class ParamsGenerator:
         return data_type
 
     def pop(self) -> nested_type:
-        if self.is_enumerate:
-            return self._params.pop()
         def _pop(src: dict, tgt: dict):
             for k, v in src.items():
                 if isinstance(v, dict):
@@ -127,11 +111,8 @@ class ParamsGenerator:
         return _pop(self._params, {})
 
     def all(self) -> Iterator[nested_type]:
-        if self.is_enumerate:
-            yield from self._params.all()
-        else:
-            for flattened_params in Grid(self.all_flattened_params):
-                yield self.nest_flattened(flattened_params)
+        for flattened_params in Grid(self.all_flattened_params):
+            yield self.nest_flattened(flattened_params)
 
     def flatten_nested(self,
                        nested: nested_type) -> nested_type:

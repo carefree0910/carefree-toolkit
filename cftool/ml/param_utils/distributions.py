@@ -1,6 +1,7 @@
 import math
 import random
 
+import numpy as np
 import matplotlib.pyplot as plt
 
 from abc import *
@@ -26,6 +27,10 @@ class DistributionBase(metaclass=ABCMeta):
     @abstractmethod
     def pop(self) -> generic_number_type:
         raise NotImplementedError
+
+    @abstractmethod
+    def clip(self, value: generic_number_type) -> generic_number_type:
+        pass
 
     def __str__(self):
         if self.values is not None:
@@ -61,6 +66,9 @@ class Uniform(DistributionBase):
         self._assert_lower_and_upper()
         return random.random() * (self.upper - self.lower) + self.lower
 
+    def clip(self, value: number_type) -> number_type:
+        return max(self.lower, min(self.upper, value))
+
 
 class Exponential(Uniform):
     def __init__(self,
@@ -79,6 +87,10 @@ class Exponential(Uniform):
     def pop(self) -> number_type:
         return math.pow(self._base, super().pop())
 
+    def clip(self, value: number_type) -> number_type:
+        lower, upper = map(math.pow, 2 * [self._base], [self.lower, self.upper])
+        return max(lower, min(upper, value))
+
 
 class Choice(DistributionBase):
     @property
@@ -88,6 +100,13 @@ class Choice(DistributionBase):
     def pop(self) -> Any:
         self._assert_values()
         return random.choice(self.values)
+
+    def clip(self, value: generic_number_type) -> generic_number_type:
+        if isinstance(value, str):
+            raise ValueError("str does not support clipping")
+        diff = np.array([v - value for v in self.values], np.float32)
+        best_idx = np.argmin(np.abs(diff)).item()
+        return self.values[best_idx]
 
 
 __all__ = ["DistributionBase", "Uniform", "Exponential", "Choice"]

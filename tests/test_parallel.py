@@ -7,4 +7,4 @@ def add_one(x):
     return x + 1
 
 if __name__ == '__main__':
-    print(Parallel(4)(add_one, list(range(10))).parallel_results)
+    print(Parallel(4)(add_one, list(range(10))).ordered_results)

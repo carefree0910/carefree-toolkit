@@ -221,6 +221,10 @@ class Parallel(PureLoggingMixin):
     def parallel_results(self) -> Dict[str, Any]:
         return self._rs
 
+    @property
+    def ordered_results(self) -> List[Any]:
+        return [None if key is None else self._rs[key] for key in self._task_names]
+
     def __sleep(self, skip_check_finished):
         time.sleep(self._sleep + random.random())
         self._refresh(skip_check_finished=skip_check_finished)

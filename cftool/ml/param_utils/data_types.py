@@ -59,6 +59,10 @@ class DataType(metaclass=ABCMeta):
         return min(self.values), max(self.values)
 
     @property
+    def is_inf(self) -> bool:
+        return math.isinf(self.num_params)
+
+    @property
     def distribution_is_inf(self) -> bool:
         return math.isinf(self.dist.num_params)
 
@@ -69,7 +73,7 @@ class DataType(metaclass=ABCMeta):
         return self._transform(self.dist.pop())
 
     def all(self) -> List[generic_number_type]:
-        if math.isinf(self.num_params):
+        if self.is_inf:
             raise ValueError("'all' method could be called iff n_params is finite")
         return self._all()
 

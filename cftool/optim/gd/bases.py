@@ -6,7 +6,7 @@ from typing import *
 from functools import partial
 from abc import ABC, abstractmethod
 
-from ..misc import register_core, fix_float_to_length
+from ...misc import register_core, fix_float_to_length
 
 optimizer_dict: Dict[str, Type["Optimizer"]] = {}
 

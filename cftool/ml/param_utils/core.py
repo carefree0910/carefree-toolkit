@@ -43,7 +43,7 @@ class ParamsGenerator:
         self._delim, self._idx_start = "^_^", "$$$"
         if isinstance(self._params, DataType):
             assert_msg = "distribution must be `Choice` when DataType is used as `params`"
-            assert isinstance(self._params._distribution, Choice), assert_msg
+            assert isinstance(self._params.dist, Choice), assert_msg
 
     @property
     def n_params(self):
@@ -65,7 +65,7 @@ class ParamsGenerator:
 
     @staticmethod
     def _append_ax_param(name: str, param: DataType, flattened_params):
-        param_dist = param._distribution
+        param_dist = param.dist
         if isinstance(param_dist, Choice):
             local_params = param.all()
             if len(local_params) == 1:

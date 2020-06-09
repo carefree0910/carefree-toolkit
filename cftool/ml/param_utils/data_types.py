@@ -13,7 +13,7 @@ class DataType(metaclass=ABCMeta):
     def __init__(self,
                  distribution: DistributionBase = None,
                  **kwargs):
-        self._distribution, self.config = distribution, kwargs
+        self.dist, self.config = distribution, kwargs
 
     @property
     @abstractmethod
@@ -25,19 +25,19 @@ class DataType(metaclass=ABCMeta):
         raise NotImplementedError
 
     def __str__(self):
-        return f"{type(self).__name__}({self._distribution})"
+        return f"{type(self).__name__}({self.dist})"
 
     __repr__ = __str__
 
     @property
     def distribution_is_inf(self) -> bool:
-        return math.isinf(self._distribution.n_params)
+        return math.isinf(self.dist.n_params)
 
     def _all(self) -> List[generic_number_type]:
-        return list(map(self.transform, self._distribution.values))
+        return list(map(self.transform, self.dist.values))
 
     def pop(self) -> generic_number_type:
-        return self.transform(self._distribution.pop())
+        return self.transform(self.dist.pop())
 
     def all(self) -> List[generic_number_type]:
         if math.isinf(self.n_params):
@@ -46,21 +46,21 @@ class DataType(metaclass=ABCMeta):
 
     @property
     def lower(self) -> nullable_number_type:
-        dist_lower = self._distribution.lower
+        dist_lower = self.dist.lower
         if dist_lower is None:
             return
         return self.transform(dist_lower)
 
     @property
     def upper(self) -> nullable_number_type:
-        dist_upper = self._distribution.upper
+        dist_upper = self.dist.upper
         if dist_upper is None:
             return
         return self.transform(dist_upper)
 
     @property
     def values(self) -> Union[List[generic_number_type], None]:
-        dist_values = self._distribution.values
+        dist_values = self.dist.values
         if dist_values is None:
             return
         return list(map(self.transform, dist_values))
@@ -103,7 +103,7 @@ class Iterable:
 class Any(DataType):
     @property
     def n_params(self) -> number_type:
-        return self._distribution.n_params
+        return self.dist.n_params
 
     def transform(self, value) -> generic_number_type:
         return value
@@ -112,11 +112,11 @@ class Any(DataType):
 class Int(DataType):
     @property
     def lower(self) -> int:
-        return int(math.ceil(self._distribution.lower))
+        return int(math.ceil(self.dist.lower))
 
     @property
     def upper(self) -> int:
-        return int(math.floor(self._distribution.upper))
+        return int(math.floor(self.dist.upper))
 
     @property
     def values(self) -> List[int]:
@@ -126,7 +126,7 @@ class Int(DataType):
     def n_params(self) -> int:
         if self.distribution_is_inf:
             return int(self.upper - self.lower) + 1
-        return self._distribution.n_params
+        return self.dist.n_params
 
     def _all(self) -> List[int]:
         if self.distribution_is_inf:
@@ -140,7 +140,7 @@ class Int(DataType):
 class Float(DataType):
     @property
     def n_params(self) -> number_type:
-        return self._distribution.n_params
+        return self.dist.n_params
 
     def transform(self, value) -> float:
         return float(value)
@@ -163,7 +163,7 @@ class Bool(DataType):
 class String(DataType):
     @property
     def n_params(self) -> number_type:
-        return self._distribution.n_params
+        return self.dist.n_params
 
     def transform(self, value) -> str:
         return str(value)

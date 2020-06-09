@@ -50,15 +50,15 @@ class ParamsGenerator:
 
     @property
     def num_params(self) -> number_type:
-        def _n_params(params):
+        def _num_params(params):
             if isinstance(params, (DataType, Iterable)):
                 return params.num_params
             assert isinstance(params, dict)
-            n_params = prod(_n_params(v) for v in params.values())
-            if math.isinf(n_params):
-                return n_params
-            return int(n_params)
-        return _n_params(self._data_types)
+            num_params = prod(_num_params(v) for v in params.values())
+            if math.isinf(num_params):
+                return num_params
+            return int(num_params)
+        return _num_params(self._data_types)
 
     @property
     def array_dim(self) -> int:

@@ -119,10 +119,10 @@ class Iterable:
 
     @property
     def num_params(self) -> number_type:
-        n_params = prod(v.num_params for v in self._values)
-        if math.isinf(n_params):
-            return n_params
-        return int(n_params)
+        num_params = prod(v.num_params for v in self._values)
+        if math.isinf(num_params):
+            return num_params
+        return int(num_params)
 
 
 class Any(DataType):

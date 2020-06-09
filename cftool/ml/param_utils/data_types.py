@@ -19,7 +19,7 @@ class DataType(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def n_params(self) -> number_type:
+    def num_params(self) -> number_type:
         raise NotImplementedError
 
     @abstractmethod
@@ -60,7 +60,7 @@ class DataType(metaclass=ABCMeta):
 
     @property
     def distribution_is_inf(self) -> bool:
-        return math.isinf(self.dist.n_params)
+        return math.isinf(self.dist.num_params)
 
     def _all(self) -> List[generic_number_type]:
         return list(map(self._transform, self.dist.values))
@@ -69,7 +69,7 @@ class DataType(metaclass=ABCMeta):
         return self._transform(self.dist.pop())
 
     def all(self) -> List[generic_number_type]:
-        if math.isinf(self.n_params):
+        if math.isinf(self.num_params):
             raise ValueError("'all' method could be called iff n_params is finite")
         return self._all()
 
@@ -114,8 +114,8 @@ class Iterable:
         return [v.bounds for v in self._values]
 
     @property
-    def n_params(self) -> number_type:
-        n_params = prod(v.n_params for v in self._values)
+    def num_params(self) -> number_type:
+        n_params = prod(v.num_params for v in self._values)
         if math.isinf(n_params):
             return n_params
         return int(n_params)
@@ -123,8 +123,8 @@ class Iterable:
 
 class Any(DataType):
     @property
-    def n_params(self) -> number_type:
-        return self.dist.n_params
+    def num_params(self) -> number_type:
+        return self.dist.num_params
 
     def _transform(self, value) -> generic_number_type:
         return value
@@ -146,10 +146,10 @@ class Int(DataType):
         return int(math.floor(self.dist.upper))
 
     @property
-    def n_params(self) -> int:
+    def num_params(self) -> int:
         if self.distribution_is_inf:
             return int(self.upper - self.lower) + 1
-        return self.dist.n_params
+        return self.dist.num_params
 
     def _all(self) -> List[int]:
         if self.distribution_is_inf:
@@ -162,8 +162,8 @@ class Int(DataType):
 
 class Float(DataType):
     @property
-    def n_params(self) -> number_type:
-        return self.dist.n_params
+    def num_params(self) -> number_type:
+        return self.dist.num_params
 
     def _transform(self, value) -> float:
         return float(value)
@@ -171,7 +171,7 @@ class Float(DataType):
 
 class Bool(DataType):
     @property
-    def n_params(self) -> int:
+    def num_params(self) -> int:
         if self.distribution_is_inf:
             return 2
         return len(self._all())
@@ -185,8 +185,8 @@ class Bool(DataType):
 
 class String(DataType):
     @property
-    def n_params(self) -> number_type:
-        return self.dist.n_params
+    def num_params(self) -> number_type:
+        return self.dist.num_params
 
     def _transform(self, value) -> str:
         return str(value)

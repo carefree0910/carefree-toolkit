@@ -49,10 +49,10 @@ class ParamsGenerator:
         self._array_dim = self._all_bounds = None
 
     @property
-    def n_params(self) -> number_type:
+    def num_params(self) -> number_type:
         def _n_params(params):
             if isinstance(params, (DataType, Iterable)):
-                return params.n_params
+                return params.num_params
             assert isinstance(params, dict)
             n_params = prod(_n_params(v) for v in params.values())
             if math.isinf(n_params):

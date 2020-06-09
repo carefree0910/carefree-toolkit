@@ -21,7 +21,7 @@ class DistributionBase(metaclass=ABCMeta):
 
     @property
     @abstractmethod
-    def n_params(self) -> number_type:
+    def num_params(self) -> number_type:
         raise NotImplementedError
 
     @abstractmethod
@@ -59,7 +59,7 @@ class DistributionBase(metaclass=ABCMeta):
 
 class Uniform(DistributionBase):
     @property
-    def n_params(self) -> number_type:
+    def num_params(self) -> number_type:
         return math.inf
 
     def pop(self) -> number_type:
@@ -94,7 +94,7 @@ class Exponential(Uniform):
 
 class Choice(DistributionBase):
     @property
-    def n_params(self) -> int:
+    def num_params(self) -> int:
         return len(self.values)
 
     def pop(self) -> Any:

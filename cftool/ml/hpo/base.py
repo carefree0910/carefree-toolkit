@@ -73,19 +73,19 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         self.estimators = estimators
         self.x_validation, self.y_validation = x_validation, y_validation
 
-        n_params = self.param_generator.n_params
+        num_params = self.param_generator.num_params
         if isinstance(num_search, str):
             if num_search != "all":
                 raise ValueError(f"num_search can only be 'all' when it is a string, '{num_search}' found")
-            if n_params == math.inf:
+            if num_params == math.inf:
                 raise ValueError("num_search is 'all' but we have infinite params to search")
-            num_search = n_params
-        if num_search > n_params:
+            num_search = num_params
+        if num_search > num_params:
             self.log_msg(
-                f"`n` is larger than total choices we've got ({n_params}), therefore only "
-                f"{n_params} searches will be run", self.warning_prefix, msg_level=logging.WARNING
+                f"`n` is larger than total choices we've got ({num_params}), therefore only "
+                f"{num_params} searches will be run", self.warning_prefix, msg_level=logging.WARNING
             )
-            num_search = n_params
+            num_search = num_params
         num_jobs = min(num_search, num_jobs)
 
         def _core(params_, *, parallel_run=False) -> List[pattern_type]:
@@ -115,7 +115,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                     self.param_mapping[self.last_code] = params
                     self.patterns[self.last_code] = _core(params, parallel_run=True)
             else:
-                if n_params == math.inf:
+                if num_params == math.inf:
                     all_params = [self.param_generator.pop() for _ in range(num_search)]
                 else:
                     all_params = []

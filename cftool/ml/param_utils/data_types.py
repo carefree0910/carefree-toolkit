@@ -80,13 +80,10 @@ class Iterable:
     def pop(self) -> generic_iterable_type[generic_number_type]:
         return self._constructor(v.pop() for v in self._values)
 
-    def all(self,
-            return_values: bool = False) -> generic_iterable_type[generic_number_type]:
+    def all(self) -> Iterator[generic_number_type]:
         grid = Grid([v.all() for v in self._values])
-        generator = (self._constructor(v) for v in grid)
-        if return_values:
-            return list(generator)
-        yield from generator
+        for v in grid:
+            yield self._constructor(v)
 
     @property
     def values(self) -> generic_iterable_type[DataType]:

@@ -37,6 +37,12 @@ class DistributionBase(metaclass=ABCMeta):
     def clip(self, value: generic_number_type) -> generic_number_type:
         pass
 
+    @property
+    def bounds(self) -> bounds_type:
+        if self.values is None:
+            return self.lower, self.upper
+        return min(self.values), max(self.values)
+
     def __str__(self):
         if self.values is not None:
             return f"{type(self).__name__}[{', '.join(map(str, self.values))}]"
@@ -72,7 +78,8 @@ class Uniform(DistributionBase):
         return random.random() * (self.upper - self.lower) + self.lower
 
     def clip(self, value: number_type) -> number_type:
-        return max(self.lower, min(self.upper, value))
+        lower, upper = self.bounds
+        return max(lower, min(upper, value))
 
 
 class Exponential(Uniform):
@@ -89,12 +96,13 @@ class Exponential(Uniform):
         assert self.base > 1, "base should be greater than 1"
         self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self.base])
 
+    @property
+    def bounds(self) -> bounds_type:
+        lower, upper = map(math.pow, 2 * [self.base], [self.lower, self.upper])
+        return lower, upper
+
     def pop(self) -> number_type:
         return math.pow(self.base, super().pop())
-
-    def clip(self, value: number_type) -> number_type:
-        lower, upper = map(math.pow, 2 * [self.base], [self.lower, self.upper])
-        return max(lower, min(upper, value))
 
 
 class Choice(DistributionBase):

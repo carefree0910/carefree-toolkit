@@ -8,8 +8,6 @@ from .types import *
 from .distributions import DistributionBase
 from ...misc import prod, Grid
 
-bounds_type = Tuple[generic_number_type, generic_number_type]
-
 
 class DataType(metaclass=ABCMeta):
     def __init__(self,
@@ -54,9 +52,7 @@ class DataType(metaclass=ABCMeta):
 
     @property
     def bounds(self) -> bounds_type:
-        if self.values is None:
-            return self.lower, self.upper
-        return min(self.values), max(self.values)
+        return self.dist.bounds
 
     @property
     def is_inf(self) -> bool:

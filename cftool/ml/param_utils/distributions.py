@@ -116,7 +116,7 @@ class Choice(DistributionBase):
 
     def clip(self, value: generic_number_type) -> generic_number_type:
         if isinstance(value, str):
-            raise ValueError("str does not support clipping")
+            return value
         diff = np.array([v - value for v in self.values], np.float32)
         best_idx = np.argmin(np.abs(diff)).item()
         return self.values[best_idx]

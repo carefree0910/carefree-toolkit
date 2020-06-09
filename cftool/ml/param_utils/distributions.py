@@ -85,15 +85,15 @@ class Exponential(Uniform):
         super().__init__(lower, upper, values=values, **kwargs)
         self._assert_lower_and_upper()
         assert self.lower > 0, "lower should be greater than 0 in exponential distribution"
-        self._base = self.config.setdefault("base", 2)
-        assert self._base > 1, "base should be greater than 1"
-        self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self._base])
+        self.base = self.config.setdefault("base", 2)
+        assert self.base > 1, "base should be greater than 1"
+        self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self.base])
 
     def pop(self) -> number_type:
-        return math.pow(self._base, super().pop())
+        return math.pow(self.base, super().pop())
 
     def clip(self, value: number_type) -> number_type:
-        lower, upper = map(math.pow, 2 * [self._base], [self.lower, self.upper])
+        lower, upper = map(math.pow, 2 * [self.base], [self.lower, self.upper])
         return max(lower, min(upper, value))
 
 

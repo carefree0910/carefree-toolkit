@@ -9,6 +9,7 @@ import logging
 import platform
 
 from typing import *
+from tqdm import tqdm
 from pathos.pools import ProcessPool
 from multiprocessing import Process
 from multiprocessing.managers import SyncManager
@@ -33,6 +34,7 @@ class Parallel(PureLoggingMixin):
     ----------
     num_jobs : int, number of jobs run in parallel.
     sleep : float, idle duration of new jobs.
+    use_tqdm: bool, whether show progress bar (with tqdm) or not.
     use_cuda: bool, whether tasks need CUDA or not.
     name : str, summary name of these tasks.
     meta_name : str, name of the meta information.
@@ -58,18 +60,24 @@ class Parallel(PureLoggingMixin):
                  num_jobs: int,
                  *,
                  sleep: float = 1.,
+                 use_tqdm: bool = True,
                  use_cuda: bool = False,
                  name: str = None,
                  meta_name: str = None,
                  logging_folder: str = None,
                  task_names: List[str] = None,
+                 tqdm_config: Dict[str, Any] = None,
                  resource_config: Dict[str, Any] = None):
         self._rs = None
-        self._n_jobs, self._sleep, self._use_cuda = num_jobs, sleep, use_cuda
+        self._use_tqdm, self._use_cuda = use_tqdm, use_cuda
+        self._n_jobs, self._sleep = num_jobs, sleep
+        if tqdm_config is None:
+            tqdm_config = {}
         if resource_config is None:
             resource_config = {}
         if logging_folder is None:
             logging_folder = os.path.join(os.getcwd(), "_parallel_", "logs")
+        self._tqdm_config = tqdm_config
         self._resource_config = resource_config
         self._name, self._meta_name = name, meta_name
         self._logging_folder, self._task_names = logging_folder, task_names
@@ -84,7 +92,12 @@ class Parallel(PureLoggingMixin):
         if WINDOWS:
             p = ProcessPool(ncpus=n_jobs)
             task_names = list(map(self._get_task_name, range(n_tasks)))
-            results = p.map(f, *args_list)
+            results = []
+            iterator = p.imap(f, *args_list)
+            if self._use_tqdm:
+                iterator = tqdm(iterator, total=n_tasks, **self._tqdm_config)
+            for result in iterator:
+                results.append(result)
             self._rs = dict(zip(task_names, results))
             return self
         self._func, self._args_list = f, args_list
@@ -127,6 +140,7 @@ class Parallel(PureLoggingMixin):
         self._log_meta_msg("initializing with refreshing")
         self._refresh(skip_check_finished=True)
         self._working_processes = None
+        self._tqdm_bar = tqdm(list(range(n_tasks)), **self._tqdm_config) if self._use_tqdm else None
         try:
             self._log_meta_msg("initializing processes")
             init_task_ids = list(range(n_jobs))
@@ -177,6 +191,8 @@ class Parallel(PureLoggingMixin):
                     if process is None:
                         continue
                     process.join()
+            if self._tqdm_bar is not None:
+                self._tqdm_bar.close()
             self._log_meta_msg("casting parallel results to Python dict")
             self._rs = dict(self._rs)
             self._log_meta_msg("shutting down sync manager")
@@ -260,6 +276,8 @@ class Parallel(PureLoggingMixin):
             self._user_terminate()
         finished_bundle = [[], []]
         for finished_slot in finished_slots[::-1]:
+            if self._tqdm_bar is not None:
+                self._tqdm_bar.update()
             tuple(map(list.append, finished_bundle, map(
                 list.pop, [self._working_task_ids, self._working_processes], [finished_slot] * 2)))
         for task_id, process in zip(*finished_bundle):

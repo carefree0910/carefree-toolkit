@@ -1,11 +1,18 @@
 import math
 import numpy as np
 
-from typing import Union
+from typing import *
 
+from .types import *
 from .data_types import *
 from .distributions import *
 from ...misc import prod, Grid
+
+params_type = Union[DataType, Iterable, dict]
+nested_params_type = Dict[str, Union[Any, Dict[str, Any]]]
+all_nested_params_type = Dict[str, Union[List[Any], Dict[str, List[Any]]]]
+flattened_params_type = Dict[str, Any]
+all_flattened_params_type = Dict[str, List[Any]]
 
 
 class ParamsGenerator:
@@ -38,15 +45,16 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self, params: Union[DataType, Iterable, dict]):
+    def __init__(self, params: params_type):
         self._params = params
         self._delim, self._idx_start = "^_^", "$$$"
         if isinstance(self._params, DataType):
             assert_msg = "distribution must be `Choice` when DataType is used as `params`"
             assert isinstance(self._params.dist, Choice), assert_msg
+        self._all_pure_params = self._all_flattened_params = None
 
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         if self.is_enumerate:
             return self._params.n_params
         def _n_params(params):
@@ -60,36 +68,42 @@ class ParamsGenerator:
         return _n_params(self._params)
 
     @property
-    def is_enumerate(self):
+    def is_enumerate(self) -> bool:
         return isinstance(self._params, (DataType, Iterable))
 
-    @staticmethod
-    def _append_ax_param(name: str, param: DataType, flattened_params):
-        param_dist = param.dist
-        if isinstance(param_dist, Choice):
-            local_params = param.all()
-            if len(local_params) == 1:
-                flattened_params.append({"name": name, "type": "fixed", "value": local_params[0]})
-            else:
-                flattened_params.append({"name": name, "type": "choice", "values": local_params})
-        else:
-            log_scale = isinstance(param_dist, Exponential)
-            if isinstance(param, Int):
-                param_type = "int"
-            elif isinstance(param, Float):
-                param_type = "float"
-            elif isinstance(param, Bool):
-                param_type = "bool"
-            elif isinstance(param, String):
-                param_type = "str"
-            else:
-                raise NotImplementedError
-            flattened_params.append({
-                "name": name, "type": "range", "bounds": [param.lower, param.upper],
-                "parameter_type": param_type, "log_scale": log_scale
-            })
+    @property
+    def all_nested_params(self) -> all_nested_params_type:
+        if self._all_pure_params is None:
+            def _all(src, tgt):
+                for k, v in src.items():
+                    if isinstance(v, dict):
+                        next_tgt = tgt.setdefault(k, {})
+                        _all(v, next_tgt)
+                    else:
+                        tgt[k] = v.all()
+                return tgt
+            self._all_pure_params = _all(self._params, {})
+        return self._all_pure_params
 
-    def pop(self):
+    @property
+    def all_flattened_params(self) -> all_flattened_params_type:
+        if self._all_flattened_params is None:
+            flattened_params = []
+            def _flatten_params(d, pre_key: Union[None, str]):
+                for name, params in d.items():
+                    if pre_key is None:
+                        next_pre_key = name
+                    else:
+                        next_pre_key = f"{pre_key}{self._delim}{name}"
+                    if isinstance(params, dict):
+                        _flatten_params(params, next_pre_key)
+                    else:
+                        flattened_params.append((next_pre_key, params))
+                return flattened_params
+            self._all_flattened_params = dict(_flatten_params(self.all_nested_params, None))
+        return self._all_flattened_params
+
+    def pop(self) -> nested_params_type:
         if self.is_enumerate:
             return self._params.pop()
         def _pop(src: dict, tgt: dict):
@@ -102,53 +116,15 @@ class ParamsGenerator:
             return tgt
         return _pop(self._params, {})
 
-    def all(self):
+    def all(self) -> Iterator[nested_params_type]:
         if self.is_enumerate:
             yield from self._params.all()
         else:
-            def _all(src: dict, tgt: dict):
-                for k, v in src.items():
-                    if isinstance(v, dict):
-                        next_tgt = tgt.setdefault(k, {})
-                        _all(v, next_tgt)
-                    else:
-                        tgt[k] = v.all()
-                return tgt
-            all_flattened_params_list = self.get_flattened_params(_all(self._params, {}))
-            all_flattened_params = dict(all_flattened_params_list)
-            for flattened_params in Grid(all_flattened_params):
+            for flattened_params in Grid(self.all_flattened_params):
                 yield self.nest_flattened_params(flattened_params)
 
-    def get_flattened_params(self, tgt_params=None, use_ax=False):
-        if tgt_params is None:
-            tgt_params = self._params
-        if isinstance(tgt_params, (DataType, Iterable)):
-            raise ValueError("get_flattened_params method requires nested params")
-        flattened_params = []
-        def _flatten_params(d: dict, pre_key: Union[None, str]):
-            for name, params in d.items():
-                if pre_key is None:
-                    next_pre_key = name
-                else:
-                    next_pre_key = f"{pre_key}{self._delim}{name}"
-                if isinstance(params, dict):
-                    _flatten_params(params, next_pre_key)
-                elif isinstance(params, Iterable):
-                    for i, param in enumerate(params.values):
-                        name = f"{next_pre_key}{self._delim}{self._idx_start}{i}"
-                        if not use_ax:
-                            flattened_params.append((name, param))
-                        else:
-                            self._append_ax_param(name, param, flattened_params)
-                else:
-                    if not use_ax:
-                        flattened_params.append((next_pre_key, params))
-                    else:
-                        self._append_ax_param(next_pre_key, params, flattened_params)
-            return flattened_params
-        return _flatten_params(tgt_params, None)
-
-    def nest_flattened_params(self, flattened_params):
+    def nest_flattened_params(self,
+                              flattened_params: flattened_params_type) -> nested_params_type:
         sorted_params = sorted(map(
             lambda k, v: (k.split(self._delim), v),
             *zip(*flattened_params.items())

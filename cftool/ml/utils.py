@@ -462,6 +462,10 @@ class ModelPattern(LoggingMixin):
                 requires_prob: bool = False) -> np.ndarray:
         return self.predict_method(requires_prob)(x)
 
+    @classmethod
+    def repeat(cls, n: int, **kwargs) -> List["ModelPattern"]:
+        return [cls(**kwargs) for _ in range(n)]
+
 
 collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 

@@ -89,6 +89,8 @@ class Parallel(PureLoggingMixin):
         # setting 'terminate' key to True
         n_tasks = len(args_list[0])
         n_jobs = min(self._n_jobs, n_tasks)
+        if self._task_names is None:
+            self._task_names = [None] * n_tasks
         if WINDOWS:
             p = ProcessPool(ncpus=n_jobs)
             task_names = list(map(self._get_task_name, range(n_tasks)))
@@ -101,7 +103,7 @@ class Parallel(PureLoggingMixin):
             self._rs = dict(zip(task_names, results))
             return self
         self._func, self._args_list = f, args_list
-        self._cursor, self._all_task_ids = 0, list(range(n_jobs, n_tasks))
+        self._cursor, self._all_task_indices = 0, list(range(n_jobs, n_tasks))
         self._log_meta_msg("initializing sync manager")
         self._sync_manager = SyncManager()
         self._sync_manager.start(lambda: signal.signal(signal.SIGINT, signal.SIG_IGN))
@@ -110,7 +112,7 @@ class Parallel(PureLoggingMixin):
             "__exceptions__": {}
         })
         self._overwritten_task_info = {}
-        self._pid2task_id = None
+        self._pid2task_idx = None
         self._log_meta_msg("initializing resource manager")
         self._resource_manager = ResourceManager(
             self._resource_config, self._get_task_name, self._refresh_patience)
@@ -143,30 +145,30 @@ class Parallel(PureLoggingMixin):
         self._tqdm_bar = tqdm(list(range(n_tasks)), **self._tqdm_config) if self._use_tqdm else None
         try:
             self._log_meta_msg("initializing processes")
-            init_task_ids = list(range(n_jobs))
-            init_processes = [self._get_process(i, start=False) for i in init_task_ids]
+            init_task_indices = list(range(n_jobs))
+            init_processes = [self._get_process(i, start=False) for i in init_task_indices]
             if self.terminated:
                 self._user_terminate()
-            init_failed_slots, init_failed_task_ids = [], []
-            for i, (task_id, process) in enumerate(zip(init_task_ids, init_processes)):
+            init_failed_slots, init_failed_task_indices = [], []
+            for i, (task_idx, process) in enumerate(zip(init_task_indices, init_processes)):
                 if process is None:
                     init_failed_slots.append(i)
-                    init_failed_task_ids.append(task_id)
-                    task_name = self._get_task_name(task_id)
+                    init_failed_task_indices.append(task_idx)
+                    task_name = self._get_task_name(task_idx)
                     self._log_with_meta(
                         task_name, "initialization failed, it may due to lack of resources",
                         msg_level=logging.WARNING
                     )
             if init_failed_slots:
                 for slot in init_failed_slots:
-                    init_task_ids[slot] = None
+                    init_task_indices[slot] = None
                     init_processes[slot] = [None] * 4
-                self._all_task_ids = init_failed_task_ids + self._all_task_ids
-            self._working_task_ids = init_task_ids
+                self._all_task_indices = init_failed_task_indices + self._all_task_indices
+            self._working_task_indices = init_task_indices
             self._working_processes, task_info = map(list, zip(*init_processes))
             self._log_meta_msg("starting all initial processes")
             tuple(map(lambda p: None if p is None else p.start(), self._working_processes))
-            tuple(map(self._record_process, self._working_processes, self._working_task_ids, task_info))
+            tuple(map(self._record_process, self._working_processes, self._working_task_indices, task_info))
             self._resource_manager.initialize_running_usages()
             self._log_meta_msg("entering parallel main loop")
             while True:
@@ -229,17 +231,17 @@ class Parallel(PureLoggingMixin):
             while True:
                 self._log_meta_msg(
                     "waiting for slots (working tasks : "
-                    f"{', '.join(map(self._get_task_name, filter(bool, self._working_task_ids)))})",
+                    f"{', '.join(map(self._get_task_name, filter(bool, self._working_task_indices)))})",
                     msg_level=logging.DEBUG
                 )
                 finished_slots = []
-                for i, (task_id, process) in enumerate(zip(
-                        self._working_task_ids, self._working_processes)):
+                for i, (task_idx, process) in enumerate(zip(
+                        self._working_task_indices, self._working_processes)):
                     if process is None:
                         self._log_meta_msg(f"pending on slot {i}")
                         finished_slots.append(i)
                         continue
-                    task_name = self._get_task_name(task_id)
+                    task_name = self._get_task_name(task_idx)
                     if not process.is_alive():
                         self._log_with_meta(task_name, f"in slot {i} is found finished")
                         finished_slots.append(i)
@@ -257,8 +259,8 @@ class Parallel(PureLoggingMixin):
         self._setup_logger(task_name, logging_path)
 
     def _refresh(self, skip_check_finished):
-        if self._pid2task_id is None:
-            self._pid2task_id = self._resource_manager.pid2task_id
+        if self._pid2task_idx is None:
+            self._pid2task_idx = self._resource_manager.pid2task_idx
         if not self._resource_manager.inference_usages_initialized:
             self._resource_manager.initialize_inference_usages()
         if not self._resource_manager.checkpoint_initialized:
@@ -279,9 +281,9 @@ class Parallel(PureLoggingMixin):
             if self._tqdm_bar is not None:
                 self._tqdm_bar.update()
             tuple(map(list.append, finished_bundle, map(
-                list.pop, [self._working_task_ids, self._working_processes], [finished_slot] * 2)))
-        for task_id, process in zip(*finished_bundle):
-            task_name = self._resource_manager.handle_finish(process, task_id)
+                list.pop, [self._working_task_indices, self._working_processes], [finished_slot] * 2)))
+        for task_idx, process in zip(*finished_bundle):
+            task_name = self._resource_manager.handle_finish(process, task_idx)
             if task_name is None:
                 continue
             self.del_logger(task_name)
@@ -289,13 +291,13 @@ class Parallel(PureLoggingMixin):
     def _add_new_processes(self):
         n_working = len(self._working_processes)
         n_new_jobs = self._n_jobs - n_working
-        n_res = len(self._all_task_ids) - self._cursor
+        n_res = len(self._all_task_indices) - self._cursor
         if n_res > 0:
             n_new_jobs = min(n_new_jobs, n_res)
             for _ in range(n_new_jobs):
-                new_task_id = self._all_task_ids[self._cursor]
-                self._working_processes.append(self._get_process(new_task_id))
-                self._working_task_ids.append(new_task_id)
+                new_task_idx = self._all_task_indices[self._cursor]
+                self._working_processes.append(self._get_process(new_task_idx))
+                self._working_task_indices.append(new_task_idx)
                 self._cursor += 1
             return True
         return n_working > 0
@@ -323,18 +325,17 @@ class Parallel(PureLoggingMixin):
             suffix = f" ({' ; '.join(f'{k}: {v}' for k, v in kwargs.items())})"
         self._log_meta_msg(f"`_set_terminate` method hit{suffix}", logging.ERROR)
 
-    def _get_task_name(self, task_id):
-        if task_id is None:
+    def _get_task_name(self, task_idx):
+        if task_idx is None:
             return
-        if self._task_names is None:
-            task_name = f"task_{task_id}{self.name_suffix}"
-        else:
-            task_name = f"{self._task_names[task_id]}{self.name_suffix}"
+        if self._task_names[task_idx] is None:
+            self._task_names[task_idx] = f"task_{task_idx}"
+        task_name = f"{self._task_names[task_idx]}{self.name_suffix}"
         self._init_logger(task_name)
         return task_name
 
-    def _f_wrapper(self, task_id, cuda=None):
-        task_name = self._get_task_name(task_id)
+    def _f_wrapper(self, task_idx, cuda=None):
+        task_name = self._get_task_name(task_idx)
         logger = self._loggers_[task_name]
 
         def log_method(msg, msg_level=logging.INFO, frame=None):
@@ -396,30 +397,30 @@ class Parallel(PureLoggingMixin):
 
         return _inner
 
-    def _get_process(self, task_id, start=True):
+    def _get_process(self, task_idx, start=True):
         rs = self._resource_manager.get_process(
-            task_id, lambda: self.__sleep(skip_check_finished=False), start)
+            task_idx, lambda: self.__sleep(skip_check_finished=False), start)
         task_name = rs["__task_name__"]
         if not rs["__create_process__"]:
             return
         if not self._use_cuda or "GPU" not in rs:
-            args = (task_id,)
+            args = (task_idx,)
         else:
-            args = (task_id, rs["GPU"]["tgt_resource_id"])
+            args = (task_idx, rs["GPU"]["tgt_resource_id"])
         target = self._f_wrapper(*args)
-        process = Process(target=target, args=tuple(args[task_id] for args in self._args_list))
+        process = Process(target=target, args=tuple(args[task_idx] for args in self._args_list))
         self._log_with_meta(task_name, "process created")
         if start:
             process.start()
             self._log_with_meta(task_name, "process started")
-            self._record_process(process, task_id, rs)
+            self._record_process(process, task_idx, rs)
             return process
         return process, rs
 
-    def _record_process(self, process, task_id, rs):
+    def _record_process(self, process, task_idx, rs):
         if process is None:
             return
-        self._resource_manager.record_process(process, task_id, rs)
+        self._resource_manager.record_process(process, task_idx, rs)
 
 
 __all__ = ["Parallel"]

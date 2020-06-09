@@ -114,7 +114,7 @@ class ResourceManager:
         self._resources, self._info_dict, self._overwritten_task_info = [], {}, {}
         self._init_logger = self._meta_log_name = None
         self._log_msg = self._log_block_msg = self._log_meta_msg = self._log_with_meta = None
-        self.pid2task_id, self._get_task_name = {}, get_task_name
+        self.pid2task_idx, self._get_task_name = {}, get_task_name
         self.config, self._refresh_patience = config, refresh_patience
 
     def register(self, resource_name, methods):
@@ -229,7 +229,7 @@ class ResourceManager:
                 pid_usage_dict = get_pid_usage_dict()
                 get_pid_usage = lambda pid_: pid_usage_dict.get(pid_, 0)
             for pid, checkpoint_usage in checkpoint_pid_usages.items():
-                task_name = self._get_task_name(self.pid2task_id[pid])
+                task_name = self._get_task_name(self.pid2task_idx[pid])
                 self._log_msg(task_name, f"checkpoint {resource} usage : {checkpoint_usage} MB", logging.DEBUG)
                 children_pid_usages = {}
                 try:
@@ -288,13 +288,13 @@ class ResourceManager:
                     running_pid_counters[pid] = 0
                     self._log_msg(task_name, f"reset {resource} counter", logging.DEBUG)
 
-    def get_process(self, task_id, sleep_method, start):
-        task_name = self._get_task_name(task_id)
+    def get_process(self, task_idx, sleep_method, start):
+        task_name = self._get_task_name(task_idx)
         results = {"__task_name__": task_name, "__create_process__": True}
         for resource in self._resources:
             info = self._info_dict[resource]
             local_results = results.setdefault(resource, {})
-            preset_usage = info["preset_usages"].setdefault(task_id, self.default_usage(resource))
+            preset_usage = info["preset_usages"].setdefault(task_idx, self.default_usage(resource))
             self._log_with_meta(
                 task_name, f"preset {resource} usage : {preset_usage} MB; "
                            f"minimum {resource} memory needed : {info['minimum_resource']} MB"
@@ -331,13 +331,13 @@ class ResourceManager:
                 return results
         return results
 
-    def record_process(self, process, task_id, rs):
+    def record_process(self, process, task_idx, rs):
         pid = process.pid
-        task_name = self._get_task_name(task_id)
+        task_name = self._get_task_name(task_idx)
         rs_task_name = rs["__task_name__"]
         assert task_name == rs_task_name, f"internal error occurred, {task_name} != {rs_task_name}"
         task_info, overwritten = None, False
-        self.pid2task_id[pid] = task_id
+        self.pid2task_idx[pid] = task_idx
         for resource in self._resources:
             local_rs = rs[resource]
             info = self._info_dict[resource]
@@ -349,7 +349,7 @@ class ResourceManager:
                 if not overwritten:
                     overwritten = True
                     task_info = self._overwritten_task_info.setdefault(task_name, {})
-                    task_info["pid"], task_info["task_id"] = pid, self.pid2task_id[pid]
+                    task_info["pid"], task_info["task_idx"] = pid, self.pid2task_idx[pid]
                 task_resource_info = task_info.setdefault(f"{resource}_info", {})
                 task_resource_info["ckpt_usage"] = checkpoint_pid_usages[pid]
                 task_resource_info["running_usage"] = running_pid_usages[pid]
@@ -360,20 +360,20 @@ class ResourceManager:
             self._log_with_meta(
                 task_name, f"record : using {resource} {resource_id} with {usage} MB memory usage (pid : {pid})")
 
-    def handle_finish(self, process, task_id):
+    def handle_finish(self, process, task_idx):
         if process is None:
             return
         pid = process.pid
-        task_name = self._get_task_name(task_id)
+        task_name = self._get_task_name(task_idx)
         self._init_logger(task_name)
         task_info = None
         if task_name not in self._overwritten_task_info:
-            pid_task_id = self.pid2task_id.pop(pid)
+            pid_task_idx = self.pid2task_idx.pop(pid)
         else:
             task_info = self._overwritten_task_info.pop(task_name)
-            recorded_pid, pid_task_id = map(task_info.get, ["pid", "task_id"])
+            recorded_pid, pid_task_idx = map(task_info.get, ["pid", "task_idx"])
             assert pid == recorded_pid, f"internal error occurred ({pid} != {recorded_pid})"
-        assert task_id == pid_task_id, "task_id should be identical with pid_task_id, internal error occurred"
+        assert task_idx == pid_task_idx, "task_idx should be identical with pid_task_idx, internal error occurred"
         for resource in self._resources:
             resource_info = self._info_dict[resource]
             if task_info is not None:
@@ -398,7 +398,7 @@ class ResourceManager:
                     logging.WARNING
                 )
                 pid_usage = pid_ckpt_usage
-            preset_usage = resource_info["preset_usages"][task_id]
+            preset_usage = resource_info["preset_usages"][task_idx]
             if pid_running_usage >= preset_usage + resource_info["warning_threshold"]:
                 self._log_with_meta(
                     task_name, f"running pid {resource} usage ({pid_running_usage}) exceeded "

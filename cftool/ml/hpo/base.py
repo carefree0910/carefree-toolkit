@@ -42,6 +42,13 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def last_patterns(self) -> List[pattern_type]:
         return self.patterns[self.last_code]
 
+    @property
+    def last_raw_metrics(self) -> Dict[str, np.ndarray]:
+        key = "core"
+        last_patterns = self.last_patterns
+        comparer = Comparer({key: last_patterns}, self.estimators)
+        return comparer.compare(self.x_validation, self.y_validation).raw_metrics[key]
+
     def _sample_params(self) -> Union[None, Dict[str, Any]]:
         if self.is_sequential:
             raise NotImplementedError

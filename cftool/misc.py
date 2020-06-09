@@ -1070,7 +1070,7 @@ class Grid:
 
     Parameters
     ----------
-    param_grid : dict[str, list(int)], indicates param names and corresponding possible values.
+    candidates : dict[str, list(int)], indicates param names and corresponding possible values.
 
     Examples
     ----------
@@ -1084,11 +1084,11 @@ class Grid:
 
     """
 
-    def __init__(self, param_grid):
-        self._grid = param_grid
+    def __init__(self, candidates):
+        self.candidates = candidates
 
     def __iter__(self):
-        items = sorted(self._grid.items())
+        items = sorted(self.candidates.items())
         if not items:
             yield {}
         else:

@@ -6,9 +6,15 @@ from typing import Dict, List, Union, Iterator
 from .types import *
 from .data_types import *
 from .distributions import *
-from ...misc import prod, Grid
+from ...misc import *
 
 params_type = Dict[str, Union[DataType, Iterable, "params_type"]]
+
+
+def _data_type_offset(value: DataType) -> int:
+    if not isinstance(value, Iterable):
+        return 1
+    return len(value.values)
 
 
 class ParamsGenerator:
@@ -37,10 +43,10 @@ class ParamsGenerator:
     """
 
     def __init__(self, params: params_type):
-        self._params = params
-        self._delim, self._idx_start = "^_^", "$$$"
-        self._all_nested_params = self._all_flattened_params = None
-        self._sorted_flattened_keys = self._sorted_flattened_offsets = None
+        self._data_types = params
+        self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
+        self._all_params_nested = self._data_types_nested.apply(lambda data_type: data_type.all())
+        self._all_flattened_data_types = None
 
     @property
     def n_params(self) -> number_type:
@@ -52,52 +58,23 @@ class ParamsGenerator:
             if math.isinf(n_params):
                 return n_params
             return int(n_params)
-        return _n_params(self._params)
+        return _n_params(self._data_types)
 
     @property
     def all_nested_params(self) -> all_nested_type:
-        if self._all_nested_params is None:
-            def _all(src, tgt):
-                for k, v in src.items():
-                    if isinstance(v, dict):
-                        next_tgt = tgt.setdefault(k, {})
-                        _all(v, next_tgt)
-                    else:
-                        tgt[k] = v.all()
-                return tgt
-            self._all_nested_params = _all(self._params, {})
-        return self._all_nested_params
+        return self._all_params_nested.nested
 
     @property
     def all_flattened_params(self) -> all_flattened_type:
-        if self._all_flattened_params is None:
-            self._all_flattened_params = self.flatten_nested(self.all_nested_params)
-        return self._all_flattened_params
+        return self._all_params_nested.flattened
 
     @property
-    def sorted_flattened_key(self) -> List[str]:
-        if self._sorted_flattened_keys is None:
-            self._sorted_flattened_keys = sorted(self.all_flattened_params)
-        return self._sorted_flattened_keys
+    def sorted_flattened_keys(self) -> List[str]:
+        return self._data_types_nested.sorted_flattened_keys
 
     @property
     def sorted_flattened_offsets(self) -> List[int]:
-        if self._sorted_flattened_offsets is None:
-            offsets = []
-            for key in self.sorted_flattened_key:
-                data_type = self._get_data_type_from(key)
-                if not isinstance(data_type, Iterable):
-                    offsets.append(1)
-                else:
-                    offsets.append(len(data_type.values))
-            self._sorted_flattened_offsets = offsets
-        return self._sorted_flattened_offsets
-
-    def _get_data_type_from(self, flattened_key: str) -> DataType:
-        data_type = self._params
-        for sub_key in flattened_key.split(self._delim):
-            data_type = data_type[sub_key]
-        return data_type
+        return self._data_types_nested.sorted_flattened_offsets
 
     def pop(self) -> nested_type:
         def _pop(src: dict, tgt: dict):
@@ -108,86 +85,30 @@ class ParamsGenerator:
                 else:
                     tgt[k] = v.pop()
             return tgt
-        return _pop(self._params, {})
+        return _pop(self._data_types, {})
 
     def all(self) -> Iterator[nested_type]:
         for flattened_params in Grid(self.all_flattened_params):
-            yield self.nest_flattened(flattened_params)
+            yield self._data_types_nested.nest_flattened(flattened_params)
 
     def flatten_nested(self,
                        nested: nested_type) -> nested_type:
-        flattened = []
-        def _flatten(d, pre_key: Union[None, str]):
-            for name, value in d.items():
-                if pre_key is None:
-                    next_pre_key = name
-                else:
-                    next_pre_key = f"{pre_key}{self._delim}{name}"
-                if isinstance(value, dict):
-                    _flatten(value, next_pre_key)
-                else:
-                    flattened.append((next_pre_key, value))
-            return flattened
-        return dict(_flatten(nested, None))
+        return self._data_types_nested.flatten_nested(nested)
 
     def nest_flattened(self,
                        flattened: flattened_type) -> nested_type:
-        sorted_pairs = sorted(map(
-            lambda k, v: (k.split(self._delim), v),
-            *zip(*flattened.items())
-        ), key=len)
-        l_start = len(self._idx_start)
-        list_traces, nested = {}, {}
-        for key_list, value in sorted_pairs:
-            if len(key_list) == 1:
-                nested[key_list[0]] = value
-            else:
-                last_key = key_list[-1]
-                if last_key.startswith(self._idx_start):
-                    list_traces.setdefault(tuple(key_list[:-1]), []).append((int(last_key[l_start:]), value))
-                else:
-                    parent = nested.setdefault(key_list[0], {})
-                    for key in key_list[1:-1]:
-                        parent = parent.setdefault(key, {})
-                    parent[last_key] = value
-        for list_key_tuple, list_values in list_traces.items():
-            if len(list_key_tuple) == 1:
-                parent = nested
-            else:
-                parent = nested.setdefault(list_key_tuple[0], {})
-                for key in list_key_tuple[1:-1]:
-                    parent = parent.setdefault(key, {})
-            indices, values = zip(*list_values)
-            assert sorted(indices) == list(range(len(indices)))
-            d = self._params
-            for key in list_key_tuple[:-1]:
-                d = d[key]
-            constructor = d[list_key_tuple[-1]]._constructor
-            parent[list_key_tuple[-1]] = constructor(values[i] for i in np.argsort(indices))
-        return nested
+        return self._data_types_nested.nest_flattened(flattened)
 
     def flattened2array(self,
                         flattened: flattened_type) -> np.ndarray:
-        value_list = []
-        for key in self.sorted_flattened_key:
-            value = flattened[key]
-            value = list(value) if isinstance(value, (list, tuple)) else [value]
-            value_list.extend(value)
-        return np.array(value_list, np.float32)
+        return self._data_types_nested.flattened2array(flattened)
 
     def array2flattened(self,
                         array: np.ndarray) -> flattened_type:
-        cursor = 0
-        flattened = {}
-        for key, offset in zip(self.sorted_flattened_key, self.sorted_flattened_offsets):
-            end = cursor + offset
-            data_type = self._get_data_type_from(key)
-            if not isinstance(data_type, Iterable):
-                value = array[cursor]
-            else:
-                value = array[cursor:end].tolist()
+        flattened = self._data_types_nested.array2flattened(array)
+        for key, value in flattened.items():
+            data_type = self._data_types_nested.get_value_from(key)
             flattened[key] = data_type.transform(value)
-            cursor = end
         return flattened
 
 

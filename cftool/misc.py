@@ -1109,6 +1109,130 @@ class Grid:
                     yield dict(zip(keys, v))
 
 
+nested_type = Dict[str, Union[Any, Dict[str, "nested_type"]]]
+all_nested_type = Dict[str, Union[List[Any], Dict[str, "all_nested_type"]]]
+union_nested_type = Union[nested_type, all_nested_type]
+flattened_type = Dict[str, Any]
+all_flattened_type = Dict[str, List[Any]]
+union_flattened_type = Union[flattened_type, all_flattened_type]
+
+
+def _offset_fn(value) -> int:
+    if not isinstance(value, (list, tuple)):
+        return 1
+    return len(value)
+
+
+class Nested:
+    def __init__(self,
+                 nested: union_nested_type,
+                 *,
+                 offset_fn: Callable[[Any], int] = _offset_fn,
+                 delim: str = "^_^"):
+        self.nested = nested
+        self.offset_fn, self.delim = offset_fn, delim
+        self._flattened = self._sorted_flattened_keys = None
+        self._sorted_flattened_offsets = None
+
+    def apply(self,
+              fn: Callable[[Any], Any]) -> "Nested":
+        def _apply(src, tgt):
+            for k, v in src.items():
+                if isinstance(v, dict):
+                    next_tgt = tgt.setdefault(k, {})
+                    _apply(v, next_tgt)
+                else:
+                    tgt[k] = fn(v)
+            return tgt
+        return Nested(_apply(self.nested, {}))
+
+    @property
+    def flattened(self) -> union_flattened_type:
+        if self._flattened is None:
+            self._flattened = self.flatten_nested(self.nested)
+        return self._flattened
+
+    @property
+    def sorted_flattened_keys(self) -> List[str]:
+        if self._sorted_flattened_keys is None:
+            self._sorted_flattened_keys = sorted(self.flattened)
+        return self._sorted_flattened_keys
+
+    @property
+    def sorted_flattened_offsets(self) -> List[int]:
+        if self._sorted_flattened_offsets is None:
+            offsets = []
+            for key in self.sorted_flattened_keys:
+                value = self.get_value_from(key)
+                offsets.append(self.offset_fn(value))
+            self._sorted_flattened_offsets = offsets
+        return self._sorted_flattened_offsets
+
+    def get_value_from(self, flattened_key: str) -> Any:
+        value = self.nested
+        for sub_key in flattened_key.split(self.delim):
+            value = value[sub_key]
+        return value
+
+    def flatten_nested(self,
+                       nested: nested_type) -> nested_type:
+        flattened = []
+        def _flatten(d, pre_key: Union[None, str]):
+            for name, value in d.items():
+                if pre_key is None:
+                    next_pre_key = name
+                else:
+                    next_pre_key = f"{pre_key}{self.delim}{name}"
+                if isinstance(value, dict):
+                    _flatten(value, next_pre_key)
+                else:
+                    flattened.append((next_pre_key, value))
+            return flattened
+        return dict(_flatten(nested, None))
+
+    def nest_flattened(self,
+                       flattened: flattened_type) -> nested_type:
+        sorted_pairs = sorted(map(
+            lambda k, v: (k.split(self.delim), v),
+            *zip(*flattened.items())
+        ), key=len)
+        nested = {}
+        for key_list, value in sorted_pairs:
+            if len(key_list) == 1:
+                nested[key_list[0]] = value
+            else:
+                parent = nested.setdefault(key_list[0], {})
+                for key in key_list[1:-1]:
+                    parent = parent.setdefault(key, {})
+                parent[key_list[-1]] = value
+        return nested
+
+    def flattened2array(self,
+                        flattened: flattened_type) -> np.ndarray:
+        value_list = []
+        for key in self.sorted_flattened_keys:
+            value = flattened[key]
+            value = list(value) if isinstance(value, (list, tuple)) else [value]
+            value_list.extend(value)
+        return np.array(value_list, np.float32)
+
+    def array2flattened(self,
+                        array: np.ndarray) -> flattened_type:
+        cursor = 0
+        flattened = {}
+        for key, offset in zip(self.sorted_flattened_keys, self.sorted_flattened_offsets):
+            end = cursor + offset
+            if offset == 1:
+                value = array[cursor]
+            else:
+                value = array[cursor:end].tolist()
+                if isinstance(value, tuple):
+                    value = tuple(value)
+            flattened[key] = value
+            cursor = end
+        return flattened
+
+
 class Sampler:
     """
     Util class which can help sampling indices from probabilities.
@@ -1556,5 +1680,6 @@ __all__ = [
     "get_indices_from_another", "UniqueIndices", "get_unique_indices", "get_counter_from_arr", "allclose",
     "register_core", "Incrementer", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Saving", "Grid",
     "Sampler", "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context",
-    "data_tuple_saving_controller"
+    "data_tuple_saving_controller", "nested_type", "all_nested_type", "union_nested_type",
+    "flattened_type", "all_flattened_type", "union_flattened_type", "Nested"
 ]

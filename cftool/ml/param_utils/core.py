@@ -5,6 +5,7 @@ from typing import Dict, List, Union, Iterator
 
 from .types import *
 from .data_types import *
+from .normalizers import *
 from .distributions import *
 from ...misc import *
 
@@ -36,7 +37,10 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self, params: params_type):
+    def __init__(self,
+                 params: params_type,
+                 *,
+                 normalize_method: Union[str, None] = None):
         self._data_types = params
 
         def _data_type_offset(value: DataType) -> int:
@@ -45,6 +49,16 @@ class ParamsGenerator:
             return len(value.values)
 
         self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
+
+        if normalize_method is None:
+            self._normalizers_flattened = None
+        else:
+            def _data_type_normalizer(value: DataType) -> Normalizer:
+                return Normalizer(normalize_method, value)
+
+            normalizers_nested = self._data_types_nested.apply(_data_type_normalizer)
+            self._normalizers_flattened = normalizers_nested.flattened
+
         self._all_params_nested = self._all_flattened_data_types = None
         self._array_dim = self._all_bounds = None
 
@@ -71,11 +85,21 @@ class ParamsGenerator:
         if self._all_bounds is None:
             bounds_list = []
             for key in self.sorted_flattened_keys:
-                data_type = self._data_types_nested.get_value_from(key)
-                if not isinstance(data_type, Iterable):
-                    bounds_list.append(list(data_type.bounds))
+                if self._normalizers_flattened is None:
+                    normalizer = None
                 else:
-                    bounds_list.extend(list(map(list, data_type.bounds)))
+                    normalizer = self._normalizers_flattened[key]
+                if normalizer is None:
+                    data_type = self._data_types_nested.get_value_from(key)
+                    if not isinstance(data_type, Iterable):
+                        bounds_list.append(list(data_type.bounds))
+                    else:
+                        bounds_list.extend(list(map(list, data_type.bounds)))
+                else:
+                    if normalizer.is_iterable:
+                        bounds_list.extend(list(map(list, normalizer.bounds)))
+                    else:
+                        bounds_list.append(list(normalizer.bounds))
             self._all_bounds = np.array(bounds_list, np.float32)
         return self._all_bounds
 
@@ -115,11 +139,25 @@ class ParamsGenerator:
 
     def flattened2array(self,
                         flattened: flattened_type) -> np.ndarray:
-        return self._data_types_nested.flattened2array(flattened)
+        if self._normalizers_flattened is None:
+            normalized = flattened
+        else:
+            normalized = {
+                k: self._normalizers_flattened[k].normalize(v)
+                for k, v in flattened.items()
+            }
+        return self._data_types_nested.flattened2array(normalized)
 
     def array2flattened(self,
                         array: np.ndarray) -> flattened_type:
-        flattened = self._data_types_nested.array2flattened(array)
+        normalized = self._data_types_nested.array2flattened(array)
+        if self._normalizers_flattened is None:
+            flattened = normalized
+        else:
+            flattened = {
+                k: self._normalizers_flattened[k].recover(v)
+                for k, v in normalized.items()
+            }
         for key, value in flattened.items():
             data_type = self._data_types_nested.get_value_from(key)
             flattened[key] = data_type.transform(value)

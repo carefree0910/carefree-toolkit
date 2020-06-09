@@ -4,19 +4,27 @@ import random
 import matplotlib.pyplot as plt
 
 from abc import *
+from typing import *
+
+from .types import *
 
 
 class DistributionBase(metaclass=ABCMeta):
-    def __init__(self, lower=None, upper=None, values=None, **kwargs):
+    def __init__(self,
+                 lower: number_type = None,
+                 upper: number_type = None,
+                 *,
+                 values: List[Any] = None,
+                 **kwargs):
         self.lower, self.upper, self.values, self.config = lower, upper, values, kwargs
 
     @property
     @abstractmethod
-    def n_params(self):
+    def n_params(self) -> number_type:
         raise NotImplementedError
 
     @abstractmethod
-    def pop(self):
+    def pop(self) -> generic_number_type:
         raise NotImplementedError
 
     def __str__(self):
@@ -46,33 +54,38 @@ class DistributionBase(metaclass=ABCMeta):
 
 class Uniform(DistributionBase):
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         return math.inf
 
-    def pop(self):
+    def pop(self) -> number_type:
         self._assert_lower_and_upper()
         return random.random() * (self.upper - self.lower) + self.lower
 
 
 class Exponential(Uniform):
-    def __init__(self, lower=None, upper=None, values=None, **kwargs):
-        super().__init__(lower, upper, values, **kwargs)
+    def __init__(self,
+                 lower: number_type = None,
+                 upper: number_type = None,
+                 *,
+                 values: List[Any] = None,
+                 **kwargs):
+        super().__init__(lower, upper, values=values, **kwargs)
         self._assert_lower_and_upper()
         assert self.lower > 0, "lower should be greater than 0 in exponential distribution"
         self._base = self.config.setdefault("base", 2)
         assert self._base > 1, "base should be greater than 1"
         self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self._base])
 
-    def pop(self):
+    def pop(self) -> number_type:
         return math.pow(self._base, super().pop())
 
 
 class Choice(DistributionBase):
     @property
-    def n_params(self):
+    def n_params(self) -> int:
         return len(self.values)
 
-    def pop(self):
+    def pop(self) -> Any:
         self._assert_values()
         return random.choice(self.values)
 

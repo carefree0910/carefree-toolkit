@@ -2,23 +2,26 @@ import math
 import random
 
 from abc import *
-from typing import List, Tuple, Union
+from typing import *
 
-from ...misc import prod, Grid
+from .types import *
 from .distributions import DistributionBase
+from ...misc import prod, Grid
 
 
 class DataType(metaclass=ABCMeta):
-    def __init__(self, distribution: DistributionBase = None, optional=True, **kwargs):
-        self._optional, self._distribution, self.config = optional, distribution, kwargs
+    def __init__(self,
+                 distribution: DistributionBase = None,
+                 **kwargs):
+        self._distribution, self.config = distribution, kwargs
 
     @property
     @abstractmethod
-    def n_params(self):
+    def n_params(self) -> number_type:
         raise NotImplementedError
 
     @abstractmethod
-    def transform(self, value):
+    def transform(self, value) -> generic_number_type:
         raise NotImplementedError
 
     def __str__(self):
@@ -27,36 +30,36 @@ class DataType(metaclass=ABCMeta):
     __repr__ = __str__
 
     @property
-    def distribution_is_inf(self):
+    def distribution_is_inf(self) -> bool:
         return math.isinf(self._distribution.n_params)
 
-    def _all(self):
+    def _all(self) -> List[generic_number_type]:
         return list(map(self.transform, self._distribution.values))
 
-    def pop(self):
+    def pop(self) -> generic_number_type:
         return self.transform(self._distribution.pop())
 
-    def all(self):
+    def all(self) -> List[generic_number_type]:
         if math.isinf(self.n_params):
             raise ValueError("'all' method could be called iff n_params is finite")
         return self._all()
 
     @property
-    def lower(self):
+    def lower(self) -> nullable_number_type:
         dist_lower = self._distribution.lower
         if dist_lower is None:
             return
         return self.transform(dist_lower)
 
     @property
-    def upper(self):
+    def upper(self) -> nullable_number_type:
         dist_upper = self._distribution.upper
         if dist_upper is None:
             return
         return self.transform(dist_upper)
 
     @property
-    def values(self):
+    def values(self) -> Union[List[generic_number_type], None]:
         dist_values = self._distribution.values
         if dist_values is None:
             return
@@ -64,7 +67,7 @@ class DataType(metaclass=ABCMeta):
 
 
 class Iterable:
-    def __init__(self, values: Union[List[DataType], Tuple[DataType]]):
+    def __init__(self, values: generic_iterable_type[DataType]):
         self._values = values
         self._constructor = list if isinstance(values, list) else tuple
 
@@ -74,10 +77,11 @@ class Iterable:
 
     __repr__ = __str__
 
-    def pop(self):
+    def pop(self) -> generic_iterable_type[generic_number_type]:
         return self._constructor(v.pop() for v in self._values)
 
-    def all(self, return_values=False):
+    def all(self,
+            return_values: bool = False) -> Union[List, Iterator][generic_number_type]:
         grid = Grid([v.all() for v in self._values])
         generator = (self._constructor(v) for v in grid)
         if return_values:
@@ -85,11 +89,11 @@ class Iterable:
         yield from generator
 
     @property
-    def values(self):
+    def values(self) -> generic_iterable_type[DataType]:
         return self._values
 
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         n_params = prod(v.n_params for v in self._values)
         if math.isinf(n_params):
             return n_params
@@ -98,70 +102,70 @@ class Iterable:
 
 class Any(DataType):
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         return self._distribution.n_params
 
-    def transform(self, value):
+    def transform(self, value) -> generic_number_type:
         return value
 
 
 class Int(DataType):
     @property
-    def lower(self):
+    def lower(self) -> int:
         return int(math.ceil(self._distribution.lower))
 
     @property
-    def upper(self):
+    def upper(self) -> int:
         return int(math.floor(self._distribution.upper))
 
     @property
-    def values(self):
+    def values(self) -> List[int]:
         return list(range(self.lower, self.upper + 1))
 
     @property
-    def n_params(self):
+    def n_params(self) -> int:
         if self.distribution_is_inf:
             return int(self.upper - self.lower) + 1
         return self._distribution.n_params
 
-    def _all(self):
+    def _all(self) -> List[int]:
         if self.distribution_is_inf:
-            return list(range(self.lower, self.upper + 1))
+            return self.values
         return super()._all()
 
-    def transform(self, value):
+    def transform(self, value) -> int:
         return int(round(value + random.random() * 2e-4 - 1e-4))
 
 
 class Float(DataType):
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         return self._distribution.n_params
 
-    def transform(self, value):
+    def transform(self, value) -> float:
         return float(value)
 
 
 class Bool(DataType):
     @property
-    def n_params(self):
+    def n_params(self) -> int:
         if self.distribution_is_inf:
             return 2
         return len(self._all())
 
-    def _all(self):
+    def _all(self) -> List[bool]:
         return sorted(super()._all())
 
-    def transform(self, value):
+    def transform(self, value) -> bool:
         return bool(value)
 
 
 class String(DataType):
     @property
-    def n_params(self):
+    def n_params(self) -> number_type:
         return self._distribution.n_params
 
-    def transform(self, value):
+    def transform(self, value) -> str:
         return str(value)
 
 

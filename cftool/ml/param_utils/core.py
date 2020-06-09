@@ -45,8 +45,7 @@ class ParamsGenerator:
     def __init__(self, params: params_type):
         self._data_types = params
         self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
-        self._all_params_nested = self._data_types_nested.apply(lambda data_type: data_type.all())
-        self._all_flattened_data_types = self._array_dim = None
+        self._all_params_nested = self._all_flattened_data_types = self._array_dim = None
 
     @property
     def n_params(self) -> number_type:
@@ -67,20 +66,15 @@ class ParamsGenerator:
         return self._array_dim
 
     @property
-    def all_nested_params(self) -> all_nested_type:
-        return self._all_params_nested.nested
-
-    @property
     def all_flattened_params(self) -> all_flattened_type:
+        if self._all_params_nested is None:
+            apply = lambda data_type: data_type.all()
+            self._all_params_nested = self._data_types_nested.apply(apply)
         return self._all_params_nested.flattened
 
     @property
     def sorted_flattened_keys(self) -> List[str]:
         return self._data_types_nested.sorted_flattened_keys
-
-    @property
-    def sorted_flattened_offsets(self) -> List[int]:
-        return self._data_types_nested.sorted_flattened_offsets
 
     def pop(self) -> nested_type:
         def _pop(src: dict, tgt: dict):

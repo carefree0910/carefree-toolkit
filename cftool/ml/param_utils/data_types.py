@@ -67,7 +67,7 @@ class DataType(metaclass=ABCMeta):
 
     def transform(self,
                   value: generic_number_type) -> generic_number_type:
-        return self.dist.clip(self._transform(value))
+        return self._transform(self.dist.clip(value))
 
 
 iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]

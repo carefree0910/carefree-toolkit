@@ -45,7 +45,8 @@ class ParamsGenerator:
     def __init__(self, params: params_type):
         self._data_types = params
         self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
-        self._all_params_nested = self._all_flattened_data_types = self._array_dim = None
+        self._all_params_nested = self._all_flattened_data_types = None
+        self._array_dim = self._all_bounds = None
 
     @property
     def n_params(self) -> number_type:
@@ -64,6 +65,19 @@ class ParamsGenerator:
         if self._array_dim is None:
             self._array_dim = self.flattened2array(self.flatten_nested(self.pop())).shape[0]
         return self._array_dim
+
+    @property
+    def all_bounds(self) -> np.ndarray:
+        if self._all_bounds is None:
+            bounds_list = []
+            for key in self.sorted_flattened_keys:
+                data_type = self._data_types_nested.get_value_from(key)
+                if not isinstance(data_type, Iterable):
+                    bounds_list.append(list(data_type.bounds))
+                else:
+                    bounds_list.extend(list(map(list, data_type.bounds)))
+            self._all_bounds = np.array(bounds_list, np.float32)
+        return self._all_bounds
 
     @property
     def all_flattened_params(self) -> all_flattened_type:

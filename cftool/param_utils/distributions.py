@@ -22,7 +22,11 @@ class DistributionBase(metaclass=ABCMeta):
     def __str__(self):
         if self._values is not None:
             return f"{type(self).__name__}[{', '.join(map(str, self._values))}]"
-        return f"{type(self).__name__}[{self._lower}, {self._upper}]"
+        if not self.config:
+            config_str = ""
+        else:
+            config_str = f", {', '.join([f'{k}={self.config[k]}' for k in sorted(self.config)])}"
+        return f"{type(self).__name__}[{self._lower:.2f}, {self._upper:.2f}{config_str}]"
 
     __repr__ = __str__
 
@@ -57,14 +61,10 @@ class Exponential(Uniform):
         assert self._lower > 0, "lower should be greater than 0 in exponential distribution"
         self._base = self.config.setdefault("base", 2)
         assert self._base > 1, "base should be greater than 1"
-        self._log_lower, self._log_upper = map(math.log, [self._lower, self._upper], 2 * [self._base])
+        self._lower, self._upper = map(math.log, [self._lower, self._upper], 2 * [self._base])
 
     def pop(self):
-        lower, upper = self._lower, self._upper
-        self._lower, self._upper = self._log_lower, self._log_upper
-        result = math.pow(self._base, super().pop())
-        self._lower, self._upper = lower, upper
-        return result
+        return math.pow(self._base, super().pop())
 
 
 class Choice(DistributionBase):

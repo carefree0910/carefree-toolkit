@@ -1063,14 +1063,18 @@ class Saving(LoggingMixin):
         return _manager()
 
 
+candidate_type = List[Any]
+candidates_type = Union[List[candidate_type], Dict[str, candidate_type]]
+
+
 class Grid:
     """
-    Util class provides permutation of simple, flattened param dicts.
+    Util class provides permutation of simple, flattened candidates.
     * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.core`.
 
     Parameters
     ----------
-    candidates : dict[str, list(int)], indicates param names and corresponding possible values.
+    candidates : candidates_type, cadidates we want to create grid from.
 
     Examples
     ----------
@@ -1084,7 +1088,7 @@ class Grid:
 
     """
 
-    def __init__(self, candidates):
+    def __init__(self, candidates: candidates_type):
         self.candidates = candidates
 
     def __iter__(self):

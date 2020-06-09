@@ -1,6 +1,8 @@
 import math
 import random
 
+import matplotlib.pyplot as plt
+
 from abc import *
 
 
@@ -30,6 +32,12 @@ class DistributionBase(metaclass=ABCMeta):
 
     def _assert_values(self):
         assert isinstance(self._values, list), "values should be a list"
+
+    def visualize(self, n: int = 100) -> "DistributionBase":
+        plt.figure()
+        plt.scatter(list(range(n)), sorted(self.pop() for _ in range(n)))
+        plt.show()
+        return self
 
 
 class Uniform(DistributionBase):

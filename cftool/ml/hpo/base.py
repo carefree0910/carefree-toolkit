@@ -60,7 +60,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                y_validation: np.ndarray = None,
                *,
                num_jobs: int = 4,
-               num_retry: int = 5,
+               num_retry: int = 4,
                num_search: Union[str, int, float] = 10,
                use_tqdm: bool = True,
                verbose_level: int = 3) -> "HPOBase":

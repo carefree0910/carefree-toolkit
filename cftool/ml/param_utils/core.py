@@ -8,12 +8,6 @@ from .data_types import *
 from .distributions import *
 from ...misc import prod, Grid
 
-params_type = Union[DataType, Iterable, dict]
-nested_params_type = Dict[str, Union[Any, Dict[str, Any]]]
-all_nested_params_type = Dict[str, Union[List[Any], Dict[str, List[Any]]]]
-flattened_params_type = Dict[str, Any]
-all_flattened_params_type = Dict[str, List[Any]]
-
 
 class ParamsGenerator:
     """
@@ -45,7 +39,7 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self, params: params_type):
+    def __init__(self, params: Union[DataType, Iterable, dict]):
         self._params = params
         self._delim, self._idx_start = "^_^", "$$$"
         if isinstance(self._params, DataType):

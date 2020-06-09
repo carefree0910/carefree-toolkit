@@ -160,7 +160,8 @@ iterable_generic_number_type = Union[List[generic_number_type], Tuple[generic_nu
 class Iterable:
     def __init__(self, values: iterable_data_type):
         self._values = values
-        self._constructor = list if isinstance(values, list) else tuple
+        self.is_list = isinstance(values, list)
+        self._constructor = list if self.is_list else tuple
 
     def __str__(self):
         braces = "[]" if self._constructor is list else "()"

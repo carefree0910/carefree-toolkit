@@ -31,7 +31,7 @@ class DataType(metaclass=ABCMeta):
         return math.isinf(self._distribution.n_params)
 
     def _all(self):
-        return list(map(self.transform, self._distribution._values))
+        return list(map(self.transform, self._distribution.values))
 
     def pop(self):
         return self.transform(self._distribution.pop())
@@ -43,21 +43,21 @@ class DataType(metaclass=ABCMeta):
 
     @property
     def lower(self):
-        dist_lower = self._distribution._lower
+        dist_lower = self._distribution.lower
         if dist_lower is None:
             return
         return self.transform(dist_lower)
 
     @property
     def upper(self):
-        dist_upper = self._distribution._upper
+        dist_upper = self._distribution.upper
         if dist_upper is None:
             return
         return self.transform(dist_upper)
 
     @property
     def values(self):
-        dist_values = self._distribution._values
+        dist_values = self._distribution.values
         if dist_values is None:
             return
         return list(map(self.transform, dist_values))
@@ -108,11 +108,11 @@ class Any(DataType):
 class Int(DataType):
     @property
     def lower(self):
-        return int(math.ceil(self._distribution._lower))
+        return int(math.ceil(self._distribution.lower))
 
     @property
     def upper(self):
-        return int(math.floor(self._distribution._upper))
+        return int(math.floor(self._distribution.upper))
 
     @property
     def values(self):

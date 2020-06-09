@@ -8,7 +8,7 @@ from abc import *
 
 class DistributionBase(metaclass=ABCMeta):
     def __init__(self, lower=None, upper=None, values=None, **kwargs):
-        self._lower, self._upper, self._values, self.config = lower, upper, values, kwargs
+        self.lower, self.upper, self.values, self.config = lower, upper, values, kwargs
 
     @property
     @abstractmethod
@@ -20,22 +20,22 @@ class DistributionBase(metaclass=ABCMeta):
         raise NotImplementedError
 
     def __str__(self):
-        if self._values is not None:
-            return f"{type(self).__name__}[{', '.join(map(str, self._values))}]"
+        if self.values is not None:
+            return f"{type(self).__name__}[{', '.join(map(str, self.values))}]"
         if not self.config:
             config_str = ""
         else:
             config_str = f", {', '.join([f'{k}={self.config[k]}' for k in sorted(self.config)])}"
-        return f"{type(self).__name__}[{self._lower:.2f}, {self._upper:.2f}{config_str}]"
+        return f"{type(self).__name__}[{self.lower:.2f}, {self.upper:.2f}{config_str}]"
 
     __repr__ = __str__
 
     def _assert_lower_and_upper(self):
-        assert self._lower is not None, "lower should be provided"
-        assert self._upper is not None, "upper should be provided"
+        assert self.lower is not None, "lower should be provided"
+        assert self.upper is not None, "upper should be provided"
 
     def _assert_values(self):
-        assert isinstance(self._values, list), "values should be a list"
+        assert isinstance(self.values, list), "values should be a list"
 
     def visualize(self, n: int = 100) -> "DistributionBase":
         plt.figure()
@@ -51,7 +51,7 @@ class Uniform(DistributionBase):
 
     def pop(self):
         self._assert_lower_and_upper()
-        return random.random() * (self._upper - self._lower) + self._lower
+        return random.random() * (self.upper - self.lower) + self.lower
 
 
 class Exponential(Uniform):
@@ -70,11 +70,11 @@ class Exponential(Uniform):
 class Choice(DistributionBase):
     @property
     def n_params(self):
-        return len(self._values)
+        return len(self.values)
 
     def pop(self):
         self._assert_values()
-        return random.choice(self._values)
+        return random.choice(self.values)
 
 
 __all__ = ["DistributionBase", "Uniform", "Exponential", "Choice"]

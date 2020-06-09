@@ -58,10 +58,10 @@ class Exponential(Uniform):
     def __init__(self, lower=None, upper=None, values=None, **kwargs):
         super().__init__(lower, upper, values, **kwargs)
         self._assert_lower_and_upper()
-        assert self._lower > 0, "lower should be greater than 0 in exponential distribution"
+        assert self.lower > 0, "lower should be greater than 0 in exponential distribution"
         self._base = self.config.setdefault("base", 2)
         assert self._base > 1, "base should be greater than 1"
-        self._lower, self._upper = map(math.log, [self._lower, self._upper], 2 * [self._base])
+        self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self._base])
 
     def pop(self):
         return math.pow(self._base, super().pop())

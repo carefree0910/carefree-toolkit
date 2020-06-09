@@ -21,7 +21,7 @@ class DataType(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def transform(self, value) -> generic_number_type:
+    def _transform(self, value) -> generic_number_type:
         raise NotImplementedError
 
     def __str__(self):
@@ -34,36 +34,40 @@ class DataType(metaclass=ABCMeta):
         dist_lower = self.dist.lower
         if dist_lower is None:
             return
-        return self.transform(dist_lower)
+        return self._transform(dist_lower)
 
     @property
     def upper(self) -> nullable_number_type:
         dist_upper = self.dist.upper
         if dist_upper is None:
             return
-        return self.transform(dist_upper)
+        return self._transform(dist_upper)
 
     @property
     def values(self) -> Union[List[generic_number_type], None]:
         dist_values = self.dist.values
         if dist_values is None:
             return
-        return list(map(self.transform, dist_values))
+        return list(map(self._transform, dist_values))
 
     @property
     def distribution_is_inf(self) -> bool:
         return math.isinf(self.dist.n_params)
 
     def _all(self) -> List[generic_number_type]:
-        return list(map(self.transform, self.dist.values))
+        return list(map(self._transform, self.dist.values))
 
     def pop(self) -> generic_number_type:
-        return self.transform(self.dist.pop())
+        return self._transform(self.dist.pop())
 
     def all(self) -> List[generic_number_type]:
         if math.isinf(self.n_params):
             raise ValueError("'all' method could be called iff n_params is finite")
         return self._all()
+
+    def transform(self,
+                  value: generic_number_type) -> generic_number_type:
+        return self.dist.clip(self._transform(value))
 
 
 iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]
@@ -89,7 +93,8 @@ class Iterable:
         for v in grid:
             yield self._constructor(v)
 
-    def transform(self, value) -> iterable_generic_number_type:
+    def transform(self,
+                  value: iterable_generic_number_type) -> iterable_generic_number_type:
         return self._constructor(v.transform(vv) for v, vv in zip(self._values, value))
 
     @property
@@ -109,7 +114,7 @@ class Any(DataType):
     def n_params(self) -> number_type:
         return self.dist.n_params
 
-    def transform(self, value) -> generic_number_type:
+    def _transform(self, value) -> generic_number_type:
         return value
 
 
@@ -137,7 +142,7 @@ class Int(DataType):
             return self.values
         return super()._all()
 
-    def transform(self, value) -> int:
+    def _transform(self, value) -> int:
         return int(round(value + random.random() * 2e-4 - 1e-4))
 
 
@@ -146,7 +151,7 @@ class Float(DataType):
     def n_params(self) -> number_type:
         return self.dist.n_params
 
-    def transform(self, value) -> float:
+    def _transform(self, value) -> float:
         return float(value)
 
 
@@ -160,7 +165,7 @@ class Bool(DataType):
     def _all(self) -> List[bool]:
         return sorted(super()._all())
 
-    def transform(self, value) -> bool:
+    def _transform(self, value) -> bool:
         return bool(value)
 
 
@@ -169,7 +174,7 @@ class String(DataType):
     def n_params(self) -> number_type:
         return self.dist.n_params
 
-    def transform(self, value) -> str:
+    def _transform(self, value) -> str:
         return str(value)
 
 

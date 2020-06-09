@@ -1,4 +1,4 @@
-from .basis import (
+from .core import (
     ParamsGenerator
 )
 from .data_types import (

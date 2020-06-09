@@ -1066,7 +1066,7 @@ class Saving(LoggingMixin):
 class Grid:
     """
     Util class provides permutation of simple, flattened param dicts.
-    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.basis`.
+    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.core`.
 
     Parameters
     ----------

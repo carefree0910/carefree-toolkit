@@ -11,12 +11,6 @@ from ...misc import *
 params_type = Dict[str, Union[DataType, Iterable, "params_type"]]
 
 
-def _data_type_offset(value: DataType) -> int:
-    if not isinstance(value, Iterable):
-        return 1
-    return len(value.values)
-
-
 class ParamsGenerator:
     """
     Parameter generator for param searching, see cftool.ml.hpo.base.HPOBase for usage.
@@ -44,6 +38,12 @@ class ParamsGenerator:
 
     def __init__(self, params: params_type):
         self._data_types = params
+
+        def _data_type_offset(value: DataType) -> int:
+            if not isinstance(value, Iterable):
+                return 1
+            return len(value.values)
+
         self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
         self._all_params_nested = self._all_flattened_data_types = None
         self._array_dim = self._all_bounds = None

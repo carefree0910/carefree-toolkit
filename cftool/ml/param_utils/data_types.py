@@ -67,7 +67,7 @@ class DataType(metaclass=ABCMeta):
         return math.isinf(self.dist.num_params)
 
     def _all(self) -> List[generic_number_type]:
-        return list(map(self._transform, self.dist.values))
+        return self.values
 
     def pop(self) -> generic_number_type:
         return self._transform(self.dist.pop())

@@ -8,6 +8,8 @@ from .data_types import *
 from .distributions import *
 from ...misc import prod, Grid
 
+params_type = Union[DataType, Iterable, Dict[str, "params_type"]]
+
 
 class ParamsGenerator:
     """
@@ -15,12 +17,12 @@ class ParamsGenerator:
 
     Parameters
     ----------
-    params : {DataType, Iterable, dict}, parameter settings.
+    params : params_type, parameter settings.
     * If DataType, then distribution of this DataType must be `Choice`. In this case, we'll simply 'enumerate'
     through the config choices.
     * If Iterable, then each element should be a DataType. It could be nested.
-    * If dict, then each key should correspond to a config key, and its value should correspond to the
-    desired value distribution. It could be nested.
+    * If Dict[str, "params_type"], then each key should correspond to a config key, and its value should
+    correspond to the desired value distribution. It could be nested.
 
     Examples
     ----------
@@ -39,7 +41,7 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self, params: Union[DataType, Iterable, dict]):
+    def __init__(self, params: params_type):
         self._params = params
         self._delim, self._idx_start = "^_^", "$$$"
         if isinstance(self._params, DataType):

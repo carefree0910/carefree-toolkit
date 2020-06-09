@@ -46,7 +46,7 @@ class ParamsGenerator:
         self._data_types = params
         self._data_types_nested = Nested(params, offset_fn=_data_type_offset)
         self._all_params_nested = self._data_types_nested.apply(lambda data_type: data_type.all())
-        self._all_flattened_data_types = None
+        self._all_flattened_data_types = self._array_dim = None
 
     @property
     def n_params(self) -> number_type:
@@ -59,6 +59,12 @@ class ParamsGenerator:
                 return n_params
             return int(n_params)
         return _n_params(self._data_types)
+
+    @property
+    def array_dim(self) -> int:
+        if self._array_dim is None:
+            self._array_dim = self.flattened2array(self.flatten_nested(self.pop())).shape[0]
+        return self._array_dim
 
     @property
     def all_nested_params(self) -> all_nested_type:

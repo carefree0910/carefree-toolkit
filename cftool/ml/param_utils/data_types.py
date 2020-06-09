@@ -199,5 +199,5 @@ class Iterable:
 
 __all__ = [
     "DataType", "Any", "Int", "Float", "Bool", "String", "Iterable",
-    "iterable_data_type", "iterable_generic_number_type"
+    "iterable_data_type", "iterable_generic_number_type", "bounds_type"
 ]

@@ -9,8 +9,6 @@ from .distributions import *
 from ...misc import prod, Grid
 
 params_type = Union[DataType, Iterable, Dict[str, "params_type"]]
-union_nested_type = Union[nested_type, all_nested_type]
-union_flattened_type = Union[flattened_type, all_flattened_type]
 
 
 class ParamsGenerator:
@@ -49,7 +47,7 @@ class ParamsGenerator:
         if isinstance(self._params, DataType):
             assert_msg = "distribution must be `Choice` when DataType is used as `params`"
             assert isinstance(self._params.dist, Choice), assert_msg
-        self._all_pure_params = self._all_flattened_params = None
+        self._all_nested_params = self._all_flattened_params = None
         self._sorted_flattened_keys = self._sorted_flattened_offsets = None
 
     @property
@@ -72,7 +70,7 @@ class ParamsGenerator:
 
     @property
     def all_nested_params(self) -> all_nested_type:
-        if self._all_pure_params is None:
+        if self._all_nested_params is None:
             def _all(src, tgt):
                 for k, v in src.items():
                     if isinstance(v, dict):
@@ -81,13 +79,13 @@ class ParamsGenerator:
                     else:
                         tgt[k] = v.all()
                 return tgt
-            self._all_pure_params = _all(self._params, {})
-        return self._all_pure_params
+            self._all_nested_params = _all(self._params, {})
+        return self._all_nested_params
 
     @property
     def all_flattened_params(self) -> all_flattened_type:
         if self._all_flattened_params is None:
-            self._all_flattened_params = self.flatten_nested_params(self.all_nested_params)
+            self._all_flattened_params = self.flatten_nested(self.all_nested_params)
         return self._all_flattened_params
 
     @property
@@ -133,49 +131,49 @@ class ParamsGenerator:
             yield from self._params.all()
         else:
             for flattened_params in Grid(self.all_flattened_params):
-                yield self.nest_flattened_params(flattened_params)
+                yield self.nest_flattened(flattened_params)
 
-    def flatten_nested_params(self,
-                              nested_params: union_nested_type) -> union_flattened_type:
-        flattened_params = []
-        def _flatten_params(d, pre_key: Union[None, str]):
-            for name, params in d.items():
+    def flatten_nested(self,
+                       nested: nested_type) -> nested_type:
+        flattened = []
+        def _flatten(d, pre_key: Union[None, str]):
+            for name, value in d.items():
                 if pre_key is None:
                     next_pre_key = name
                 else:
                     next_pre_key = f"{pre_key}{self._delim}{name}"
-                if isinstance(params, dict):
-                    _flatten_params(params, next_pre_key)
+                if isinstance(value, dict):
+                    _flatten(value, next_pre_key)
                 else:
-                    flattened_params.append((next_pre_key, params))
-            return flattened_params
-        return dict(_flatten_params(nested_params, None))
+                    flattened.append((next_pre_key, value))
+            return flattened
+        return dict(_flatten(nested, None))
 
-    def nest_flattened_params(self,
-                              flattened_params: flattened_type) -> nested_type:
-        sorted_params = sorted(map(
+    def nest_flattened(self,
+                       flattened: flattened_type) -> nested_type:
+        sorted_pairs = sorted(map(
             lambda k, v: (k.split(self._delim), v),
-            *zip(*flattened_params.items())
+            *zip(*flattened.items())
         ), key=len)
         l_start = len(self._idx_start)
-        list_traces, nested_params = {}, {}
-        for key_list, value in sorted_params:
+        list_traces, nested = {}, {}
+        for key_list, value in sorted_pairs:
             if len(key_list) == 1:
-                nested_params[key_list[0]] = value
+                nested[key_list[0]] = value
             else:
                 last_key = key_list[-1]
                 if last_key.startswith(self._idx_start):
                     list_traces.setdefault(tuple(key_list[:-1]), []).append((int(last_key[l_start:]), value))
                 else:
-                    parent = nested_params.setdefault(key_list[0], {})
+                    parent = nested.setdefault(key_list[0], {})
                     for key in key_list[1:-1]:
                         parent = parent.setdefault(key, {})
                     parent[last_key] = value
         for list_key_tuple, list_values in list_traces.items():
             if len(list_key_tuple) == 1:
-                parent = nested_params
+                parent = nested
             else:
-                parent = nested_params.setdefault(list_key_tuple[0], {})
+                parent = nested.setdefault(list_key_tuple[0], {})
                 for key in list_key_tuple[1:-1]:
                     parent = parent.setdefault(key, {})
             indices, values = zip(*list_values)
@@ -185,16 +183,16 @@ class ParamsGenerator:
                 d = d[key]
             constructor = d[list_key_tuple[-1]]._constructor
             parent[list_key_tuple[-1]] = constructor(values[i] for i in np.argsort(indices))
-        return nested_params
+        return nested
 
     def flattened2array(self,
-                        flattened_params: flattened_type) -> np.ndarray:
-        param_list = []
+                        flattened: flattened_type) -> np.ndarray:
+        value_list = []
         for key in self.sorted_flattened_key:
-            param = flattened_params[key]
-            param = list(param) if isinstance(param, (list, tuple)) else [param]
-            param_list.extend(param)
-        return np.array(param_list, np.float32)
+            value = flattened[key]
+            value = list(value) if isinstance(value, (list, tuple)) else [value]
+            value_list.extend(value)
+        return np.array(value_list, np.float32)
 
     def array2flattened(self,
                         array: np.ndarray) -> flattened_type:

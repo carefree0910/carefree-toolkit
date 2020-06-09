@@ -66,8 +66,12 @@ class DataType(metaclass=ABCMeta):
         return list(map(self.transform, dist_values))
 
 
+iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]
+iterable_generic_number_type = Union[List[generic_number_type], Tuple[generic_number_type, ...]]
+
+
 class Iterable:
-    def __init__(self, values: generic_iterable_type[DataType]):
+    def __init__(self, values: iterable_data_type):
         self._values = values
         self._constructor = list if isinstance(values, list) else tuple
 
@@ -77,7 +81,7 @@ class Iterable:
 
     __repr__ = __str__
 
-    def pop(self) -> generic_iterable_type[generic_number_type]:
+    def pop(self) -> iterable_generic_number_type:
         return self._constructor(v.pop() for v in self._values)
 
     def all(self) -> Iterator[generic_number_type]:
@@ -86,7 +90,7 @@ class Iterable:
             yield self._constructor(v)
 
     @property
-    def values(self) -> generic_iterable_type[DataType]:
+    def values(self) -> iterable_data_type:
         return self._values
 
     @property

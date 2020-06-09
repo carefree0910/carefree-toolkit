@@ -3,7 +3,7 @@ from typing import *
 number_type = Union[int, float]
 generic_number_type = Union[number_type, Any]
 nullable_number_type = Union[number_type, None]
-generic_iterable_type = Union[List, Tuple]
+generic_iterable_type = Iterable
 
 
 __all__ = [

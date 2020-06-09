@@ -81,7 +81,7 @@ class Iterable:
         return self._constructor(v.pop() for v in self._values)
 
     def all(self,
-            return_values: bool = False) -> Union[List, Iterator][generic_number_type]:
+            return_values: bool = False) -> generic_iterable_type[generic_number_type]:
         grid = Grid([v.all() for v in self._values])
         generator = (self._constructor(v) for v in grid)
         if return_values:

@@ -47,11 +47,6 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             raise NotImplementedError
         return
 
-    def _update_caches(self) -> None:
-        if self.is_sequential:
-            raise NotImplementedError
-        return
-
     def search(self,
                x: np.ndarray,
                y: np.ndarray,

@@ -9,8 +9,8 @@ from .distributions import *
 from ...misc import prod, Grid
 
 params_type = Union[DataType, Iterable, Dict[str, "params_type"]]
-union_nested_type = Union[nested_params_type, all_nested_params_type]
-union_flattened_type = Union[flattened_params_type, all_flattened_params_type]
+union_nested_type = Union[nested_type, all_nested_type]
+union_flattened_type = Union[flattened_type, all_flattened_type]
 
 
 class ParamsGenerator:
@@ -71,7 +71,7 @@ class ParamsGenerator:
         return isinstance(self._params, (DataType, Iterable))
 
     @property
-    def all_nested_params(self) -> all_nested_params_type:
+    def all_nested_params(self) -> all_nested_type:
         if self._all_pure_params is None:
             def _all(src, tgt):
                 for k, v in src.items():
@@ -85,7 +85,7 @@ class ParamsGenerator:
         return self._all_pure_params
 
     @property
-    def all_flattened_params(self) -> all_flattened_params_type:
+    def all_flattened_params(self) -> all_flattened_type:
         if self._all_flattened_params is None:
             self._all_flattened_params = self.flatten_nested_params(self.all_nested_params)
         return self._all_flattened_params
@@ -115,7 +115,7 @@ class ParamsGenerator:
             data_type = data_type[sub_key]
         return data_type
 
-    def pop(self) -> nested_params_type:
+    def pop(self) -> nested_type:
         if self.is_enumerate:
             return self._params.pop()
         def _pop(src: dict, tgt: dict):
@@ -128,7 +128,7 @@ class ParamsGenerator:
             return tgt
         return _pop(self._params, {})
 
-    def all(self) -> Iterator[nested_params_type]:
+    def all(self) -> Iterator[nested_type]:
         if self.is_enumerate:
             yield from self._params.all()
         else:
@@ -152,7 +152,7 @@ class ParamsGenerator:
         return dict(_flatten_params(nested_params, None))
 
     def nest_flattened_params(self,
-                              flattened_params: flattened_params_type) -> nested_params_type:
+                              flattened_params: flattened_type) -> nested_type:
         sorted_params = sorted(map(
             lambda k, v: (k.split(self._delim), v),
             *zip(*flattened_params.items())
@@ -188,7 +188,7 @@ class ParamsGenerator:
         return nested_params
 
     def flattened2array(self,
-                        flattened_params: flattened_params_type) -> np.ndarray:
+                        flattened_params: flattened_type) -> np.ndarray:
         param_list = []
         for key in self.sorted_flattened_key:
             param = flattened_params[key]
@@ -197,7 +197,7 @@ class ParamsGenerator:
         return np.array(param_list, np.float32)
 
     def array2flattened(self,
-                        array: np.ndarray) -> flattened_params_type:
+                        array: np.ndarray) -> flattened_type:
         cursor = 0
         flattened = {}
         for key, offset in zip(self.sorted_flattened_key, self.sorted_flattened_offsets):

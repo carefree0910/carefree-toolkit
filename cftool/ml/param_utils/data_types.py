@@ -89,6 +89,9 @@ class Iterable:
         for v in grid:
             yield self._constructor(v)
 
+    def transform(self, value) -> iterable_generic_number_type:
+        return self._constructor(v.transform(vv) for v, vv in zip(self._values, value))
+
     @property
     def values(self) -> iterable_data_type:
         return self._values

@@ -82,49 +82,6 @@ class DataType(metaclass=ABCMeta):
         return self._transform(self.dist.clip(value))
 
 
-iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]
-iterable_generic_number_type = Union[List[generic_number_type], Tuple[generic_number_type, ...]]
-
-
-class Iterable:
-    def __init__(self, values: iterable_data_type):
-        self._values = values
-        self._constructor = list if isinstance(values, list) else tuple
-
-    def __str__(self):
-        braces = "[]" if self._constructor is list else "()"
-        return f"{braces[0]}{', '.join(map(str, self._values))}{braces[1]}"
-
-    __repr__ = __str__
-
-    def pop(self) -> iterable_generic_number_type:
-        return self._constructor(v.pop() for v in self._values)
-
-    def all(self) -> Iterator[generic_number_type]:
-        grid = Grid([v.all() for v in self._values])
-        for v in grid:
-            yield self._constructor(v)
-
-    def transform(self,
-                  value: iterable_generic_number_type) -> iterable_generic_number_type:
-        return self._constructor(v.transform(vv) for v, vv in zip(self._values, value))
-
-    @property
-    def values(self) -> iterable_data_type:
-        return self._values
-
-    @property
-    def bounds(self) -> List[bounds_type]:
-        return [v.bounds for v in self._values]
-
-    @property
-    def num_params(self) -> number_type:
-        num_params = prod(v.num_params for v in self._values)
-        if math.isinf(num_params):
-            return num_params
-        return int(num_params)
-
-
 class Any(DataType):
     @property
     def num_params(self) -> number_type:
@@ -196,4 +153,47 @@ class String(DataType):
         return str(value)
 
 
-__all__ = ["DataType", "Iterable", "Any", "Int", "Float", "Bool", "String"]
+iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]
+iterable_generic_number_type = Union[List[generic_number_type], Tuple[generic_number_type, ...]]
+
+
+class Iterable:
+    def __init__(self, values: iterable_data_type):
+        self._values = values
+        self._constructor = list if isinstance(values, list) else tuple
+
+    def __str__(self):
+        braces = "[]" if self._constructor is list else "()"
+        return f"{braces[0]}{', '.join(map(str, self._values))}{braces[1]}"
+
+    __repr__ = __str__
+
+    def pop(self) -> iterable_generic_number_type:
+        return self._constructor(v.pop() for v in self._values)
+
+    def all(self) -> Iterator[generic_number_type]:
+        grid = Grid([v.all() for v in self._values])
+        for v in grid:
+            yield self._constructor(v)
+
+    def transform(self,
+                  value: iterable_generic_number_type) -> iterable_generic_number_type:
+        return self._constructor(v.transform(vv) for v, vv in zip(self._values, value))
+
+    @property
+    def values(self) -> iterable_data_type:
+        return self._values
+
+    @property
+    def bounds(self) -> List[bounds_type]:
+        return [v.bounds for v in self._values]
+
+    @property
+    def num_params(self) -> number_type:
+        num_params = prod(v.num_params for v in self._values)
+        if math.isinf(num_params):
+            return num_params
+        return int(num_params)
+
+
+__all__ = ["DataType", "Any", "Int", "Float", "Bool", "String", "Iterable"]

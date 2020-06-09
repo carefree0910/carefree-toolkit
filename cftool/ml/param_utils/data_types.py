@@ -30,21 +30,6 @@ class DataType(metaclass=ABCMeta):
     __repr__ = __str__
 
     @property
-    def distribution_is_inf(self) -> bool:
-        return math.isinf(self.dist.n_params)
-
-    def _all(self) -> List[generic_number_type]:
-        return list(map(self.transform, self.dist.values))
-
-    def pop(self) -> generic_number_type:
-        return self.transform(self.dist.pop())
-
-    def all(self) -> List[generic_number_type]:
-        if math.isinf(self.n_params):
-            raise ValueError("'all' method could be called iff n_params is finite")
-        return self._all()
-
-    @property
     def lower(self) -> nullable_number_type:
         dist_lower = self.dist.lower
         if dist_lower is None:
@@ -64,6 +49,21 @@ class DataType(metaclass=ABCMeta):
         if dist_values is None:
             return
         return list(map(self.transform, dist_values))
+
+    @property
+    def distribution_is_inf(self) -> bool:
+        return math.isinf(self.dist.n_params)
+
+    def _all(self) -> List[generic_number_type]:
+        return list(map(self.transform, self.dist.values))
+
+    def pop(self) -> generic_number_type:
+        return self.transform(self.dist.pop())
+
+    def all(self) -> List[generic_number_type]:
+        if math.isinf(self.n_params):
+            raise ValueError("'all' method could be called iff n_params is finite")
+        return self._all()
 
 
 iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]

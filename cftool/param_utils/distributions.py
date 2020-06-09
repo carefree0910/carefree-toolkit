@@ -42,18 +42,21 @@ class Uniform(DistributionBase):
         return random.random() * (self._upper - self._lower) + self._lower
 
 
-class Exponential(DistributionBase):
-    @property
-    def n_params(self):
-        return math.inf
-
-    def pop(self):
+class Exponential(Uniform):
+    def __init__(self, lower=None, upper=None, values=None, **kwargs):
+        super().__init__(lower, upper, values, **kwargs)
         self._assert_lower_and_upper()
         assert self._lower > 0, "lower should be greater than 0 in exponential distribution"
-        ratio = self.config.setdefault("ratio", 2)
-        assert ratio > 1, "ratio should be greater than 1"
-        diff = math.log(self._upper / self._lower, ratio)
-        return math.pow(ratio, random.random() * diff) * self._lower
+        self._base = self.config.setdefault("base", 2)
+        assert self._base > 1, "base should be greater than 1"
+        self._log_lower, self._log_upper = map(math.log, [self._lower, self._upper], 2 * [self._base])
+
+    def pop(self):
+        lower, upper = self._lower, self._upper
+        self._lower, self._upper = self._log_lower, self._log_upper
+        result = math.pow(self._base, super().pop())
+        self._lower, self._upper = lower, upper
+        return result
 
 
 class Choice(DistributionBase):

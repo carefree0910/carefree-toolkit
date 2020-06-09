@@ -1,7 +1,7 @@
 import math
 import numpy as np
 
-from typing import *
+from typing import Dict, List, Union, Iterator
 
 from .types import *
 from .data_types import *
@@ -50,6 +50,7 @@ class ParamsGenerator:
             assert_msg = "distribution must be `Choice` when DataType is used as `params`"
             assert isinstance(self._params.dist, Choice), assert_msg
         self._all_pure_params = self._all_flattened_params = None
+        self._sorted_flattened_keys = self._sorted_flattened_offsets = None
 
     @property
     def n_params(self) -> number_type:
@@ -88,6 +89,31 @@ class ParamsGenerator:
         if self._all_flattened_params is None:
             self._all_flattened_params = self.flatten_nested_params(self.all_nested_params)
         return self._all_flattened_params
+
+    @property
+    def sorted_flattened_key(self) -> List[str]:
+        if self._sorted_flattened_keys is None:
+            self._sorted_flattened_keys = sorted(self.all_flattened_params)
+        return self._sorted_flattened_keys
+
+    @property
+    def sorted_flattened_offsets(self) -> List[int]:
+        if self._sorted_flattened_offsets is None:
+            offsets = []
+            for key in self.sorted_flattened_key:
+                data_type = self._get_data_type_from(key)
+                if not isinstance(data_type, Iterable):
+                    offsets.append(1)
+                else:
+                    offsets.append(len(data_type.values))
+            self._sorted_flattened_offsets = offsets
+        return self._sorted_flattened_offsets
+
+    def _get_data_type_from(self, flattened_key: str) -> DataType:
+        data_type = self._params
+        for sub_key in flattened_key.split(self._delim):
+            data_type = data_type[sub_key]
+        return data_type
 
     def pop(self) -> nested_params_type:
         if self.is_enumerate:
@@ -160,6 +186,30 @@ class ParamsGenerator:
             constructor = d[list_key_tuple[-1]]._constructor
             parent[list_key_tuple[-1]] = constructor(values[i] for i in np.argsort(indices))
         return nested_params
+
+    def flattened2array(self,
+                        flattened_params: flattened_params_type) -> np.ndarray:
+        param_list = []
+        for key in self.sorted_flattened_key:
+            param = flattened_params[key]
+            param = list(param) if isinstance(param, (list, tuple)) else [param]
+            param_list.extend(param)
+        return np.array(param_list, np.float32)
+
+    def array2flattened(self,
+                        array: np.ndarray) -> flattened_params_type:
+        cursor = 0
+        flattened = {}
+        for key, offset in zip(self.sorted_flattened_key, self.sorted_flattened_offsets):
+            end = cursor + offset
+            data_type = self._get_data_type_from(key)
+            if not isinstance(data_type, Iterable):
+                value = array[cursor]
+            else:
+                value = array[cursor:end].tolist()
+            flattened[key] = data_type.transform(value)
+            cursor = end
+        return flattened
 
 
 __all__ = ["ParamsGenerator"]

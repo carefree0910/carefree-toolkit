@@ -1090,19 +1090,23 @@ class Grid:
 
     def __init__(self, candidates: candidates_type):
         self.candidates = candidates
+        self._is_list = isinstance(candidates, list)
+
+    @staticmethod
+    def _yield_lists(lists):
+        yield from map(list, product(*lists))
 
     def __iter__(self):
-        items = sorted(self.candidates.items())
-        if not items:
-            yield {}
+        if self._is_list:
+            yield from self._yield_lists(self.candidates)
         else:
-            keys, values = zip(*items)
-            for v in map(list, product(*values)):
-                for i, vv in enumerate(v):
-                    if isinstance(vv, tuple) and len(vv) == 1:
-                        v[i] = vv[0]
-                params = dict(zip(keys, v))
-                yield params
+            items = sorted(self.candidates.items())
+            if not items:
+                yield {}
+            else:
+                keys, values = zip(*items)
+                for v in map(list, product(*values)):
+                    yield dict(zip(keys, v))
 
 
 class Sampler:

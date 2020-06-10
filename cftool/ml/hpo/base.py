@@ -23,8 +23,10 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                  pattern_creator: pattern_creator_type,
                  params: Dict[str, DataType],
                  *,
-                 verbose_level: int = 2):
+                 verbose_level: int = 2,
+                 **kwargs):
         self._caches = {}
+        self._init_config(**kwargs)
         self._creator = pattern_creator
         self.param_generator = ParamsGenerator(params)
         self._verbose_level = verbose_level
@@ -48,6 +50,9 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         last_patterns = self.last_patterns
         comparer = Comparer({key: last_patterns}, self.estimators)
         return comparer.compare(self.x_validation, self.y_validation).raw_metrics[key]
+
+    def _init_config(self, **kwargs):
+        pass
 
     def _sample_params(self) -> Union[None, Dict[str, Any]]:
         if self.is_sequential:

@@ -321,9 +321,7 @@ class Estimator(LoggingMixin):
                  *,
                  verbose_level: int = 2,
                  **kwargs):
-        self.raw_metrics = {}
-        self.final_scores = {}
-        self.best_method = None
+        self._reset()
         self._verbose_level = verbose_level
         self._metric = Metrics(metric_type, **kwargs)
 
@@ -346,6 +344,11 @@ class Estimator(LoggingMixin):
 
     # Core
 
+    def _reset(self):
+        self.raw_metrics = {}
+        self.final_scores = {}
+        self.best_method = None
+
     def _default_scoring(self, raw_metrics, mean, std) -> float:
         return mean - self.sign * std
 
@@ -358,6 +361,7 @@ class Estimator(LoggingMixin):
                  *,
                  scoring_function: Union[str, scoring_fn_type] = "default",
                  verbose_level: int = 1) -> None:
+        self._reset()
         if isinstance(scoring_function, str):
             scoring_function = getattr(self, f"_{scoring_function}_scoring")
         for k, v in methods.items():

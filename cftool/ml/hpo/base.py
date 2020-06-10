@@ -96,16 +96,14 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         def _core(params_, *, parallel_run=False) -> List[pattern_type]:
             range_list = list(range(num_retry))
             _task = lambda _=0: self._creator(x, y, params_)
-            if parallel_run:
+            if not parallel_run:
+                local_patterns = [_task() for _ in range_list]
+            else:
                 local_patterns = Parallel(
                     num_jobs,
                     use_tqdm=use_tqdm,
                     tqdm_config={"position": 1, "leave": False}
                 )(_task, range_list).ordered_results
-            else:
-                local_patterns = []
-                for _ in range_list:
-                    local_patterns.append(_task())
             return local_patterns
 
         with timeit("Generating Patterns"):

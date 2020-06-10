@@ -1,4 +1,8 @@
+from .bo import *
 from .gd import *
 
 
-__all__ = ["Optimizer", "GradientDescentMixin", "optimizer_dict"]
+__all__ = [
+    "BayesianOptimization",
+    "Optimizer", "GradientDescentMixin", "optimizer_dict"
+]

@@ -629,6 +629,7 @@ class Comparer(LoggingMixin):
                 x: np.ndarray,
                 y: np.ndarray,
                 *,
+                scoring_function: Union[str, scoring_fn_type] = "default",
                 verbose_level: int = 1) -> "Comparer":
         for estimator in self.estimators.values():
             methods = {}
@@ -658,7 +659,11 @@ class Comparer(LoggingMixin):
                 if invalid:
                     continue
                 methods[model_name] = predict_methods
-            estimator.estimate(x, y, methods, verbose_level=verbose_level)
+            estimator.estimate(
+                x, y, methods,
+                scoring_function=scoring_function,
+                verbose_level=verbose_level
+            )
         return self
 
 
@@ -900,5 +905,5 @@ class Visualizer:
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
-    "pattern_type", "patterns_type"
+    "pattern_type", "patterns_type", "estimate_fn_type", "scoring_fn_type"
 ]

@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Dict, List, Type, Union
+from functools import partial
 
 from ..types import *
 from ..data_types import *
@@ -15,7 +16,8 @@ single_normalizer_dict: Dict[str, Type["SingleNormalizer"]] = {}
 
 class SingleNormalizer(ABC):
     def __init__(self,
-                 data_type: DataType):
+                 data_type: DataType,
+                 **kwargs):
         self.core, self.dist = data_type, data_type.dist
         self._is_string = isinstance(data_type, String)
         self._is_exponential = isinstance(self.dist, Exponential)
@@ -31,6 +33,7 @@ class SingleNormalizer(ABC):
                 else:
                     self._lower, self._upper = self.dist.lower, self.dist.upper
                 self._diff = self._upper - self._lower
+        self._init_config(**kwargs)
 
     @property
     @abstractmethod
@@ -45,6 +48,9 @@ class SingleNormalizer(ABC):
     def recover(self, value: float) -> generic_number_type:
         pass
 
+    def _init_config(self, **kwargs):
+        pass
+
     @classmethod
     def register(cls, name: str):
         global single_normalizer_dict
@@ -54,9 +60,10 @@ class SingleNormalizer(ABC):
 class IterableNormalizer:
     def __init__(self,
                  data_type: Iterable,
-                 single_normalizer_base: Type[SingleNormalizer]):
+                 single_normalizer_base: Type[SingleNormalizer],
+                 **kwargs):
         self._data_type = data_type
-        self._normalizers = list(map(single_normalizer_base, data_type.values))
+        self._normalizers = list(map(partial(single_normalizer_base, **kwargs), data_type.values))
 
     @property
     def bounds(self) -> List[bounds_type]:
@@ -77,14 +84,15 @@ class IterableNormalizer:
 class Normalizer:
     def __init__(self,
                  method: str,
-                 data_type: union_data_type):
+                 data_type: union_data_type,
+                 **kwargs):
         self._data_type = data_type
         self.is_iterable = isinstance(data_type, Iterable)
         single_normalizer_base = single_normalizer_dict[method]
         if not self.is_iterable:
-            self._single_normalizer = single_normalizer_base(data_type)
+            self._single_normalizer = single_normalizer_base(data_type, **kwargs)
         else:
-            self._iterable_normalizer = IterableNormalizer(data_type, single_normalizer_base)
+            self._iterable_normalizer = IterableNormalizer(data_type, single_normalizer_base, **kwargs)
 
     @property
     def bounds(self) -> union_bounds_type:

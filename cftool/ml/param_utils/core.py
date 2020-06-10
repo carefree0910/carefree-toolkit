@@ -40,7 +40,8 @@ class ParamsGenerator:
     def __init__(self,
                  params: params_type,
                  *,
-                 normalize_method: Union[str, None] = None):
+                 normalize_method: Union[str, None] = None,
+                 normalize_config: Dict[str, Any] = None):
         self._data_types = params
 
         def _data_type_offset(value: DataType) -> int:
@@ -53,8 +54,10 @@ class ParamsGenerator:
         if normalize_method is None:
             self._normalizers_flattened = None
         else:
+            if normalize_config is None:
+                normalize_config = {}
             def _data_type_normalizer(value: DataType) -> Normalizer:
-                return Normalizer(normalize_method, value)
+                return Normalizer(normalize_method, value, **normalize_config)
 
             normalizers_nested = self._data_types_nested.apply(_data_type_normalizer)
             self._normalizers_flattened = normalizers_nested.flattened

@@ -18,13 +18,18 @@ class BayesianOptimization:
                  gp_params: Dict[str, Any] = None,
                  acquisition: str = "ucb",
                  normalization: Union[str, None] = None,
+                 normalization_config: Dict[str, Any] = None,
                  xi: float = 0.01,
                  kappa: float = 2.,
                  kappa_decay: float = 1.,
                  kappa_decay_delay: int = 0):
 
         self._queue = []
-        self._space = TargetSpace(fn, params, normalization=normalization)
+        self._space = TargetSpace(
+            fn, params,
+            normalization=normalization,
+            normalization_config=normalization_config
+        )
 
         if gp_params is None:
             gp_params = {}

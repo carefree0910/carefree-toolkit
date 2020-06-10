@@ -18,9 +18,14 @@ class TargetSpace:
                  fn: fn_type,
                  params: params_type,
                  *,
-                 normalization: Union[str, None]):
+                 normalization: Union[str, None],
+                 normalization_config: Dict[str, Any]):
         self.fn = fn
-        self.params_gen = ParamsGenerator(params, normalize_method=normalization)
+        self.params_gen = ParamsGenerator(
+            params,
+            normalize_method=normalization,
+            normalize_config=normalization_config
+        )
         self._codes2scores = {}
         self._sorted_keys = self.params_gen.sorted_flattened_keys
         self._tried_flattened_arrays = np.empty([0, self.dim], np.float32)

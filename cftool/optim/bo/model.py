@@ -17,7 +17,7 @@ class BayesianOptimization:
                  *,
                  gp_params: Dict[str, Any] = None,
                  acquisition: str = "ucb",
-                 normalization: Union[str, None] = None,
+                 normalization: Union[str, None] = "cube",
                  normalization_config: Dict[str, Any] = None,
                  xi: float = 0.01,
                  kappa: float = 2.,

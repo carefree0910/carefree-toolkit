@@ -57,7 +57,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         comparer = Comparer({key: patterns}, self.estimators)
         final_scores = comparer.compare(
             self.x_validation, self.y_validation,
-            scoring_function=self._scoring_function,
+            scoring_function=self._estimator_scoring_function,
             verbose_level=6
         ).final_scores
         return {metric: scores[key] for metric, scores in final_scores.items()}
@@ -85,7 +85,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                num_jobs: int = 4,
                num_retry: int = 4,
                num_search: Union[str, int, float] = 10,
-               scoring_function: Union[str, scoring_fn_type] = "default",
+               estimator_scoring_function: Union[str, scoring_fn_type] = "default",
                use_tqdm: bool = True,
                verbose_level: int = 3) -> "HPOBase":
 
@@ -112,7 +112,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         num_jobs = min(num_search, num_jobs)
 
         self._use_tqdm = use_tqdm
-        self._scoring_function = scoring_function
+        self._estimator_scoring_function = estimator_scoring_function
         self._num_retry, self._num_jobs = num_retry, num_jobs
 
         with timeit("Generating Patterns"):
@@ -150,7 +150,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         self.comparer = Comparer(self.patterns, estimators)
         self.comparer.compare(
             x_validation, y_validation,
-            scoring_function=scoring_function,
+            scoring_function=estimator_scoring_function,
             verbose_level=verbose_level
         )
 

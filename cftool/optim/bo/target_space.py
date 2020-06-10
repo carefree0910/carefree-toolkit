@@ -5,7 +5,7 @@ from typing import *
 from ...misc import *
 from ...ml.param_utils import *
 
-fn_type = Callable[[nested_type], float]
+fn_type = Union[Callable[[nested_type], float], None]
 
 
 class Result(NamedTuple):
@@ -85,6 +85,8 @@ class TargetSpace:
 
     def probe(self,
               param: flattened_type) -> "TargetSpace":
+        if self.fn is None:
+            raise ValueError("fn is not provided, so `probe` method should not be called")
         code = hash_code(str(param))
         score = self._codes2scores.get(code)
         if score is not None:

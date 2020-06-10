@@ -37,7 +37,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         pass
 
     @property
-    def last_params(self) -> Dict[str, Any]:
+    def last_param(self) -> Dict[str, Any]:
         return self.param_mapping[self.last_code]
 
     @property
@@ -47,7 +47,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def _init_config(self, **kwargs):
         pass
 
-    def _sample_params(self) -> Union[None, Dict[str, Any]]:
+    def _sample_param(self) -> Union[None, Dict[str, Any]]:
         if self.is_sequential:
             raise NotImplementedError
         return
@@ -62,9 +62,9 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         ).final_scores
         return {metric: scores[key] for metric, scores in final_scores.items()}
 
-    def _core(self, params, *, parallel_run=False) -> List[pattern_type]:
+    def _core(self, param, *, parallel_run=False) -> List[pattern_type]:
         range_list = list(range(self._num_retry))
-        _task = lambda _=0: self._creator(self.x_train, self.y_train, params)
+        _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         if not parallel_run:
             local_patterns = [_task() for _ in range_list]
         else:
@@ -122,10 +122,10 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                 if use_tqdm:
                     iterator = tqdm(iterator, position=0)
                 for _ in iterator:
-                    params = self._sample_params()
-                    self.last_code = hash_code(str(params))
-                    self.param_mapping[self.last_code] = params
-                    self.patterns[self.last_code] = self._core(params, parallel_run=True)
+                    param = self._sample_param()
+                    self.last_code = hash_code(str(param))
+                    self.param_mapping[self.last_code] = param
+                    self.patterns[self.last_code] = self._core(param, parallel_run=True)
             else:
                 if num_params == math.inf:
                     all_params = [self.param_generator.pop() for _ in range(num_search)]

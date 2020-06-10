@@ -57,7 +57,8 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         comparer = Comparer({key: patterns}, self.estimators)
         final_scores = comparer.compare(
             self.x_validation, self.y_validation,
-            scoring_function=self._scoring_function
+            scoring_function=self._scoring_function,
+            verbose_level=6
         ).final_scores
         return {metric: scores[key] for metric, scores in final_scores.items()}
 

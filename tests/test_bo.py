@@ -1,15 +1,20 @@
 from cftool.ml.param_utils import *
 from cftool.optim.bo import BayesianOptimization
 
+float_uniform = Float(Uniform(-10, 10))
+string_choice = String(Choice(values=["a", "b", "c"]))
 params = {
-    "x1": Float(Uniform(-10, 10)),
-    "x2": Float(Uniform(-10, 10))
+    "x1": Iterable([float_uniform, float_uniform]),
+    "x2": Iterable([string_choice, string_choice])
 }
 
 def fn(p):
-    return -(p["x1"] + 2 * p["x2"] - 7) ** 2 - (2 * p["x1"] + p["x2"] - 5) ** 2
+    x1, x2 = p["x1"], p["x2"]
+    r1 = -(x1[0] + 2 * x1[1] - 7) ** 2 - (2 * x1[0] + x1[1] - 5) ** 2
+    r2 = (x2[0] == "b") + (x2[1] == "c")
+    return r1 + 10. * r2
 
-# Ground Truth is [ 1, 3 ]
+# Ground Truth is [ [1, 3], ["b", "c"] ]
 bo = BayesianOptimization(fn, params).maximize()
 print(bo.best_result)
 bo.maximize()

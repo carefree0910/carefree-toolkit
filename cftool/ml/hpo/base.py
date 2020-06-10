@@ -7,6 +7,7 @@ import numpy as np
 
 from typing import *
 from tqdm import tqdm
+from collections import defaultdict
 from abc import abstractmethod, ABCMeta
 
 from ..utils import *
@@ -85,6 +86,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                num_jobs: int = 4,
                num_retry: int = 4,
                num_search: Union[str, int, float] = 10,
+               score_weights: Union[Dict[str, float], None] = None,
                estimator_scoring_function: Union[str, scoring_fn_type] = "default",
                use_tqdm: bool = True,
                verbose_level: int = 3) -> "HPOBase":
@@ -112,6 +114,9 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         num_jobs = min(num_search, num_jobs)
 
         self._use_tqdm = use_tqdm
+        if score_weights is None:
+            score_weights = {estimator.type: 1. for estimator in estimators}
+        self._score_weights = score_weights
         self._estimator_scoring_function = estimator_scoring_function
         self._num_retry, self._num_jobs = num_retry, num_jobs
 
@@ -154,6 +159,15 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             verbose_level=verbose_level
         )
 
+        weighted_scores = defaultdict(float)
+        for metric, scores in self.comparer.final_scores.items():
+            for method, score in scores.items():
+                weighted_scores[method] += self._score_weights[metric] * score
+        sorted_methods = sorted(weighted_scores)
+        sorted_methods_scores = [weighted_scores[key] for key in sorted_methods]
+        best_method = sorted_methods[np.argmax(sorted_methods_scores).item()]
+        self.best_param = self.param_mapping[best_method]
+
         best_methods = self.comparer.best_methods
         self.best_params = {k: self.param_mapping[v] for k, v in best_methods.items()}
         param_msgs = {k: pprint.pformat(v) for k, v in self.best_params.items()}
@@ -164,6 +178,10 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                 "-" * 100,
                 param_msgs[k]
             ] for k in sorted(param_msgs)], [])
+            + [
+                "-" * 100, f"best ({best_method})", "-" * 100,
+                pprint.pformat(self.best_param)
+            ]
             + ["-" * 100]
         )
         self.log_block_msg(msg, self.info_prefix, "Best Parameters", verbose_level - 1)

@@ -59,6 +59,19 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             raise NotImplementedError
         return
 
+    def _core(self, params, *, parallel_run=False) -> List[pattern_type]:
+        range_list = list(range(self._num_retry))
+        _task = lambda _=0: self._creator(self.x_train, self.y_train, params)
+        if not parallel_run:
+            local_patterns = [_task() for _ in range_list]
+        else:
+            local_patterns = Parallel(
+                self._num_jobs,
+                use_tqdm=self._use_tqdm,
+                tqdm_config={"position": 1, "leave": False}
+            )(_task, range_list).ordered_results
+        return local_patterns
+
     def search(self,
                x: np.ndarray,
                y: np.ndarray,
@@ -76,6 +89,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             x_validation, y_validation = x, y
 
         self.estimators = estimators
+        self.x_train, self.y_train = x, y
         self.x_validation, self.y_validation = x_validation, y_validation
 
         num_params = self.param_generator.num_params
@@ -93,18 +107,8 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             num_search = num_params
         num_jobs = min(num_search, num_jobs)
 
-        def _core(params_, *, parallel_run=False) -> List[pattern_type]:
-            range_list = list(range(num_retry))
-            _task = lambda _=0: self._creator(x, y, params_)
-            if not parallel_run:
-                local_patterns = [_task() for _ in range_list]
-            else:
-                local_patterns = Parallel(
-                    num_jobs,
-                    use_tqdm=use_tqdm,
-                    tqdm_config={"position": 1, "leave": False}
-                )(_task, range_list).ordered_results
-            return local_patterns
+        self._use_tqdm = use_tqdm
+        self._num_retry, self._num_jobs = num_retry, num_jobs
 
         with timeit("Generating Patterns"):
             if self.is_sequential:
@@ -116,7 +120,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                     params = self._sample_params()
                     self.last_code = hash_code(str(params))
                     self.param_mapping[self.last_code] = params
-                    self.patterns[self.last_code] = _core(params, parallel_run=True)
+                    self.patterns[self.last_code] = self._core(params, parallel_run=True)
             else:
                 if num_params == math.inf:
                     all_params = [self.param_generator.pop() for _ in range(num_search)]
@@ -132,9 +136,9 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                 codes = list(map(hash_code, map(str, all_params)))
                 self.param_mapping = dict(zip(codes, all_params))
                 if num_jobs <= 1:
-                    patterns = list(map(_core, all_params))
+                    patterns = list(map(self._core, all_params))
                 else:
-                    patterns = Parallel(num_jobs)(_core, all_params).ordered_results
+                    patterns = Parallel(num_jobs)(self._core, all_params).ordered_results
                 self.patterns = dict(zip(codes, patterns))
                 self.last_code = codes[-1]
 

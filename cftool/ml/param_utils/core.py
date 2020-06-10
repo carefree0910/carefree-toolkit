@@ -66,6 +66,10 @@ class ParamsGenerator:
         self._array_dim = self._all_bounds = None
 
     @property
+    def params(self) -> params_type:
+        return self._data_types
+
+    @property
     def num_params(self) -> number_type:
         def _num_params(params):
             if isinstance(params, (DataType, Iterable)):

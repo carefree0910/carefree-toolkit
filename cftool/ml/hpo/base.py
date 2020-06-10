@@ -44,13 +44,6 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def last_patterns(self) -> List[pattern_type]:
         return self.patterns[self.last_code]
 
-    @property
-    def last_raw_metrics(self) -> Dict[str, np.ndarray]:
-        key = "core"
-        last_patterns = self.last_patterns
-        comparer = Comparer({key: last_patterns}, self.estimators)
-        return comparer.compare(self.x_validation, self.y_validation).raw_metrics[key]
-
     def _init_config(self, **kwargs):
         pass
 
@@ -58,6 +51,14 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         if self.is_sequential:
             raise NotImplementedError
         return
+
+    def _get_scores(self, patterns: List[pattern_type]) -> Dict[str, float]:
+        key = "core"
+        comparer = Comparer({key: patterns}, self.estimators)
+        return comparer.compare(
+            self.x_validation, self.y_validation,
+            scoring_function=self._scoring_function
+        ).final_scores[key]
 
     def _core(self, params, *, parallel_run=False) -> List[pattern_type]:
         range_list = list(range(self._num_retry))

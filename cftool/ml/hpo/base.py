@@ -55,10 +55,11 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def _get_scores(self, patterns: List[pattern_type]) -> Dict[str, float]:
         key = "core"
         comparer = Comparer({key: patterns}, self.estimators)
-        return comparer.compare(
+        final_scores = comparer.compare(
             self.x_validation, self.y_validation,
             scoring_function=self._scoring_function
-        ).final_scores[key]
+        ).final_scores
+        return {metric: scores[key] for metric, scores in final_scores.items()}
 
     def _core(self, params, *, parallel_run=False) -> List[pattern_type]:
         range_list = list(range(self._num_retry))

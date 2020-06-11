@@ -138,9 +138,9 @@ class GradientDescentMixin(ABC):
         self._setup_optimizer(**kwargs)
         return self
 
-    def _gradient_descent(self,
-                          x: np.ndarray,
-                          y: np.ndarray):
+    def gradient_descent(self,
+                         x: np.ndarray,
+                         y: np.ndarray):
         self._setup_optimizer(**self.optimizer_config)
         self._optimizer.reset()
         n_sample = len(x)

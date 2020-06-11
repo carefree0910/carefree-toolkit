@@ -66,13 +66,16 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def _core(self, param, *, parallel_run=False) -> List[pattern_type]:
         range_list = list(range(self._num_retry))
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
+        tqdm_config = {"position": 1, "leave": False}
         if not parallel_run:
+            if self._use_tqdm:
+                range_list = tqdm(range_list, **tqdm_config)
             local_patterns = [_task() for _ in range_list]
         else:
             local_patterns = Parallel(
                 self._num_jobs,
                 use_tqdm=self._use_tqdm,
-                tqdm_config={"position": 1, "leave": False}
+                tqdm_config=tqdm_config
             )(_task, range_list).ordered_results
         return local_patterns
 
@@ -146,6 +149,8 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                 codes = list(map(hash_code, map(str, all_params)))
                 self.param_mapping = dict(zip(codes, all_params))
                 if num_jobs <= 1:
+                    if self._use_tqdm:
+                        all_params = tqdm(all_params)
                     patterns = list(map(self._core, all_params))
                 else:
                     patterns = Parallel(num_jobs)(self._core, all_params).ordered_results

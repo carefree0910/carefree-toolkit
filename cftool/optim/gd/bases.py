@@ -140,7 +140,7 @@ class GradientDescentMixin(ABC):
 
     def gradient_descent(self,
                          x: np.ndarray,
-                         y: np.ndarray):
+                         y: np.ndarray) -> "GradientDescentMixin":
         self._setup_optimizer(**self.optimizer_config)
         self._optimizer.reset()
         n_sample = len(x)
@@ -164,6 +164,7 @@ class GradientDescentMixin(ABC):
             if self.show_tqdm:
                 iterator.set_postfix({"loss": fix_float_to_length(local_losses[0], 6)})
             self._losses.append(local_losses)
+        return self
 
     def plot_loss_curve(self) -> "GradientDescentMixin":
         base = np.arange(len(self._losses))

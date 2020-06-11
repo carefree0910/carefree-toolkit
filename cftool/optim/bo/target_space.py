@@ -99,4 +99,4 @@ class TargetSpace:
         return self.params_gen.flatten_nested(self.params_gen.pop())
 
 
-__all__ = ["Result", "TargetSpace", "fn_type", "params_type"]
+__all__ = ["Result", "TargetSpace", "fn_type"]

@@ -8,6 +8,7 @@ from sklearn.gaussian_process import GaussianProcessRegressor
 from .acquisition import *
 from .target_space import *
 from ...misc import *
+from ...ml.param_utils import params_type
 
 
 class BayesianOptimization:

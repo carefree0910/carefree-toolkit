@@ -286,6 +286,7 @@ class Metrics(LoggingMixin):
 
 estimate_fn_type = Callable[[np.ndarray], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
+predict_method_type = Union[estimate_fn_type, None]
 
 
 class Estimator(LoggingMixin):
@@ -447,7 +448,7 @@ class ModelPattern(LoggingMixin):
         self._verbose_level = verbose_level
 
     def predict_method(self,
-                       requires_prob: bool) -> Callable[[np.ndarray], np.ndarray]:
+                       requires_prob: bool) -> predict_method_type:
         predict_method = self._predict_prob_method if requires_prob else self._predict_method
         if isinstance(predict_method, str):
             if self.model is None:
@@ -536,7 +537,7 @@ class EnsemblePattern:
     # API
 
     def predict_method(self,
-                       requires_prob: bool) -> Callable[[np.ndarray], np.ndarray]:
+                       requires_prob: bool) -> predict_method_type:
         predict_methods = list(map(ModelPattern.predict_method, self._patterns, len(self) * [requires_prob]))
         def _predict(x: np.ndarray):
             predictions = [method(x) for method in predict_methods]

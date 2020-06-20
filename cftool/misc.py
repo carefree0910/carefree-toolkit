@@ -819,7 +819,7 @@ class SavingMixin(LoggingMixin):
     def load(self, folder: str, *, compress: bool = True):
         base_folder = os.path.dirname(os.path.abspath(folder))
         with lock_manager(base_folder, [folder]):
-            with Saving.compress_loader(self, folder, compress, remove_extracted=True):
+            with Saving.compress_loader(folder, compress, remove_extracted=True, logging_mixin=self):
                 with self._data_tuple_context(is_saving=False):
                     Saving.load_instance(self, folder, log_method=self.log_msg)
         return self

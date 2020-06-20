@@ -173,7 +173,8 @@ def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
 
 
 def show_or_save(export_path: str,
-                 fig: plt.figure = None, **kwargs) -> None:
+                 fig: plt.figure = None,
+                 **kwargs) -> None:
     """
     Utility function to deal with figure.
 
@@ -803,10 +804,15 @@ class SavingMixin(LoggingMixin):
             return False
         return verbose_level >= 5
 
-    def _data_tuple_context(self, *, is_saving):
+    def _data_tuple_context(self,
+                            *,
+                            is_saving: bool):
         return data_tuple_saving_controller(self, is_saving=is_saving)
 
-    def save(self, folder: str, *, compress: bool = True):
+    def save(self,
+             folder: str,
+             *,
+             compress: bool = True):
         with self._data_tuple_context(is_saving=True):
             Saving.save_instance(self, folder, self.log_msg)
         if compress:
@@ -816,7 +822,10 @@ class SavingMixin(LoggingMixin):
                 Saving.compress(abs_folder, remove_original=True)
         return self
 
-    def load(self, folder: str, *, compress: bool = True):
+    def load(self,
+             folder: str,
+             *,
+             compress: bool = True):
         base_folder = os.path.dirname(os.path.abspath(folder))
         with lock_manager(base_folder, [folder]):
             with Saving.compress_loader(folder, compress, remove_extracted=True, logging_mixin=self):

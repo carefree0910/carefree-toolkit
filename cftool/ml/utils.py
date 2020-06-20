@@ -453,7 +453,7 @@ class ModelPattern(LoggingMixin):
         if isinstance(predict_method, str):
             if self.model is None:
                 raise ValueError("Either init_method or Callable predict_method is required in ModelPattern")
-            predict_method = getattr(self.model, predict_method)
+            predict_method = getattr(self.model, predict_method, None)
         elif self.model is not None:
             self.log_msg(
                 "predict_method is Callable but model is also created, which has no effect",
@@ -539,6 +539,9 @@ class EnsemblePattern:
     def predict_method(self,
                        requires_prob: bool) -> predict_method_type:
         predict_methods = list(map(ModelPattern.predict_method, self._patterns, len(self) * [requires_prob]))
+        predict_methods = [method for method in predict_methods if method is not None]
+        if not predict_methods:
+            return
         def _predict(x: np.ndarray):
             predictions = [method(x) for method in predict_methods]
             return self.collate_fn(predictions, requires_prob)

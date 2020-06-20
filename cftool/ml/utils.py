@@ -284,6 +284,13 @@ class Metrics(LoggingMixin):
         return thresholds[np.argmax(metric)]
 
 
+def register_metric(name, sign, requires_prob):
+    def _register(f):
+        Metrics.add_metric(f, name, sign, requires_prob)
+        return f
+    return _register
+
+
 estimate_fn_type = Callable[[np.ndarray], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
 predict_method_type = Union[estimate_fn_type, None]
@@ -913,5 +920,5 @@ class Visualizer:
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
-    "pattern_type", "patterns_type", "estimate_fn_type", "scoring_fn_type"
+    "pattern_type", "patterns_type", "estimate_fn_type", "scoring_fn_type", "register_metric"
 ]

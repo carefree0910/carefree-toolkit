@@ -1044,15 +1044,20 @@ class Saving(LoggingMixin):
             shutil.rmtree(abs_folder)
 
     @staticmethod
-    def compress_loader(instance, folder, is_compress, *, remove_extracted=True):
+    def compress_loader(folder: str,
+                        is_compress: bool,
+                        *,
+                        remove_extracted: bool = True,
+                        logging_mixin: LoggingMixin = None):
         class _manager(context_error_handler):
             def __enter__(self):
                 if is_compress:
                     if os.path.isdir(folder):
-                        instance.log_msg(
-                            f"'{folder}' already exists, it will be cleared up to load our model",
-                            instance.warning_prefix, msg_level=logging.WARNING
-                        )
+                        msg = f"'{folder}' already exists, it will be cleared up to load our model"
+                        if logging_mixin is None:
+                            print(msg)
+                        else:
+                            logging_mixin.log_msg(msg, logging_mixin.warning_prefix, msg_level=logging.WARNING)
                         shutil.rmtree(folder)
                     with zipfile.ZipFile(f"{folder}.zip", "r") as zip_ref:
                         zip_ref.extractall(folder)

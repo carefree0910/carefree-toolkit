@@ -368,7 +368,7 @@ class Estimator(LoggingMixin):
                  methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
                  *,
                  scoring_function: Union[str, scoring_fn_type] = "default",
-                 verbose_level: int = 1) -> None:
+                 verbose_level: int = 1) -> Dict[str, Dict[str, float]]:
         self._reset()
         if isinstance(scoring_function, str):
             scoring_function = getattr(self, f"_{scoring_function}_scoring")
@@ -380,6 +380,7 @@ class Estimator(LoggingMixin):
             for name, sub_methods in methods.items()
         }
         msg_list = []
+        statistics = {}
         best_idx, best_score = -1, -math.inf
         sorted_method_names = sorted(self.raw_metrics)
         for i, name in enumerate(sorted_method_names):
@@ -390,12 +391,16 @@ class Estimator(LoggingMixin):
             self.final_scores[name] = new_score
             if new_score > best_score:
                 best_idx, best_score = i, new_score
+            method_statistics = statistics.setdefault(name, {})
+            method_statistics["mean"], method_statistics["std"] = mean, std
+            method_statistics["score"] = new_score
         self.best_method = sorted_method_names[best_idx]
         msg_list[best_idx] += "  <-  "
         width = max(map(len, msg_list))
         msg_list.insert(0, "=" * width)
         msg_list.append("-" * width)
         self.log_block_msg("\n".join(msg_list), self.info_prefix, "Results", verbose_level)
+        return statistics
 
 
 class ModelPattern(LoggingMixin):

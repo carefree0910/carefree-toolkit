@@ -573,6 +573,7 @@ class EnsemblePattern:
         return cls([ModelPattern(**kwargs) for _ in range(n)], ensemble_method)
 
 
+choices_type = Union[None, List[Union[int, None]]]
 pattern_type = Union[ModelPattern, EnsemblePattern]
 patterns_type = Union[pattern_type, List[pattern_type]]
 
@@ -645,12 +646,111 @@ class Comparer(LoggingMixin):
     def best_methods(self) -> Dict[str, str]:
         return {k: v.best_method for k, v in self.estimators.items()}
 
+    def _log_statistics(self,
+                        estimator_statistics: Dict[str, Dict[str, Dict[str, float]]],
+                        verbose_level: int,
+                        **kwargs) -> None:
+        sorted_metrics = sorted(estimator_statistics)
+        body = {}
+        same_choices: choices_type = None
+        best_choices: choices_type = None
+        need_display_best_choice = False
+        sub_header = sorted_methods = None
+        statistic_types = ["mean", "std", "score"]
+        for metric_idx, metric_type in enumerate(sorted_metrics):
+            statistics = estimator_statistics[metric_type]
+            if sorted_methods is None:
+                sorted_methods = sorted(statistics)
+                need_display_best_choice = len(sorted_methods) > 1
+            if sub_header is None:
+                sub_header = statistic_types * len(sorted_metrics)
+            if best_choices is None and need_display_best_choice:
+                same_choices = [None] * len(sub_header)
+                best_choices = [None] * len(sub_header)
+            for method_idx, method in enumerate(sorted_methods):
+                method_statistics = statistics[method]
+                method_statistics = [method_statistics[stat_type] for stat_type in statistic_types]
+                body.setdefault(method, []).extend(method_statistics)
+                if best_choices is not None:
+                    for statistic_idx, method_statistic in enumerate(method_statistics):
+                        choice_idx = metric_idx * len(statistic_types) + statistic_idx
+                        current_idx_choice = best_choices[choice_idx]
+                        if current_idx_choice is None:
+                            best_choices[choice_idx] = method_idx
+                        else:
+                            stat_type = statistic_types[statistic_idx]
+                            chosen_stat = statistics[sorted_methods[current_idx_choice]][stat_type]
+                            if method_statistic == chosen_stat:
+                                same_choices[choice_idx] = method_idx
+                            elif stat_type == "std":
+                                if method_statistic < chosen_stat:
+                                    same_choices[choice_idx] = None
+                                    best_choices[choice_idx] = method_idx
+                            elif stat_type == "score":
+                                if method_statistic > chosen_stat:
+                                    same_choices[choice_idx] = None
+                                    best_choices[choice_idx] = method_idx
+                            else:
+                                assert stat_type == "mean"
+                                sign = Metrics.sign_dict[metric_type]
+                                if method_statistic * sign > chosen_stat * sign:
+                                    same_choices[choice_idx] = None
+                                    best_choices[choice_idx] = method_idx
+        padding = 2 * (kwargs.get("padding", 1) + 3)
+        method_length = kwargs.get("method_length", 16)
+        float_length = kwargs.get("float_length", 8)
+        cell_length = float_length + padding
+        num_statistic_types = len(statistic_types)
+        metric_type_length = num_statistic_types * cell_length + 2
+        header_msg = (
+            f"|{'metrics':^{method_length}s}|"
+            + "|".join([
+                f"{metric_type:^{metric_type_length}s}"
+                for metric_type in sorted_metrics
+            ])
+            + "|"
+        )
+        sub_header_msg = (
+            f"|{' ' * method_length}|"
+            + "|".join([f"{sub_header_item:^{cell_length}s}" for sub_header_item in sub_header])
+            + "|"
+        )
+        body_msgs = []
+        for method_idx, method in enumerate(sorted_methods):
+            cell_msgs = []
+            for cell_idx, cell_item in enumerate(body[method]):
+                cell_str = fix_float_to_length(cell_item, float_length)
+                if (
+                    best_choices is not None
+                    and (best_choices[cell_idx] == method_idx or same_choices[cell_idx] == method_idx)
+                ):
+                    cell_str = f" -- {cell_str} -- "
+                else:
+                    cell_str = f"{cell_str:^{cell_length}s}"
+                cell_msgs.append(cell_str)
+            body_msgs.append(
+                f"|{method:^{method_length}s}|"
+                + "|".join(cell_msgs)
+                + "|"
+            )
+        msgs = [header_msg, sub_header_msg] + body_msgs
+        length = len(body_msgs[0])
+        single_split = "-" * length
+        double_split = "=" * length
+        main_msg = f"\n{single_split}\n".join(msgs)
+        self.log_block_msg(
+            f"{double_split}\n{main_msg}\n{double_split}",
+            self.info_prefix, "Results", verbose_level
+        )
+
     def compare(self,
                 x: np.ndarray,
                 y: np.ndarray,
                 *,
                 scoring_function: Union[str, scoring_fn_type] = "default",
-                verbose_level: int = 1) -> "Comparer":
+                verbose_level: int = 1,
+                **kwargs) -> "Comparer":
+        estimator_statistics = {}
         for estimator in self.estimators.values():
             methods = {}
             for model_name, patterns in self.patterns.items():
@@ -679,11 +779,12 @@ class Comparer(LoggingMixin):
                 if invalid:
                     continue
                 methods[model_name] = predict_methods
-            estimator.estimate(
+            estimator_statistics[estimator.type] = estimator.estimate(
                 x, y, methods,
                 scoring_function=scoring_function,
-                verbose_level=verbose_level
+                verbose_level=verbose_level + 5
             )
+        self._log_statistics(estimator_statistics, verbose_level, **kwargs)
         return self
 
 

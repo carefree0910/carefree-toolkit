@@ -84,7 +84,9 @@ class Parallel(PureLoggingMixin):
         self._refresh_patience = resource_config.setdefault("refresh_patience", 10)
         self._init_logger(self.meta_log_name)
 
-    def __call__(self, f, *args_list) -> "Parallel":
+    def __call__(self,
+                 f: Callable,
+                 *args_list) -> "Parallel":
         #   if f returns a dict with 'terminate' key, Parallel can be terminated at early stage by
         # setting 'terminate' key to True
         n_tasks = len(args_list[0])
@@ -167,8 +169,8 @@ class Parallel(PureLoggingMixin):
             self._working_task_indices = init_task_indices
             self._working_processes, task_info = map(list, zip(*init_processes))
             self._log_meta_msg("starting all initial processes")
-            tuple(map(lambda p: None if p is None else p.start(), self._working_processes))
-            tuple(map(self._record_process, self._working_processes, self._working_task_indices, task_info))
+            tuple(map(lambda p_: None if p_ is None else p_.start(), self._working_processes))
+            tuple(map(self._record_process, self._working_task_indices, self._working_processes, task_info))
             self._resource_manager.initialize_running_usages()
             self._log_meta_msg("entering parallel main loop")
             while True:
@@ -225,12 +227,13 @@ class Parallel(PureLoggingMixin):
     def ordered_results(self) -> List[Any]:
         return [None if key is None else self._rs[key] for key in self._task_names]
 
-    def __sleep(self, skip_check_finished):
+    def __sleep(self,
+                skip_check_finished: bool) -> None:
         time.sleep(self._sleep + random.random())
         self._refresh(skip_check_finished=skip_check_finished)
 
-    def __wait(self, wait_until_finished):
-        # should return a sorted list
+    def __wait(self,
+               wait_until_finished: bool) -> List[int]:
         try:
             while True:
                 self._log_meta_msg(
@@ -256,13 +259,15 @@ class Parallel(PureLoggingMixin):
             self._set_terminate(scope="wait")
             raise self._ParallelError("Keyboard Interrupted")
 
-    def _init_logger(self, task_name):
+    def _init_logger(self,
+                     task_name: str) -> None:
         logging_folder = os.path.join(self._logging_folder, task_name)
         os.makedirs(logging_folder, exist_ok=True)
         logging_path = os.path.join(logging_folder, f"{timestamp()}.log")
         self._setup_logger(task_name, logging_path)
 
-    def _refresh(self, skip_check_finished):
+    def _refresh(self,
+                 skip_check_finished: bool) -> None:
         if self._pid2task_idx is None:
             self._pid2task_idx = self._resource_manager.pid2task_idx
         if not self._resource_manager.inference_usages_initialized:
@@ -274,7 +279,8 @@ class Parallel(PureLoggingMixin):
         if not skip_check_finished:
             self._wait_and_handle_finish(wait_until_finish=False)
 
-    def _wait_and_handle_finish(self, wait_until_finish):
+    def _wait_and_handle_finish(self,
+                                wait_until_finish: bool) -> None:
         finished_slots = self.__wait(wait_until_finish)
         if not finished_slots:
             return
@@ -287,12 +293,12 @@ class Parallel(PureLoggingMixin):
             tuple(map(list.append, finished_bundle, map(
                 list.pop, [self._working_task_indices, self._working_processes], [finished_slot] * 2)))
         for task_idx, process in zip(*finished_bundle):
-            task_name = self._resource_manager.handle_finish(process, task_idx)
+            task_name = self._resource_manager.handle_finish(task_idx, process)
             if task_name is None:
                 continue
             self.del_logger(task_name)
 
-    def _add_new_processes(self):
+    def _add_new_processes(self) -> bool:
         n_working = len(self._working_processes)
         n_new_jobs = self._n_jobs - n_working
         n_res = len(self._all_task_indices) - self._cursor
@@ -306,7 +312,7 @@ class Parallel(PureLoggingMixin):
             return True
         return n_working > 0
 
-    def _user_terminate(self):
+    def _user_terminate(self) -> None:
         self._log_meta_msg("`_user_terminate` method hit, joining processes", logging.ERROR)
         for process in self._working_processes:
             if process is None:
@@ -319,7 +325,7 @@ class Parallel(PureLoggingMixin):
         else:
             raise self._ParallelError("Parallel terminated by unexpected errors")
 
-    def _set_terminate(self, **kwargs):
+    def _set_terminate(self, **kwargs) -> None:
         meta = self.meta
         meta["terminated"] = True
         self._rs["__meta__"] = meta
@@ -329,7 +335,8 @@ class Parallel(PureLoggingMixin):
             suffix = f" ({' ; '.join(f'{k}: {v}' for k, v in kwargs.items())})"
         self._log_meta_msg(f"`_set_terminate` method hit{suffix}", logging.ERROR)
 
-    def _get_task_name(self, task_idx):
+    def _get_task_name(self,
+                       task_idx: int) -> Union[str, None]:
         if task_idx is None:
             return
         if self._task_names[task_idx] is None:
@@ -338,7 +345,9 @@ class Parallel(PureLoggingMixin):
         self._init_logger(task_name)
         return task_name
 
-    def _f_wrapper(self, task_idx, cuda=None):
+    def _f_wrapper(self,
+                   task_idx: int,
+                   cuda: int = None) -> Callable:
         task_name = self._get_task_name(task_idx)
         logger = self._loggers_[task_name]
 
@@ -401,7 +410,9 @@ class Parallel(PureLoggingMixin):
 
         return _inner
 
-    def _get_process(self, task_idx, start=True):
+    def _get_process(self,
+                     task_idx: int,
+                     start: bool = True) -> Union[Tuple[Process, Dict[str, Any]], Process, None]:
         rs = self._resource_manager.get_process(
             task_idx, lambda: self.__sleep(skip_check_finished=False), start)
         task_name = rs["__task_name__"]
@@ -417,14 +428,17 @@ class Parallel(PureLoggingMixin):
         if start:
             process.start()
             self._log_with_meta(task_name, "process started")
-            self._record_process(process, task_idx, rs)
+            self._record_process(task_idx, process, rs)
             return process
         return process, rs
 
-    def _record_process(self, process, task_idx, rs):
+    def _record_process(self,
+                        task_idx: int,
+                        process: Union[Process, None],
+                        rs: Dict[str, Any]) -> None:
         if process is None:
             return
-        self._resource_manager.record_process(process, task_idx, rs)
+        self._resource_manager.record_process(task_idx, process, rs)
 
 
 __all__ = ["Parallel"]

@@ -2,7 +2,7 @@ import psutil
 import logging
 import subprocess
 
-from typing import Dict
+from typing import *
 
 from .misc import PureLoggingMixin
 
@@ -11,15 +11,15 @@ class PCManager:
     """ Util class which can check PC status (unit: MB). """
 
     @staticmethod
-    def get_available_ram():
+    def get_available_ram() -> float:
         return psutil.virtual_memory().available / 1024 ** 2
 
     @staticmethod
-    def get_pid_ram_usage(pid):
+    def get_pid_ram_usage(pid: int) -> float:
         try:
             process = psutil.Process(pid)
         except psutil.NoSuchProcess:
-            return 0
+            return 0.
         return process.memory_info().rss / 1024 ** 2
 
 
@@ -41,12 +41,15 @@ class GPUManager:
 
     """
 
-    def __init__(self, available_cuda_list=None, *, reuse=True):
+    def __init__(self,
+                 available_cuda_list: Union[List[Union[str, int]], None] = None,
+                 *,
+                 reuse: bool = True):
         self._reuse = reuse
         self._available_cuda = None if available_cuda_list is None else set(map(int, available_cuda_list))
 
     @staticmethod
-    def _query_gpu():
+    def _query_gpu() -> List[Dict[str, int]]:
         q_args = ["index", "gpu_name", "memory.free", "memory.total"]
         cmd = f"nvidia-smi --query-gpu={','.join(q_args)} --format=csv,noheader"
         results = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, close_fds=True).communicate()[0]
@@ -63,22 +66,24 @@ class GPUManager:
         return list(map(_parse, results))
 
     @staticmethod
-    def _query_pid():
+    def _query_pid() -> List[Tuple[int, int]]:
         cmd = "nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader"
         results = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, close_fds=True).communicate()[0]
         results = list(filter(bool, results.decode("utf-8").strip().split("\n")))
-        return [
-            list(map(int, line.replace("MiB", "").strip().split(", ")))
-            for line in results
-        ]
+        pid_list = []
+        for line in results:
+            key, value = map(int, line.replace("MiB", "").strip().split(", "))
+            pid_list.append((key, value))
+        return pid_list
 
     @staticmethod
-    def _sort_by_memory(gpus, by_size=False):
+    def _sort_by_memory(gpus: List[Dict[str, int]],
+                        by_size: bool = False) -> List[Dict[str, int]]:
         if by_size:
             return sorted(gpus, key=lambda d: d["memory.free"], reverse=True)
         return sorted(gpus, key=lambda d: float(d["memory.free"]) / d["memory.total"], reverse=True)
 
-    def _gpu_filter(self, gpu):
+    def _gpu_filter(self, gpu: Dict[str, int]):
         return self._available_cuda is None or gpu["index"] in self._available_cuda
 
     def choose(self) -> int:
@@ -110,14 +115,19 @@ class ResourceManager:
 
     """
 
-    def __init__(self, config, get_task_name, refresh_patience):
+    def __init__(self,
+                 config: Dict[str, Any],
+                 get_task_name: Callable[[int], Union[str, None]],
+                 refresh_patience: int):
         self._resources, self._info_dict, self._overwritten_task_info = [], {}, {}
         self._init_logger = self._meta_log_name = None
         self._log_msg = self._log_block_msg = self._log_meta_msg = self._log_with_meta = None
         self.pid2task_idx, self._get_task_name = {}, get_task_name
         self.config, self._refresh_patience = config, refresh_patience
 
-    def register(self, resource_name, methods):
+    def register(self,
+                 resource_name: str,
+                 methods: Dict[str, Callable]) -> None:
         self._resources.append(resource_name)
         resource_config = self.config.setdefault(f"{resource_name.lower()}_config", {})
         preset_usages = resource_config.setdefault("preset_usages", {})
@@ -145,27 +155,29 @@ class ResourceManager:
         info["inference_usages_initialized"] = False
         info["pid2resource_id"] = {}
 
-    def register_logging(self, init_logger, mixin: PureLoggingMixin):
+    def register_logging(self,
+                         init_logger: Callable[[str], None],
+                         mixin: PureLoggingMixin):
         self._init_logger, self._meta_log_name = init_logger, mixin.meta_log_name
         self._log_msg, self._log_block_msg = mixin.log_msg, mixin.log_block_msg
         self._log_meta_msg, self._log_with_meta = mixin._log_meta_msg, mixin._log_with_meta
 
     @property
-    def inference_usages_initialized(self):
+    def inference_usages_initialized(self) -> bool:
         for info in self._info_dict.values():
             if not info["inference_usages_initialized"]:
                 return False
         return True
 
     @property
-    def checkpoint_initialized(self):
+    def checkpoint_initialized(self) -> bool:
         for info in self._info_dict.values():
             if not info["checkpoint_pid_usages"]:
                 return False
         return True
 
     @staticmethod
-    def _get_all_relevant_processes(pid):
+    def _get_all_relevant_processes(pid: int) -> List[psutil.Process]:
         parent = psutil.Process(pid)
         processes = [parent]
         for process in parent.children(recursive=True):
@@ -173,7 +185,7 @@ class ResourceManager:
         return processes
 
     @staticmethod
-    def _get_pid_usages(info):
+    def _get_pid_usages(info: Dict[str, Any]) -> Dict[str, int]:
         get_pid_usage_dict = info["get_pid_usage_dict"]
         if get_pid_usage_dict is not None:
             return get_pid_usage_dict()
@@ -181,13 +193,13 @@ class ResourceManager:
         for pid in info["running_pid_usages"].keys():
             try:
                 processes = ResourceManager._get_all_relevant_processes(pid)
-                pid_usages[pid] = sum(get_pid_usage(process.pid) for process in processes)
+                pid_usages[pid] = int(sum(get_pid_usage(process.pid) for process in processes))
             except psutil.NoSuchProcess:
                 pid_usages[pid] = 0
         return pid_usages
 
     @staticmethod
-    def get_dict_block_msg(d):
+    def get_dict_block_msg(d: Dict[str, int]) -> str:
         keys = sorted(d.keys())
         values = [d[key] for key in keys]
         header = " | ".join(map(lambda pid: f"{pid:^12s}", map(str, keys)))
@@ -195,19 +207,19 @@ class ResourceManager:
         len_header = len(header)
         return f"{'=' * len_header}\n{header}\n{'-' * len_header}\n{body}\n{'-' * len_header}"
 
-    def default_usage(self, resource):
-        return self._info_dict[resource]["preset_usages"]["__default__"]
+    def default_usage(self, resource: str) -> int:
+        return int(self._info_dict[resource]["preset_usages"]["__default__"])
 
-    def initialize_running_usages(self):
+    def initialize_running_usages(self) -> None:
         for info in self._info_dict.values():
             info["running_pid_usages"] = info["checkpoint_pid_usages"].copy()
 
-    def initialize_inference_usages(self):
+    def initialize_inference_usages(self) -> None:
         for info in self._info_dict.values():
             info["inference_frees"] = info["get_available_dict"]()
             info["inference_usages_initialized"] = True
 
-    def log_pid_usages_and_inference_frees(self):
+    def log_pid_usages_and_inference_frees(self) -> None:
         for resource in self._resources:
             info = self._info_dict[resource]
             self._log_block_msg(
@@ -219,7 +231,7 @@ class ResourceManager:
                 self.get_dict_block_msg(info["inference_frees"]), logging.DEBUG
             )
 
-    def check(self):
+    def check(self) -> None:
         for resource in self._resources:
             info = self._info_dict[resource]
             checkpoint_pid_usages, running_pid_usages, running_pid_counters = map(
@@ -288,9 +300,12 @@ class ResourceManager:
                     running_pid_counters[pid] = 0
                     self._log_msg(task_name, f"reset {resource} counter", logging.DEBUG)
 
-    def get_process(self, task_idx, sleep_method, start):
+    def get_process(self,
+                    task_idx: int,
+                    sleep_method: Callable,
+                    start: bool) -> Dict[str, Any]:
         task_name = self._get_task_name(task_idx)
-        results = {"__task_name__": task_name, "__create_process__": True}
+        results: Dict[str, Any] = {"__task_name__": task_name, "__create_process__": True}
         for resource in self._resources:
             info = self._info_dict[resource]
             local_results = results.setdefault(resource, {})
@@ -331,7 +346,10 @@ class ResourceManager:
                 return results
         return results
 
-    def record_process(self, process, task_idx, rs):
+    def record_process(self,
+                       task_idx: int,
+                       process: psutil.Process,
+                       rs: Dict[str, Any]) -> None:
         pid = process.pid
         task_name = self._get_task_name(task_idx)
         rs_task_name = rs["__task_name__"]
@@ -360,7 +378,9 @@ class ResourceManager:
             self._log_with_meta(
                 task_name, f"record : using {resource} {resource_id} with {usage} MB memory usage (pid : {pid})")
 
-    def handle_finish(self, process, task_idx):
+    def handle_finish(self,
+                      task_idx: int,
+                      process: psutil.Process) -> Union[str, None]:
         if process is None:
             return
         pid = process.pid

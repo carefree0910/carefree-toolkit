@@ -697,7 +697,7 @@ class Comparer(LoggingMixin):
                                     same_choices[choice_idx] = None
                                     best_choices[choice_idx] = method_idx
         padding = 2 * (kwargs.get("padding", 1) + 3)
-        method_length = kwargs.get("method_length", 16)
+        method_length = kwargs.get("method_length", 16) + padding
         float_length = kwargs.get("float_length", 8)
         cell_length = float_length + padding
         num_statistic_types = len(statistic_types)

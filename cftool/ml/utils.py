@@ -477,7 +477,10 @@ class ModelPattern(LoggingMixin):
                 x: np.ndarray,
                 *,
                 requires_prob: bool = False) -> np.ndarray:
-        return self.predict_method(requires_prob)(x)
+        predict_method = self.predict_method(requires_prob)
+        if predict_method is None:
+            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
+        return predict_method(x)
 
     @classmethod
     def repeat(cls, n: int, **kwargs) -> List["ModelPattern"]:
@@ -563,7 +566,10 @@ class EnsemblePattern:
                 x: np.ndarray,
                 *,
                 requires_prob: bool = False) -> np.ndarray:
-        return self.predict_method(requires_prob)(x)
+        predict_method = self.predict_method(requires_prob)
+        if predict_method is None:
+            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
+        return predict_method(x)
 
     @classmethod
     def from_same_methods(cls,

@@ -1026,5 +1026,7 @@ class Visualizer:
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
-    "pattern_type", "patterns_type", "estimate_fn_type", "scoring_fn_type", "register_metric"
+    "collate_fn_type", "estimate_fn_type", "scoring_fn_type",
+    "pattern_type", "patterns_type",
+    "register_metric"
 ]

@@ -622,7 +622,7 @@ class Comparer(LoggingMixin):
     >>> comparer = Comparer(patterns, estimators).compare(x, y)
     >>> # {'mse': {'identical': 1.666667, 'minus_one': 0.666666},
     >>> # 'mae': {'identical': 1.0, 'minus_one': 0.666666}}
-    >>> print(comparer.scores)
+    >>> print(comparer.final_scores)
     >>> # {'mse': 'minus_one', 'mae': 'minus_one'}
     >>> print(comparer.best_methods)
 

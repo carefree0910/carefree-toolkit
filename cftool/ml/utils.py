@@ -10,6 +10,7 @@ from scipy import interp
 from scipy import stats as ss
 from sklearn import metrics
 from functools import partial
+from abc import ABC, abstractmethod
 
 from ..misc import *
 
@@ -293,6 +294,7 @@ def register_metric(name, sign, requires_prob):
 
 estimate_fn_type = Callable[[np.ndarray], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
+collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 predict_method_type = Union[estimate_fn_type, None]
 
 
@@ -403,7 +405,23 @@ class Estimator(LoggingMixin):
         return statistics
 
 
-class ModelPattern(LoggingMixin):
+class PatternBase(ABC):
+    @abstractmethod
+    def predict_method(self,
+                       requires_prob: bool) -> predict_method_type:
+        pass
+
+    def predict(self,
+                x: np.ndarray,
+                *,
+                requires_prob: bool = False) -> np.ndarray:
+        predict_method = self.predict_method(requires_prob)
+        if predict_method is None:
+            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
+        return predict_method(x)
+
+
+class ModelPattern(PatternBase, LoggingMixin):
     """
     Util class to create an interface for users to leverage `Comparer` & `HPO` (and more in the future).
 
@@ -473,24 +491,12 @@ class ModelPattern(LoggingMixin):
             )
         return predict_method
 
-    def predict(self,
-                x: np.ndarray,
-                *,
-                requires_prob: bool = False) -> np.ndarray:
-        predict_method = self.predict_method(requires_prob)
-        if predict_method is None:
-            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
-        return predict_method(x)
-
     @classmethod
     def repeat(cls, n: int, **kwargs) -> List["ModelPattern"]:
         return [cls(**kwargs) for _ in range(n)]
 
 
-collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
-
-
-class EnsemblePattern:
+class EnsemblePattern(PatternBase):
     """
     Util class to create an interface for users to leverage `Comparer` & `HPO` in an ensembled way.
 
@@ -561,15 +567,6 @@ class EnsemblePattern:
             predictions = [method(x) for method in predict_methods]
             return self.collate_fn(predictions, requires_prob)
         return _predict
-
-    def predict(self,
-                x: np.ndarray,
-                *,
-                requires_prob: bool = False) -> np.ndarray:
-        predict_method = self.predict_method(requires_prob)
-        if predict_method is None:
-            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
-        return predict_method(x)
 
     @classmethod
     def from_same_methods(cls,

@@ -561,9 +561,9 @@ class EnsemblePattern(PatternBase):
         return cls([ModelPattern(**kwargs) for _ in range(n)], ensemble_method)
 
 
-choices_type = Union[None, List[Union[int, None]]]
 pattern_type = Union[ModelPattern, EnsemblePattern]
 patterns_type = Union[pattern_type, List[pattern_type]]
+choices_type = Union[None, List[Union[int, Set[int], None]]]
 
 
 class Comparer(LoggingMixin):
@@ -669,7 +669,10 @@ class Comparer(LoggingMixin):
                             stat_type = statistic_types[statistic_idx]
                             chosen_stat = statistics[sorted_methods[current_idx_choice]][stat_type]
                             if method_statistic == chosen_stat:
-                                same_choices[choice_idx] = method_idx
+                                if same_choices[choice_idx] is None:
+                                    same_choices[choice_idx] = {method_idx}
+                                else:
+                                    same_choices[choice_idx].add(method_idx)
                             elif stat_type == "std":
                                 if method_statistic < chosen_stat:
                                     same_choices[choice_idx] = None
@@ -710,7 +713,8 @@ class Comparer(LoggingMixin):
                 cell_str = fix_float_to_length(cell_item, float_length)
                 if (
                     best_choices is not None
-                    and (best_choices[cell_idx] == method_idx or same_choices[cell_idx] == method_idx)
+                    and (best_choices[cell_idx] == method_idx
+                         or same_choices[cell_idx] is not None and method_idx in same_choices[cell_idx])
                 ):
                     cell_str = f" -- {cell_str} -- "
                 else:

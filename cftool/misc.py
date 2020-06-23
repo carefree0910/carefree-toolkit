@@ -487,7 +487,7 @@ class LoggingMixin:
         if self._logging_path_ is None:
             folder = os.path.join(os.getcwd(), "_logging", type(self).__name__)
             os.makedirs(folder, exist_ok=True)
-            self._logging_path_ = os.path.join(folder, f"{timestamp()}.log")
+            self._logging_path_ = self.generate_logging_path(folder)
         return self._logging_path_
 
     @property
@@ -515,6 +515,10 @@ class LoggingMixin:
         for handler in logger.handlers[:]:
             handler.close()
             logger.removeHandler(handler)
+
+    @staticmethod
+    def generate_logging_path(folder: str) -> str:
+        return os.path.join(folder, f"{timestamp()}.log")
 
     def _init_logging(self,
                       verbose_level: Union[int, None] = 2,

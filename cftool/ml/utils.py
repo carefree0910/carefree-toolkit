@@ -6,7 +6,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import *
-from scipy import interp
 from scipy import stats as ss
 from sklearn import metrics
 from functools import partial
@@ -120,11 +119,11 @@ class Metrics(LoggingMixin):
 
     sign_dict = {
         "ddr": -1, "quantile": -1, "cdf_loss": -1, "loss": -1,
-        "f1_score": 1, "r2_score": 1, "auc": 1, "multi_auc": 1,
+        "f1_score": 1, "r2_score": 1, "auc": 1,
         "acc": 1, "mae": -1, "mse": -1, "ber": -1,
         "correlation": 1, "top_k_score": 1
     }
-    requires_prob_metrics = {"auc", "multi_auc"}
+    requires_prob_metrics = {"auc"}
     optimized_binary_metrics = {"acc", "ber"}
     custom_metrics = {}
 
@@ -226,21 +225,7 @@ class Metrics(LoggingMixin):
         n_classes = pred.shape[1]
         if n_classes == 2:
             return metrics.roc_auc_score(y.ravel(), pred[..., 1])
-        return Metrics.multi_auc(y, pred)
-
-    @staticmethod
-    def multi_auc(y, pred):
-        n_classes = pred.shape[1]
-        y = get_one_hot(y.ravel(), n_classes)
-        fpr, tpr = [None] * n_classes, [None] * n_classes
-        for i in range(n_classes):
-            fpr[i], tpr[i], _ = metrics.roc_curve(y[..., i], pred[..., i])
-        new_fpr = np.unique(np.concatenate([fpr[i] for i in range(n_classes)]))
-        new_tpr = np.zeros_like(new_fpr)
-        for i in range(n_classes):
-            new_tpr += interp(new_fpr, fpr[i], tpr[i])
-        new_tpr /= n_classes
-        return metrics.auc(new_fpr, new_tpr)
+        return metrics.roc_auc_score(y.ravel(), pred, multi_class="ovr")
 
     @staticmethod
     def acc(y, pred):

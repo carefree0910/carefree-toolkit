@@ -71,7 +71,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         tqdm_config = {"position": 1, "leave": False}
         if not parallel_run:
-            if self._use_tqdm:
+            if self._use_tqdm and len(range_list) > 1:
                 range_list = tqdm(range_list, **tqdm_config)
             local_patterns = [_task() for _ in range_list]
         else:

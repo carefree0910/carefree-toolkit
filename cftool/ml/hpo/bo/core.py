@@ -37,11 +37,14 @@ class BayesianHPO(HPOBase):
         if self._iteration <= self._init_points:
             return self.param_generator.pop()
         if not self._bo_core.space.is_empty:
-            self._bo_core.register(self.last_param, self._score(self._get_scores(self.last_patterns)))
+            nested = self.last_param
+            flattened = self.param_generator.flatten_nested(nested)
+            self._bo_core.register(flattened, self._score(self._get_scores(self.last_patterns)))
         else:
             for code, params in self.param_mapping.items():
                 patterns = self.patterns[code]
-                self._bo_core.register(params, self._score(self._get_scores(patterns)))
+                flattened = self.param_generator.flatten_nested(params)
+                self._bo_core.register(flattened, self._score(self._get_scores(patterns)))
         flattened = self._bo_core.suggest(self._num_warmup, self._num_iter)
         return self.param_generator.nest_flattened(flattened)
 

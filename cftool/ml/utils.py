@@ -635,10 +635,9 @@ class Comparer(LoggingMixin):
         return {k: v.best_method for k, v in self.estimators.items()}
 
     def _log_statistics(self,
-                        estimator_statistics: Dict[str, Dict[str, Dict[str, float]]],
                         verbose_level: int,
                         **kwargs) -> None:
-        sorted_metrics = sorted(estimator_statistics)
+        sorted_metrics = sorted(self.estimator_statistics)
         body = {}
         same_choices: choices_type = None
         best_choices: choices_type = None
@@ -646,7 +645,7 @@ class Comparer(LoggingMixin):
         sub_header = sorted_methods = None
         statistic_types = ["mean", "std", "score"]
         for metric_idx, metric_type in enumerate(sorted_metrics):
-            statistics = estimator_statistics[metric_type]
+            statistics = self.estimator_statistics[metric_type]
             if sorted_methods is None:
                 sorted_methods = sorted(statistics)
                 need_display_best_choice = len(sorted_methods) > 1
@@ -742,7 +741,7 @@ class Comparer(LoggingMixin):
                 scoring_function: Union[str, scoring_fn_type] = "default",
                 verbose_level: int = 1,
                 **kwargs) -> "Comparer":
-        estimator_statistics = {}
+        self.estimator_statistics: Dict[str, Dict[str, Dict[str, float]]] = {}
         for estimator in self.estimators.values():
             methods = {}
             for model_name, patterns in self.patterns.items():
@@ -771,12 +770,12 @@ class Comparer(LoggingMixin):
                 if invalid:
                     continue
                 methods[model_name] = predict_methods
-            estimator_statistics[estimator.type] = estimator.estimate(
+            self.estimator_statistics[estimator.type] = estimator.estimate(
                 x, y, methods,
                 scoring_function=scoring_function,
                 verbose_level=verbose_level + 5
             )
-        self._log_statistics(estimator_statistics, verbose_level, **kwargs)
+        self._log_statistics(verbose_level, **kwargs)
         return self
 
 

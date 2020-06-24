@@ -63,7 +63,10 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         ).final_scores
         return {metric: scores[key] for metric, scores in final_scores.items()}
 
-    def _core(self, param, *, parallel_run=False) -> List[pattern_type]:
+    def _core(self,
+              param: nested_type,
+              *,
+              parallel_run: bool = False) -> List[pattern_type]:
         range_list = list(range(self._num_retry))
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         tqdm_config = {"position": 1, "leave": False}

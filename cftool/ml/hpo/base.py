@@ -193,13 +193,24 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         best_methods = self.comparer.best_methods
         self.best_params = {k: self.param_mapping[v] for k, v in best_methods.items()}
         param_msgs = {k: pprint.pformat(v) for k, v in self.best_params.items()}
+        estimator_statistics = self.comparer.estimator_statistics
+        sorted_metrics = sorted(param_msgs)
+        target_statistics = []
+        for metric in sorted_metrics:
+            metric_method = best_methods[metric]
+            metric_statistics = estimator_statistics[metric][metric_method]
+            target_statistics.append({
+                "method": metric_method,
+                "mean": fix_float_to_length(metric_statistics["mean"], 8),
+                "std": fix_float_to_length(metric_statistics["std"], 8)
+            })
         msg = "\n".join(
             sum([[
                 "-" * 100,
-                f"{k} ({self.comparer.final_scores[k][best_methods[k]]:8.6f})",
+                f"{metric}  ({stat['method']}) ({stat['mean']} ± {stat['std']})",
                 "-" * 100,
-                param_msgs[k]
-            ] for k in sorted(param_msgs)], [])
+                param_msgs[metric]
+            ] for metric, stat in zip(sorted_metrics, target_statistics)], [])
             + [
                 "-" * 100, f"best ({best_method})", "-" * 100,
                 pprint.pformat(self.best_param)

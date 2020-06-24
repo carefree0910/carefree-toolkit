@@ -38,7 +38,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         pass
 
     @property
-    def last_param(self) -> Dict[str, Any]:
+    def last_param(self) -> nested_type:
         return self.param_mapping[self.last_code]
 
     @property
@@ -48,7 +48,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def _init_config(self, **kwargs):
         pass
 
-    def _sample_param(self) -> Union[None, Dict[str, Any]]:
+    def _sample_param(self) -> Union[None, nested_type]:
         if self.is_sequential:
             raise NotImplementedError
         return

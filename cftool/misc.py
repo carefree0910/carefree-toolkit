@@ -1601,7 +1601,9 @@ class timing_context(context_error_handler):
 
     """
 
-    def __init__(self, logging_mixin, name):
+    def __init__(self,
+                 logging_mixin: LoggingMixin,
+                 name: str):
         self._cls, self._name = logging_mixin, name
 
     @property

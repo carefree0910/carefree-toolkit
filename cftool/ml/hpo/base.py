@@ -7,6 +7,7 @@ import numpy as np
 
 from typing import *
 from tqdm import tqdm
+from functools import partial
 from collections import defaultdict
 from abc import abstractmethod, ABCMeta
 
@@ -16,19 +17,22 @@ from ..param_utils import *
 from ...dist import Parallel
 
 hpo_dict: Dict[str, Type["HPOBase"]] = {}
-pattern_creator_type = Callable[[np.ndarray, np.ndarray, Dict[str, Any]], pattern_type]
+created_type = Union[pattern_type, Any]
+creator_type = Callable[[np.ndarray, np.ndarray, Dict[str, Any]], created_type]
 
 
 class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def __init__(self,
-                 pattern_creator: pattern_creator_type,
+                 creator: creator_type,
                  params: Dict[str, DataType],
                  *,
+                 converter: Callable[[List[created_type]], patterns_type] = None,
                  verbose_level: int = 2,
                  **kwargs):
         self._caches = {}
         self._init_config(**kwargs)
-        self._creator = pattern_creator
+        self._creator = creator
+        self._converter = converter
         self.param_generator = ParamsGenerator(params)
         self._verbose_level = verbose_level
 
@@ -66,21 +70,26 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
     def _core(self,
               param: nested_type,
               *,
-              parallel_run: bool = False) -> List[pattern_type]:
+              convert: bool = True,
+              parallel_run: bool = False) -> List[Union[pattern_type, created_type]]:
         range_list = list(range(self._num_retry))
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         tqdm_config = {"position": 1, "leave": False}
         if not parallel_run:
             if self._use_tqdm and len(range_list) > 1:
                 range_list = tqdm(range_list, **tqdm_config)
-            local_patterns = [_task() for _ in range_list]
+            created = [_task() for _ in range_list]
         else:
-            local_patterns = Parallel(
+            parallel = Parallel(
                 self._num_jobs,
                 use_tqdm=self._use_tqdm,
                 tqdm_config=tqdm_config
-            )(_task, range_list).ordered_results
-        return local_patterns
+            )
+            created = parallel(_task, range_list).ordered_results
+        if not convert:
+            return created
+        patterns = created if self._converter is None else self._converter(created)
+        return patterns
 
     def search(self,
                x: np.ndarray,
@@ -95,7 +104,8 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                score_weights: Union[Dict[str, float], None] = None,
                estimator_scoring_function: Union[str, scoring_fn_type] = "default",
                use_tqdm: bool = True,
-               verbose_level: int = 3) -> "HPOBase":
+               verbose_level: int = 2,
+               **kwargs) -> "HPOBase":
 
         if x_validation is None or y_validation is None:
             x_validation, y_validation = x, y
@@ -136,7 +146,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                     param = self._sample_param()
                     self.last_code = hash_code(str(param))
                     self.param_mapping[self.last_code] = param
-                    self.patterns[self.last_code] = self._core(param, parallel_run=True)
+                    self.patterns[self.last_code] = self._core(param, convert=True, parallel_run=num_jobs > 1)
             else:
                 if num_params == math.inf:
                     all_params = [self.param_generator.pop() for _ in range(num_search)]
@@ -156,7 +166,11 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                         all_params = tqdm(all_params)
                     patterns = list(map(self._core, all_params))
                 else:
-                    patterns = Parallel(num_jobs)(self._core, all_params).ordered_results
+                    logging_folder = kwargs.get("parallel_logging_folder")
+                    parallel = Parallel(num_jobs, logging_folder=logging_folder)
+                    core = partial(self._core, convert=False)
+                    created_list = parallel(core, all_params).ordered_results
+                    patterns = list(map(self._converter, created_list))
                 self.patterns = dict(zip(codes, patterns))
                 self.last_code = codes[-1]
 
@@ -192,7 +206,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             ]
             + ["-" * 100]
         )
-        self.log_block_msg(msg, self.info_prefix, "Best Parameters", verbose_level - 1)
+        self.log_block_msg(msg, self.info_prefix, "Best Parameters", verbose_level)
 
         return self
 

@@ -118,10 +118,9 @@ class Metrics(LoggingMixin):
     """
 
     sign_dict = {
-        "ddr": -1, "quantile": -1, "cdf_loss": -1, "loss": -1,
         "f1_score": 1, "r2_score": 1, "auc": 1,
         "acc": 1, "mae": -1, "mse": -1, "ber": -1,
-        "correlation": 1, "top_k_score": 1
+        "correlation": 1
     }
     requires_prob_metrics = {"auc"}
     optimized_binary_metrics = {"acc", "ber"}

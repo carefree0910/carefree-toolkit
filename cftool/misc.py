@@ -629,6 +629,10 @@ class LoggingMixin:
 
     @classmethod
     def start_timer(cls, name):
+        if name in cls._time_cache_dict_:
+            print(f"{cls.warning_prefix}'{name}' was already in time cache dict, "
+                  "this may cause by calling `start_timer` repeatedly")
+            return
         cls._time_cache_dict_[name] = time.time()
 
     @classmethod

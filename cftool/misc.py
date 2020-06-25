@@ -635,8 +635,9 @@ class LoggingMixin:
     def end_timer(cls, name):
         start_time = cls._time_cache_dict_.pop(name, None)
         if start_time is None:
-            raise KeyError(f"'{name}' was not found in time cache dict, "
-                           "this may cause by not calling `start_timer` method")
+            print(f"{cls.warning_prefix}'{name}' was not found in time cache dict, "
+                  "this may cause by not calling `start_timer` method")
+            return
         incrementer = cls._timing_dict_.setdefault(name, Incrementer())
         incrementer.update(time.time() - start_time)
 

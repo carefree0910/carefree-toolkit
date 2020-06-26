@@ -138,7 +138,7 @@ def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
         return [tuple(batch) for batch in manager]
 
 
-def is_numeric(s: str) -> bool:
+def is_numeric(s: Any) -> bool:
     """ Check whether `s` is a number. """
 
     try:

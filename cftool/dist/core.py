@@ -17,7 +17,7 @@ from multiprocessing.managers import SyncManager
 from ..misc import *
 from ..manage import *
 
-WINDOWS = platform.system() == "Windows"
+LINUX = platform.system() == "Linux"
 dill._dill._reverse_typemap["ClassType"] = type
 
 
@@ -27,8 +27,9 @@ class Parallel(PureLoggingMixin):
 
     Warnings
     ----------
-    On Windows platform, functions are dramatically reduced because Windows does not well support pickling.
-    * In this occasion, `Parallel` will simply leverage `pathos` to do the jobs.
+        On platforms other than Linux, functions are dramatically reduced because only
+    Linux system well supports pickling. In this occasion, `Parallel` will simply leverage
+    `pathos` to do the jobs.
 
     Parameters
     ----------
@@ -93,7 +94,7 @@ class Parallel(PureLoggingMixin):
         n_jobs = min(self._n_jobs, n_tasks)
         if self._task_names is None:
             self._task_names = [None] * n_tasks
-        if WINDOWS:
+        if not LINUX:
             p = ProcessPool(ncpus=n_jobs)
             task_names = list(map(self._get_task_name, range(n_tasks)))
             results = []

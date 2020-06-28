@@ -50,19 +50,18 @@ class LinearRegression(GradientDescentMixin):
         return x.dot(self.w) + self.b
 
 
-def pattern_creator(features, labels, param):
-    model = LinearRegression(dim_, **param)
-    model.show_tqdm = False
-    model.fit(features, labels)
-    return ModelPattern(init_method=lambda: model)
-
-
-if __name__ == '__main__':
-    dim_ = 10
-    w_true = np.random.random([dim_, 1])
+def test():
+    dim = 10
+    w_true = np.random.random([dim, 1])
     b_true = np.random.random([1])
-    x_ = np.random.random([1000, dim_])
-    y_ = x_.dot(w_true) + b_true
+    x = np.random.random([1000, dim])
+    y = x.dot(w_true) + b_true
+
+    def pattern_creator(features, labels, param):
+        model = LinearRegression(dim, **param)
+        model.show_tqdm = False
+        model.fit(features, labels)
+        return ModelPattern(init_method=lambda: model)
 
     params = {
         "lr": Float(Exponential(1e-5, 0.1)),
@@ -70,8 +69,13 @@ if __name__ == '__main__':
     }
 
     estimators = list(map(Estimator, ["mae", "mse"]))
-    hpo = HPOBase.make("naive", pattern_creator, params)
-    hpo.search(
-        x_, y_, estimators,
-        num_jobs=1, use_tqdm=True, verbose_level=1
-    )
+    for hpo_method in ["naive", "bo"]:
+        hpo = HPOBase.make(hpo_method, pattern_creator, params)
+        hpo.search(
+            x, y, estimators,
+            num_jobs=1, use_tqdm=True, verbose_level=1
+        )
+
+
+if __name__ == '__main__':
+    test()

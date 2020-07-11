@@ -398,6 +398,27 @@ class Estimator(LoggingMixin):
         self.log_block_msg(statistics.msg, self.info_prefix, "Results", verbose_level)
         return statistics.data
 
+    @classmethod
+    def merge(cls, estimators: List["Estimator"]) -> "Estimator":
+        first_estimator = estimators[0]
+        new_final_scores = {key: [value] for key, value in first_estimator.final_scores.items()}
+        new_raw_metrics = {key: [value] for key, value in first_estimator.raw_metrics.items()}
+        for estimator in estimators[1:]:
+            for key, value in estimator.raw_metrics.items():
+                new_raw_metrics[key].append(value)
+                new_final_scores[key].append(estimator.final_scores[key])
+        new_raw_metrics = {k: np.concatenate(v) for k, v in new_raw_metrics.items()}
+        new_final_scores = {k: sum(v) / len(v) for k, v in new_final_scores.items()}
+        first_metric_ins = first_estimator._metric
+        new_estimator = cls(
+            first_metric_ins.type,
+            verbose_level=first_estimator._verbose_level,
+            metric_config=first_metric_ins.config
+        )
+        new_estimator.raw_metrics = new_raw_metrics
+        new_estimator.final_scores = new_final_scores
+        return new_estimator
+
 
 class PatternBase(ABC):
     @abstractmethod

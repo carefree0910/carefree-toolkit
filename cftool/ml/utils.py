@@ -806,6 +806,25 @@ class Comparer(LoggingMixin):
         self._log_statistics(verbose_level, **kwargs)
         return self
 
+    @classmethod
+    def merge(cls,
+              comparer_list: List["Comparer"],
+              scoring_function: Union[str, scoring_fn_type] = "default") -> "Comparer":
+        first_comparer = comparer_list[0]
+        new_estimators = [
+            Estimator.merge([comparer.estimators[k] for comparer in comparer_list])
+            for k in first_comparer.estimators.keys()
+        ]
+        new_comparer = cls(
+            first_comparer.patterns, new_estimators,
+            verbose_level=first_comparer._verbose_level
+        )
+        new_comparer.estimator_statistics = {
+            estimator.type: estimator.get_statistics(scoring_function).data
+            for estimator in new_estimators
+        }
+        return new_comparer
+
 
 class ScalarEMA:
     """

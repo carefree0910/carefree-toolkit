@@ -659,9 +659,9 @@ class Comparer(LoggingMixin):
     def best_methods(self) -> Dict[str, str]:
         return {k: v.best_method for k, v in self.estimators.items()}
 
-    def _log_statistics(self,
-                        verbose_level: int,
-                        **kwargs) -> None:
+    def log_statistics(self,
+                       verbose_level: int = 1,
+                       **kwargs) -> None:
         sorted_metrics = sorted(self.estimator_statistics)
         body = {}
         same_choices: choices_type = None
@@ -803,7 +803,7 @@ class Comparer(LoggingMixin):
                 scoring_function=scoring_function,
                 verbose_level=None if verbose_level is None else verbose_level + 5
             )
-        self._log_statistics(verbose_level, **kwargs)
+        self.log_statistics(verbose_level, **kwargs)
         return self
 
     @classmethod

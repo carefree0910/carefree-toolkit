@@ -290,7 +290,7 @@ class Estimator(LoggingMixin):
     ----------
     metric_type : str, indicates which kind of metric is to be calculated.
     verbose_level : int, verbose level used in `LoggingMixin`.
-    **kwargs : used to initialize `Metrics` instance.
+    metric_config : used to initialize `Metrics` instance.
 
     Examples
     --------
@@ -314,10 +314,10 @@ class Estimator(LoggingMixin):
                  metric_type: str,
                  *,
                  verbose_level: int = 2,
-                 **kwargs):
+                 metric_config: Dict[str, Any] = None):
         self._reset()
         self._verbose_level = verbose_level
-        self._metric = Metrics(metric_type, **kwargs)
+        self._metric = Metrics(metric_type, metric_config)
 
     def __str__(self):
         return f"Estimator({self.type})"

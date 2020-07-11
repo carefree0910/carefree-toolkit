@@ -282,6 +282,11 @@ collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 predict_method_type = Union[estimate_fn_type, None]
 
 
+class Statistics(NamedTuple):
+    msg: str
+    data: Dict[str, Dict[str, float]]
+
+
 class Estimator(LoggingMixin):
     """
     Util class to estimate the performances of a group of methods, on specific dataset & metric.
@@ -348,27 +353,14 @@ class Estimator(LoggingMixin):
 
     # API
 
-    def estimate(self,
-                 x: np.ndarray,
-                 y: np.ndarray,
-                 methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
-                 *,
-                 scoring_function: Union[str, scoring_fn_type] = "default",
-                 verbose_level: int = 1) -> Dict[str, Dict[str, float]]:
-        self._reset()
-        if isinstance(scoring_function, str):
-            scoring_function = getattr(self, f"_{scoring_function}_scoring")
-        for k, v in methods.items():
-            if not isinstance(v, list):
-                methods[k] = [v]
-        self.raw_metrics = {
-            name: np.array([self._metric.metric(y, method(x)) for method in sub_methods], np.float32)
-            for name, sub_methods in methods.items()
-        }
+    def get_statistics(self,
+                       scoring_function: Union[str, scoring_fn_type] = "default") -> Statistics:
         msg_list = []
         statistics = {}
         best_idx, best_score = -1, -math.inf
         sorted_method_names = sorted(self.raw_metrics)
+        if isinstance(scoring_function, str):
+            scoring_function = getattr(self, f"_{scoring_function}_scoring")
         for i, name in enumerate(sorted_method_names):
             raw_metrics = self.raw_metrics[name]
             mean, std = raw_metrics.mean().item(), raw_metrics.std().item()
@@ -385,8 +377,26 @@ class Estimator(LoggingMixin):
         width = max(map(len, msg_list))
         msg_list.insert(0, "=" * width)
         msg_list.append("-" * width)
-        self.log_block_msg("\n".join(msg_list), self.info_prefix, "Results", verbose_level)
-        return statistics
+        return Statistics("\n".join(msg_list), statistics)
+
+    def estimate(self,
+                 x: np.ndarray,
+                 y: np.ndarray,
+                 methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
+                 *,
+                 scoring_function: Union[str, scoring_fn_type] = "default",
+                 verbose_level: int = 1) -> Dict[str, Dict[str, float]]:
+        self._reset()
+        for k, v in methods.items():
+            if not isinstance(v, list):
+                methods[k] = [v]
+        self.raw_metrics = {
+            name: np.array([self._metric.metric(y, method(x)) for method in sub_methods], np.float32)
+            for name, sub_methods in methods.items()
+        }
+        statistics = self.get_statistics(scoring_function)
+        self.log_block_msg(statistics.msg, self.info_prefix, "Results", verbose_level)
+        return statistics.data
 
 
 class PatternBase(ABC):

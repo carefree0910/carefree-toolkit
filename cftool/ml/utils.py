@@ -654,37 +654,40 @@ class Comparer(LoggingMixin):
                 same_choices = [None] * len(sub_header)
                 best_choices = [None] * len(sub_header)
             for method_idx, method in enumerate(sorted_methods):
-                method_statistics = statistics[method]
-                method_statistics = [method_statistics[stat_type] for stat_type in statistic_types]
-                body.setdefault(method, []).extend(method_statistics)
-                if best_choices is not None:
-                    for statistic_idx, method_statistic in enumerate(method_statistics):
-                        choice_idx = metric_idx * len(statistic_types) + statistic_idx
-                        current_idx_choice = best_choices[choice_idx]
-                        if current_idx_choice is None:
-                            best_choices[choice_idx] = method_idx
-                        else:
-                            stat_type = statistic_types[statistic_idx]
-                            chosen_stat = statistics[sorted_methods[current_idx_choice]][stat_type]
-                            if method_statistic == chosen_stat:
-                                if same_choices[choice_idx] is None:
-                                    same_choices[choice_idx] = {method_idx}
-                                else:
-                                    same_choices[choice_idx].add(method_idx)
-                            elif stat_type == "std":
-                                if method_statistic < chosen_stat:
-                                    same_choices[choice_idx] = None
-                                    best_choices[choice_idx] = method_idx
-                            elif stat_type == "score":
-                                if method_statistic > chosen_stat:
-                                    same_choices[choice_idx] = None
-                                    best_choices[choice_idx] = method_idx
+                method_statistics = statistics.get(method)
+                if method_statistics is None:
+                    method_statistics = [math.nan for _ in statistic_types]
+                else:
+                    method_statistics = [method_statistics[stat_type] for stat_type in statistic_types]
+                    if best_choices is not None:
+                        for statistic_idx, method_statistic in enumerate(method_statistics):
+                            choice_idx = metric_idx * len(statistic_types) + statistic_idx
+                            current_idx_choice = best_choices[choice_idx]
+                            if current_idx_choice is None:
+                                best_choices[choice_idx] = method_idx
                             else:
-                                assert stat_type == "mean"
-                                sign = Metrics.sign_dict[metric_type]
-                                if method_statistic * sign > chosen_stat * sign:
-                                    same_choices[choice_idx] = None
-                                    best_choices[choice_idx] = method_idx
+                                stat_type = statistic_types[statistic_idx]
+                                chosen_stat = statistics[sorted_methods[current_idx_choice]][stat_type]
+                                if method_statistic == chosen_stat:
+                                    if same_choices[choice_idx] is None:
+                                        same_choices[choice_idx] = {method_idx}
+                                    else:
+                                        same_choices[choice_idx].add(method_idx)
+                                elif stat_type == "std":
+                                    if method_statistic < chosen_stat:
+                                        same_choices[choice_idx] = None
+                                        best_choices[choice_idx] = method_idx
+                                elif stat_type == "score":
+                                    if method_statistic > chosen_stat:
+                                        same_choices[choice_idx] = None
+                                        best_choices[choice_idx] = method_idx
+                                else:
+                                    assert stat_type == "mean"
+                                    sign = Metrics.sign_dict[metric_type]
+                                    if method_statistic * sign > chosen_stat * sign:
+                                        same_choices[choice_idx] = None
+                                        best_choices[choice_idx] = method_idx
+                body.setdefault(method, []).extend(method_statistics)
         padding = 2 * (kwargs.get("padding", 1) + 3)
         method_length = kwargs.get("method_length", 16) + padding
         float_length = kwargs.get("float_length", 8)

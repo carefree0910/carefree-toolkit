@@ -468,11 +468,6 @@ class ModelPattern(PatternBase, LoggingMixin):
             if self.model is None:
                 raise ValueError("Either init_method or Callable predict_method is required in ModelPattern")
             predict_method = getattr(self.model, predict_method, None)
-        elif self.model is not None:
-            self.log_msg(
-                "predict_method is Callable but model is also created, which has no effect",
-                self.warning_prefix, 2, logging.WARNING
-            )
         return predict_method
 
     @classmethod

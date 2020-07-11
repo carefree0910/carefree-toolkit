@@ -770,7 +770,7 @@ class Comparer(LoggingMixin):
             self.estimator_statistics[estimator.type] = estimator.estimate(
                 x, y, methods,
                 scoring_function=scoring_function,
-                verbose_level=verbose_level + 5
+                verbose_level=None if verbose_level is None else verbose_level + 5
             )
         self._log_statistics(verbose_level, **kwargs)
         return self

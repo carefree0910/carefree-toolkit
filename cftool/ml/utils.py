@@ -1,5 +1,6 @@
 import os
 import math
+import shutil
 import logging
 
 import numpy as np
@@ -1061,8 +1062,200 @@ class Visualizer:
         return show_or_return(return_canvas)
 
 
+class Tracker:
+    def __init__(self,
+                 project_name: str = None,
+                 task_name: str = None,
+                 *,
+                 base_folder: str = None,
+                 overwrite: bool = False):
+        if base_folder is None:
+            base_folder = self.default_base_folder()
+        if project_name is None:
+            project_name = self.default_project_name()
+        if task_name is None:
+            task_name = timestamp(ensure_different=True)
+        self.base_folder = base_folder
+        self.project_name = project_name
+        self.task_name = task_name
+        self.project_folder = os.path.join(base_folder, project_name)
+        self.log_folder = os.path.join(self.project_folder, task_name)
+        exists = os.path.isdir(self.log_folder)
+        if exists:
+            if not overwrite:
+                print(f"loading tracker from '{self.log_folder}'")
+                self._load()
+            else:
+                print(f"{LoggingMixin.warning_prefix}'{self.log_folder}' already exists, it will be overwritten")
+                shutil.rmtree(self.log_folder)
+        if not exists or overwrite:
+            os.makedirs(self.log_folder)
+            self.reset()
+
+    def __str__(self):
+        return f"Tracker(project={self.project_name}, task={self.task_name})"
+
+    __repr__ = __str__
+
+    # core
+
+    @property
+    def scalars_folder(self) -> str:
+        folder = os.path.join(self.log_folder, "scalars")
+        os.makedirs(folder, exist_ok=True)
+        return folder
+
+    @staticmethod
+    def default_base_folder() -> str:
+        home = os.path.expanduser("~")
+        return os.path.join(home, ".carefree-toolkit", ".tracker")
+
+    @staticmethod
+    def default_project_name() -> str:
+        cwd = os.getcwd()
+        return f"{hash_code(cwd)}_{os.path.split(cwd)[-1]}"
+
+    def _load(self) -> None:
+        self._load_scalars()
+
+    def _load_scalars(self) -> None:
+        self.scalars = {}
+        for file in os.listdir(self.scalars_folder):
+            data = []
+            name = os.path.splitext(file)[0]
+            with open(os.path.join(self.scalars_folder, file), "r") as f:
+                for line in f:
+                    data.append(float(line.strip() or "nan"))
+            self.scalars[name] = data
+
+    # api
+
+    def reset(self) -> None:
+        self.scalars: Dict[str, List[float]] = {}
+
+    def track_scalar(self,
+                     name: str,
+                     value: float) -> None:
+        file = os.path.join(self.scalars_folder, f"{name}.txt")
+        data = self.scalars.setdefault(name, [])
+        data.append(value)
+        if not os.path.isfile(file):
+            with open(file, "w") as f:
+                f.write("\n".join(map(str, data)))
+        else:
+            with open(file, "a") as f:
+                f.write(f"\n{'' if math.isnan(value) else value}")
+
+    def visualize_scalars(self,
+                          types: List[str] = None,
+                          *,
+                          export_folder: str = None,
+                          merge: bool = True) -> None:
+        if export_folder is not None:
+            os.makedirs(export_folder, exist_ok=True)
+        if types is None:
+            types = list(self.scalars.keys())
+        plt.figure()
+        for i, name in enumerate(sorted(types)):
+            data = self.scalars[name]
+            plt.plot(np.arange(len(data)), data, label=name)
+            if not merge:
+                plt.legend()
+                export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
+                show_or_save(export_path)
+                if i != len(types) - 1:
+                    plt.figure()
+        if merge:
+            plt.legend()
+            export_path = None if export_folder is None else os.path.join(export_folder, "merged.png")
+            show_or_save(export_path)
+
+    # clear
+
+    @staticmethod
+    def _confirm(confirm: bool) -> bool:
+        if not confirm:
+            return True
+        if input("[Y/n] (default : n)").lower() != "y":
+            print("canceled")
+            return False
+        return True
+
+    def clear(self,
+              *,
+              confirm: bool = True) -> None:
+        print(f"clearing '{self.log_folder}'")
+        if self._confirm(confirm):
+            shutil.rmtree(self.log_folder)
+
+    def clear_project(self,
+                      *,
+                      confirm: bool = True) -> None:
+        print(f"clearing '{self.project_folder}'")
+        if self._confirm(confirm):
+            shutil.rmtree(self.project_folder)
+
+    def clear_all(self,
+                  *,
+                  confirm: bool = True) -> None:
+        print(f"clearing '{self.base_folder}'")
+        if self._confirm(confirm):
+            shutil.rmtree(self.base_folder)
+
+    # class methods
+
+    @classmethod
+    def compare(cls,
+                project_name: str = None,
+                task_names: List[str] = None,
+                *,
+                base_folder: str = None,
+                visualize: bool = True,
+                types: List[str] = None,
+                export_folder: str = None,
+                merge: bool = False) -> List["Tracker"]:
+        if base_folder is None:
+            base_folder = Tracker.default_base_folder()
+        if project_name is None:
+            project_name = Tracker.default_project_name()
+        project_folder = os.path.join(base_folder, project_name)
+        if task_names is None:
+            task_names = os.listdir(project_folder)
+        else:
+            for task_name in task_names:
+                task_folder = os.path.join(project_folder, task_name)
+                if not os.path.isdir(task_folder):
+                    raise ValueError(f"'{task_folder}' does not exist")
+        trackers = [
+            Tracker(project_name, task_name, base_folder=base_folder)
+            for task_name in task_names
+        ]
+        if visualize:
+            plt.figure()
+            if types is None:
+                types = set()
+                for tracker in trackers:
+                    types |= set(tracker.scalars.keys())
+                types = list(types)
+            for i, name in enumerate(sorted(types)):
+                for task_name, tracker in zip(task_names, trackers):
+                    data = tracker.scalars.get(name, [])
+                    plt.plot(np.arange(len(data)), data, label=f"{name} - {task_name}")
+                if not merge:
+                    plt.legend()
+                    export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
+                    show_or_save(export_path)
+                    if i != len(types) - 1:
+                        plt.figure()
+            if merge:
+                plt.legend()
+                export_path = None if export_folder is None else os.path.join(export_folder, "merged.png")
+                show_or_save(export_path)
+        return trackers
+
+
 __all__ = [
-    "Anneal", "Metrics", "ScalarEMA", "Visualizer",
+    "Anneal", "Metrics", "ScalarEMA", "Visualizer", "Tracker",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
     "collate_fn_type", "estimate_fn_type", "scoring_fn_type",
     "pattern_type", "patterns_type",

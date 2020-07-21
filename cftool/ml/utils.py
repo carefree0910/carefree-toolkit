@@ -1063,6 +1063,32 @@ class Visualizer:
 
 
 class Tracker:
+    """
+    Util class to track records in an experiment.
+    * Currently only scalars are supported.
+
+    Parameters
+    ----------
+    project_name : {str, None}, the project name of the experiment.
+    * If None, then `Tracker.default_project_name()` will be used.
+    task_name : {str, None}, the task name of the experiment.
+    * If None, then `timestamp(ensure_different=True)` will be used.
+    base_folder : {str, None}, where the records will be stored.
+    * If None, then `Tracker.default_base_folder()` will be used.
+    overwrite : bool, whether overwrite the existing records.
+    * If False (which is by default), `Tracker` will load the existing records.
+
+    Examples
+    --------
+    >>> from cftool.ml.utils import Tracker
+    >>>
+    >>> tracker = Tracker()
+    >>> tracker.track_scalar("acc", 0.34)
+    >>> tracker.track_scalar("acc", 0.67)
+    >>> tracker.visualize_scalars()
+
+    """
+
     def __init__(self,
                  project_name: str = None,
                  task_name: str = None,

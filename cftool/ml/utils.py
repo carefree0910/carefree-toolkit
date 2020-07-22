@@ -1151,26 +1151,31 @@ class Tracker:
             name = os.path.splitext(file)[0]
             with open(os.path.join(self.scalars_folder, file), "r") as f:
                 for line in f:
-                    data.append(float(line.strip() or "nan"))
+                    iteration, value = line.strip().split()
+                    data.append((int(iteration), float(value)))
             self.scalars[name] = data
 
     # api
 
     def reset(self) -> None:
-        self.scalars: Dict[str, List[float]] = {}
+        self.scalars: Dict[str, List[Tuple[int, float]]] = {}
 
     def track_scalar(self,
                      name: str,
-                     value: float) -> None:
+                     value: float,
+                     *,
+                     iteration: int = None) -> None:
         file = os.path.join(self.scalars_folder, f"{name}.txt")
         data = self.scalars.setdefault(name, [])
-        data.append(value)
+        if iteration is None:
+            iteration = 0 if not data else data[-1][0] + 1
+        data.append((iteration, value))
         if not os.path.isfile(file):
             with open(file, "w") as f:
-                f.write("\n".join(map(str, data)))
+                f.write("\n".join(map(lambda line: " ".join(map(str, line)), data)))
         else:
             with open(file, "a") as f:
-                f.write(f"\n{'' if math.isnan(value) else value}")
+                f.write(f"\n{iteration} {value}")
 
     def visualize_scalars(self,
                           types: List[str] = None,
@@ -1184,7 +1189,8 @@ class Tracker:
         plt.figure()
         for i, name in enumerate(sorted(types)):
             data = self.scalars[name]
-            plt.plot(np.arange(len(data)), data, label=name)
+            iterations, values = map(list, zip(*data))
+            plt.plot(iterations, values, label=name)
             if not merge:
                 plt.legend()
                 export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
@@ -1265,8 +1271,10 @@ class Tracker:
                 types = list(types)
             for i, name in enumerate(sorted(types)):
                 for task_name, tracker in zip(task_names, trackers):
-                    data = tracker.scalars.get(name, [])
-                    plt.plot(np.arange(len(data)), data, label=f"{name} - {task_name}")
+                    data = tracker.scalars.get(name)
+                    if data is not None:
+                        iterations, values = map(list, zip(*data))
+                        plt.plot(iterations, values, label=f"{name} - {task_name}")
                 if not merge:
                     plt.legend()
                     export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")

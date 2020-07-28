@@ -1131,6 +1131,12 @@ class Tracker:
         os.makedirs(folder, exist_ok=True)
         return folder
 
+    @property
+    def messages_folder(self) -> str:
+        folder = os.path.join(self.log_folder, "messages")
+        os.makedirs(folder, exist_ok=True)
+        return folder
+
     @staticmethod
     def default_base_folder() -> str:
         home = os.path.expanduser("~")
@@ -1143,6 +1149,7 @@ class Tracker:
 
     def _load(self) -> None:
         self._load_scalars()
+        self._load_messages()
 
     def _load_scalars(self) -> None:
         self.scalars = {}
@@ -1155,9 +1162,17 @@ class Tracker:
                     data.append((int(iteration), float(value)))
             self.scalars[name] = data
 
+    def _load_messages(self) -> None:
+        self.messages = {}
+        for file in os.listdir(self.messages_folder):
+            name = os.path.splitext(file)[0]
+            with open(os.path.join(self.messages_folder, file), "r") as f:
+                self.messages[name] = f.read()
+
     # api
 
     def reset(self) -> None:
+        self.messages: Dict[str, str] = {}
         self.scalars: Dict[str, List[Tuple[int, float]]] = {}
 
     def track_scalar(self,
@@ -1176,6 +1191,22 @@ class Tracker:
         else:
             with open(file, "a") as f:
                 f.write(f"\n{iteration} {value}")
+
+    def track_message(self,
+                      name: str,
+                      message: str,
+                      *,
+                      append: bool = True) -> None:
+        file = os.path.join(self.messages_folder, f"{name}.txt")
+        existing_message = self.messages.get(name, "")
+        if not existing_message or not append:
+            self.messages[name] = message
+            with open(file, "w") as f:
+                f.write(message)
+            return
+        self.messages[name] = f"{existing_message}\n{message}"
+        with open(file, "a") as f:
+            f.write(f"\n{message}")
 
     def visualize_scalars(self,
                           types: List[str] = None,

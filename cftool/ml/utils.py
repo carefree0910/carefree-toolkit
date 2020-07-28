@@ -662,7 +662,7 @@ class Comparer(LoggingMixin):
 
     def log_statistics(self,
                        verbose_level: int = 1,
-                       **kwargs) -> None:
+                       **kwargs) -> str:
         sorted_metrics = sorted(self.estimator_statistics)
         body = {}
         same_choices: choices_type = None
@@ -758,10 +758,9 @@ class Comparer(LoggingMixin):
         single_split = "-" * length
         double_split = "=" * length
         main_msg = f"\n{single_split}\n".join(msgs)
-        self.log_block_msg(
-            f"{double_split}\n{main_msg}\n{double_split}",
-            self.info_prefix, "Results", verbose_level
-        )
+        final_msg = f"{double_split}\n{main_msg}\n{double_split}"
+        self.log_block_msg(final_msg, self.info_prefix, "Results", verbose_level)
+        return final_msg
 
     def compare(self,
                 x: np.ndarray,

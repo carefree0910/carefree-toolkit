@@ -1112,7 +1112,7 @@ class Tracker:
                 self._load()
             else:
                 print(f"{LoggingMixin.warning_prefix}'{self.log_folder}' already exists, it will be overwritten")
-                shutil.rmtree(self.log_folder)
+                self.clear(confirm=False)
         if not exists or overwrite:
             os.makedirs(self.log_folder)
             self.reset()

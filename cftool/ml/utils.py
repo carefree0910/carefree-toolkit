@@ -1219,8 +1219,9 @@ class Tracker:
         plt.figure()
         for i, name in enumerate(sorted(types)):
             data = self.scalars[name]
-            iterations, values = map(list, zip(*data))
-            plt.plot(iterations, values, label=name)
+            iterations, values = map(np.array, map(list, zip(*data)))
+            mask = iterations >= 0
+            plt.plot(iterations[mask], values[mask], label=name)
             if not merge:
                 plt.legend()
                 export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
@@ -1303,8 +1304,9 @@ class Tracker:
                 for task_name, tracker in zip(task_names, trackers):
                     data = tracker.scalars.get(name)
                     if data is not None:
-                        iterations, values = map(list, zip(*data))
-                        plt.plot(iterations, values, label=f"{name} - {task_name}")
+                        iterations, values = map(np.array, map(list, zip(*data)))
+                        mask = iterations >= 0
+                        plt.plot(iterations[mask], values[mask], label=f"{name} - {task_name}")
                 if not merge:
                     plt.legend()
                     export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")

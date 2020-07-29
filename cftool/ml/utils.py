@@ -399,6 +399,17 @@ class Estimator(LoggingMixin):
         self.log_block_msg(statistics.msg, self.info_prefix, "Results", verbose_level)
         return statistics.data
 
+    def select(self,
+               method_names: List[str]) -> "Estimator":
+        new_estimator = Estimator(
+            self.type,
+            verbose_level=self._verbose_level,
+            metric_config=self._metric.config
+        )
+        new_estimator.raw_metrics = {k: self.raw_metrics[k] for k in method_names}
+        new_estimator.final_scores = {k: self.final_scores[k] for k in method_names}
+        return new_estimator
+
     @classmethod
     def merge(cls, estimators: List["Estimator"]) -> "Estimator":
         new_raw_metrics, new_final_scores = {}, {}
@@ -804,6 +815,17 @@ class Comparer(LoggingMixin):
             )
         self.log_statistics(verbose_level, **kwargs)
         return self
+
+    def select(self,
+               method_names: List[str]) -> "Comparer":
+        new_patterns = {}
+        for name in method_names:
+            pattern = self.patterns.get(name)
+            if pattern is None:
+                raise ValueError(f"'{name}' is not found in current patterns")
+            new_patterns[name] = pattern
+        new_estimators = [estimator.select(method_names) for estimator in self.estimators.values()]
+        return Comparer(new_patterns, new_estimators, verbose_level=self._verbose_level)
 
     @classmethod
     def merge(cls,

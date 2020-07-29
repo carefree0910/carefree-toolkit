@@ -134,7 +134,7 @@ def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
 
     if not keep_tail:
         return list(zip(*[iter(iterable)] * n))
-    with batch_manager(object(), iterable, batch_size=n) as manager:
+    with batch_manager(iterable, batch_size=n) as manager:
         return [tuple(batch) for batch in manager]
 
 
@@ -338,7 +338,7 @@ def allclose(*arrays: np.ndarray, **kwargs) -> bool:
     allclose : bool
 
     """
-    for i, arr in enumerate(arrays[:1]):
+    for i, arr in enumerate(arrays[:-1]):
         if not np.allclose(arr, arrays[i + 1], **kwargs):
             return False
     return True

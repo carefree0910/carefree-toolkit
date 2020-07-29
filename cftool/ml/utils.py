@@ -1108,7 +1108,7 @@ class Tracker:
         exists = os.path.isdir(self.log_folder)
         if exists:
             if not overwrite:
-                print(f"loading tracker from '{self.log_folder}'")
+                print(f"{LoggingMixin.info_prefix}loading tracker from '{self.log_folder}'")
                 self._load()
             else:
                 print(f"{LoggingMixin.warning_prefix}'{self.log_folder}' already exists, it will be overwritten")
@@ -1247,21 +1247,21 @@ class Tracker:
     def clear(self,
               *,
               confirm: bool = True) -> None:
-        print(f"clearing '{self.log_folder}'")
+        print(f"{LoggingMixin.info_prefix}clearing '{self.log_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.log_folder)
 
     def clear_project(self,
                       *,
                       confirm: bool = True) -> None:
-        print(f"clearing '{self.project_folder}'")
+        print(f"{LoggingMixin.info_prefix}clearing '{self.project_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.project_folder)
 
     def clear_all(self,
                   *,
                   confirm: bool = True) -> None:
-        print(f"clearing '{self.base_folder}'")
+        print(f"{LoggingMixin.info_prefix}clearing '{self.base_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.base_folder)
 

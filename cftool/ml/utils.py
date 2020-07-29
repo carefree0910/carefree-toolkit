@@ -571,7 +571,9 @@ class EnsemblePattern(PatternBase):
         predictions = np.array(arrays)
         if not requires_prob and np.issubdtype(predictions.dtype, np.integer):
             max_class = predictions.max() + 1
-            predictions = predictions.squeeze(2).T
+            if len(predictions.shape) == 3:
+                predictions = predictions.squeeze(2)
+            predictions = predictions.T
             counts = np.apply_along_axis(partial(np.bincount, minlength=max_class), 1, predictions)
             return counts.argmax(1).reshape([-1, 1])
         return predictions.mean(0)

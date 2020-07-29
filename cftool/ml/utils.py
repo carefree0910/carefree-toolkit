@@ -401,15 +401,14 @@ class Estimator(LoggingMixin):
 
     @classmethod
     def merge(cls, estimators: List["Estimator"]) -> "Estimator":
-        first_estimator = estimators[0]
-        new_final_scores = {key: [value] for key, value in first_estimator.final_scores.items()}
-        new_raw_metrics = {key: [value] for key, value in first_estimator.raw_metrics.items()}
-        for estimator in estimators[1:]:
+        new_raw_metrics, new_final_scores = {}, {}
+        for estimator in estimators:
             for key, value in estimator.raw_metrics.items():
-                new_raw_metrics[key].append(value)
-                new_final_scores[key].append(estimator.final_scores[key])
+                new_raw_metrics.setdefault(key, []).append(value)
+                new_final_scores.setdefault(key, []).append(estimator.final_scores[key])
         new_raw_metrics = {k: np.concatenate(v) for k, v in new_raw_metrics.items()}
         new_final_scores = {k: sum(v) / len(v) for k, v in new_final_scores.items()}
+        first_estimator = estimators[0]
         first_metric_ins = first_estimator._metric
         new_estimator = cls(
             first_metric_ins.type,

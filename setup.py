@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = "0.1.8"
+VERSION = "0.1.8.1"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:

@@ -20,6 +20,8 @@ class BayesianHPO(HPOBase):
         self._num_iter = kwargs.get("num_iter", 10)
         self._num_warmup = kwargs.get("num_warmup", 10000)
         self._init_points = kwargs.get("init_points", 5)
+        if self._init_points <= 1:
+            raise ValueError(f"init_points should larger than 1, {self._init_points} found")
         self._bo_core, self._iteration = None, 0
 
     def _score(self,

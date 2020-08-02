@@ -382,8 +382,8 @@ class Estimator(LoggingMixin):
         return Statistics("\n".join(msg_list), statistics)
 
     def estimate(self,
-                 x: np.ndarray,
-                 y: np.ndarray,
+                 x: generic_data_type,
+                 y: generic_data_type,
                  methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
                  *,
                  scoring_function: Union[str, scoring_fn_type] = "default",

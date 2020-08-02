@@ -277,7 +277,7 @@ def register_metric(name, sign, requires_prob):
     return _register
 
 
-estimate_fn_type = Callable[[np.ndarray], np.ndarray]
+estimate_fn_type = Callable[[Union[np.ndarray, Any]], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
 collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 predict_method_type = Union[estimate_fn_type, None]
@@ -438,7 +438,7 @@ class PatternBase(ABC):
         pass
 
     def predict(self,
-                x: np.ndarray,
+                x: Union[np.ndarray, Any],
                 *,
                 requires_prob: bool = False) -> np.ndarray:
         predict_method = self.predict_method(requires_prob)

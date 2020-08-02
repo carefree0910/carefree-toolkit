@@ -887,7 +887,11 @@ class Saving(LoggingMixin):
             return False
         if callable(elem):
             return False
-        return True
+        try:
+            json.dumps({"": elem})
+            return True
+        except TypeError:
+            return False
 
     @staticmethod
     def _check_list_and_tuple(arr: Union[list, tuple]):

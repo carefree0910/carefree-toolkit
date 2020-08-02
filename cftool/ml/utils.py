@@ -509,7 +509,10 @@ class ModelPattern(PatternBase, LoggingMixin):
         predict_method = self._predict_prob_method if requires_prob else self._predict_method
         if isinstance(predict_method, str):
             if self.model is None:
-                raise ValueError("Either init_method or Callable predict_method is required in ModelPattern")
+                raise ValueError(
+                    "Either init_method or Callable predict_method is required in ModelPattern "
+                    f"(requires_prob={requires_prob})"
+                )
             predict_method = getattr(self.model, predict_method, None)
         return predict_method
 

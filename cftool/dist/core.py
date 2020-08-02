@@ -94,11 +94,20 @@ class Parallel(PureLoggingMixin):
         n_jobs = min(self._n_jobs, n_tasks)
         if self._task_names is None:
             self._task_names = [None] * n_tasks
-        if not LINUX:
-            p = ProcessPool(ncpus=n_jobs)
-            task_names = list(map(self._get_task_name, range(n_tasks)))
+        if not LINUX or n_jobs <= 1:
+            if LINUX:
+                print(
+                    f"{LoggingMixin.warning_prefix}Detected Linux system but n_jobs={n_jobs}, "
+                    "functions will be dramatically reduced.\n* It is recommended to set "
+                    "n_jobs to a larger value"
+                )
             results = []
-            iterator = p.imap(f, *args_list)
+            task_names = list(map(self._get_task_name, range(n_tasks)))
+            if n_jobs <= 1:
+                iterator = (f(*args) for args in zip(*args_list))
+            else:
+                p = ProcessPool(ncpus=n_jobs)
+                iterator = p.imap(f, *args_list)
             if self._use_tqdm:
                 iterator = tqdm(iterator, total=n_tasks, **self._tqdm_config)
             for result in iterator:

@@ -92,11 +92,11 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         return patterns
 
     def search(self,
-               x: np.ndarray,
-               y: np.ndarray,
+               x: generic_data_type,
+               y: generic_data_type,
                estimators: List[Estimator],
-               x_validation: np.ndarray = None,
-               y_validation: np.ndarray = None,
+               x_validation: generic_data_type = None,
+               y_validation: generic_data_type = None,
                *,
                num_jobs: int = 4,
                num_retry: int = 4,
@@ -107,7 +107,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                verbose_level: int = 2,
                **kwargs) -> "HPOBase":
 
-        if x_validation is None or y_validation is None:
+        if x_validation is None and y_validation is None:
             x_validation, y_validation = x, y
 
         self.estimators = estimators

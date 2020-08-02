@@ -277,7 +277,8 @@ def register_metric(name, sign, requires_prob):
     return _register
 
 
-estimate_fn_type = Callable[[Union[np.ndarray, Any]], np.ndarray]
+generic_data_type = Union[np.ndarray, Any]
+estimate_fn_type = Callable[[generic_data_type], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
 collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
 predict_method_type = Union[estimate_fn_type, None]
@@ -1347,6 +1348,6 @@ __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer", "Tracker",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
     "collate_fn_type", "estimate_fn_type", "scoring_fn_type",
-    "pattern_type", "patterns_type",
+    "generic_data_type", "pattern_type", "patterns_type",
     "register_metric"
 ]

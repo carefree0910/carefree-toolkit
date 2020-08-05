@@ -1550,11 +1550,15 @@ class batch_manager(context_error_handler):
 
     """
 
-    def __init__(self, *inputs, n_elem=1e6, batch_size=None, max_batch_size=1024):
+    def __init__(self,
+                 *inputs,
+                 n_elem: int = 1e6,
+                 batch_size: int = None,
+                 max_batch_size: int = 1024):
         if not inputs:
             raise ValueError("inputs should be provided in general_batch_manager")
         input_lengths = list(map(len, inputs))
-        self._n, self._rs, self._inputs = input_lengths[0], [], inputs
+        self._n, self._inputs = input_lengths[0], inputs
         assert all(length == self._n for length in input_lengths), "inputs should be of same length"
         if batch_size is not None:
             self._batch_size = batch_size

@@ -134,7 +134,7 @@ def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
 
     if not keep_tail:
         return list(zip(*[iter(iterable)] * n))
-    with batch_manager(iterable, batch_size=n) as manager:
+    with batch_manager(iterable, batch_size=n, max_batch_size=n) as manager:
         return [tuple(batch) for batch in manager]
 
 

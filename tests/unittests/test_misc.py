@@ -78,6 +78,16 @@ class TestMisc(unittest.TestCase):
         lst = [1, 2, 3, 4, 5, 6, 7, 8]
         self.assertEqual(grouped(lst, 3), [(1, 2, 3), (4, 5, 6)])
         self.assertEqual(grouped(lst, 3, keep_tail=True), [(1, 2, 3), (4, 5, 6), (7, 8)])
+        unit = 10 ** 5
+        lst = list(range(3 * unit + 1))
+        gt = [
+            tuple(range(unit)),
+            tuple(range(unit, 2 * unit)),
+            tuple(range(2 * unit, 3 * unit)),
+            (3 * unit,)
+        ]
+        self.assertEqual(grouped(lst, unit, keep_tail=True), gt)
+        self.assertEqual(grouped(lst, unit), gt[:-1])
 
     def test_is_numeric(self):
         self.assertEqual(is_numeric(0x1), True)

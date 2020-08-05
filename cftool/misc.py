@@ -1540,8 +1540,7 @@ class batch_manager(context_error_handler):
 
     Examples
     --------
-    >>> instance = type("test", (object,), {})()
-    >>> with batch_manager(instance, np.arange(5), np.arange(1, 6), batch_size=2) as manager:
+    >>> with batch_manager(np.arange(5), np.arange(1, 6), batch_size=2) as manager:
     >>>     for arr, tensor in manager:
     >>>         print(arr, tensor)
     >>>         # Will print:

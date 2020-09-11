@@ -568,18 +568,22 @@ class EnsemblePattern(PatternBase):
         return getattr(self, f"_{self._ensemble_method}_collate")
 
     # Core
+    
+    @staticmethod
+    def vote(arr: np.ndarray, num_classes: int) -> np.ndarray:
+        counts = np.apply_along_axis(partial(np.bincount, minlength=num_classes), 1, arr)
+        return counts.argmax(1).reshape([-1, 1])
 
     @staticmethod
     def _default_collate(arrays: List[np.ndarray],
                          requires_prob: bool) -> np.ndarray:
         predictions = np.array(arrays)
         if not requires_prob and np.issubdtype(predictions.dtype, np.integer):
-            max_class = predictions.max() + 1
+            num_classes = predictions.max() + 1
             if len(predictions.shape) == 3:
                 predictions = predictions.squeeze(2)
             predictions = predictions.T
-            counts = np.apply_along_axis(partial(np.bincount, minlength=max_class), 1, predictions)
-            return counts.argmax(1).reshape([-1, 1])
+            return EnsemblePattern.vote(predictions, num_classes)
         return predictions.mean(0)
 
     # API

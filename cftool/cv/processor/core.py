@@ -1,7 +1,11 @@
 import cv2
+import math
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from typing import *
+from scipy.ndimage import rotate
 
 from ..utils import Reader
 from ...misc import check
@@ -196,6 +200,83 @@ class Processor:
         dst = cv2.dilate(dst, None)
         img[dst > threshold * dst.max()] = [0, 0, 255]
         self.result = img
+        return self
+
+    # degradation methods
+
+    @check({"mean": "float", "sigma": "float"})
+    def gaussian_noise(self,
+                       mean: float = 0.,
+                       sigma: float = 51.) -> "Processor":
+        noise = np.random.normal(mean, sigma, self.current_array.shape)
+        self.result = np.clip(self.current_array + noise, 0., 255.).astype(np.uint8)
+        return self
+
+    @check({"length": "int", "angle": "float"})
+    def motion(self,
+               length: int = 8,
+               angle: float = 0.) -> "Processor":
+        h, w, c = self.current_array.shape
+        kernel = np.zeros([h, w])
+        kernel[int(h / 2):int(h / 2 + 1), int(w / 2 - length / 2):int(w / 2 + length / 2)] = 1
+        kernel = rotate(kernel, angle, reshape=False)
+        kernel /= kernel.sum()
+        self.result = cv2.filter2D(self.current_array, -1, kernel)
+        return self
+
+    # thresholding methods
+
+    @check({"max_val": "int", "eps": "float"})
+    def global_thresh(self,
+                      max_val: int = 255,
+                      *,
+                      eps: float = 1.,
+                      return_info: bool = False) -> Union["Processor", Any]:
+        img = self.current_gray
+        threshold = img.mean()
+        while True:
+            mask = img >= threshold
+            g1, g2 = img[mask], img[~mask]
+            m1, m2 = g1.mean(), g2.mean()
+            new_threshold = 0.5 * (m1 + m2)
+            if abs(threshold - new_threshold) <= eps:
+                threshold = new_threshold
+                break
+            threshold = new_threshold
+        if return_info:
+            return g1, g2, m1, m2
+        self.result = cv2.threshold(img, threshold, max_val, cv2.THRESH_BINARY)[1]
+        return self
+
+    @check({
+        "max_val": "int",
+        "method": ["choices", ["mean", "gaussian"]],
+        "block_size": ["int", "odd"],
+        "c": "float",
+    })
+    def adaptive_thresh(self,
+                        max_val: int = 255,
+                        *,
+                        method: str = "gaussian",
+                        block_size: int = 11,
+                        c: int = 2) -> "Processor":
+        method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C if method == "gaussian" else cv2.ADAPTIVE_THRESH_MEAN_C
+        self.result = cv2.adaptiveThreshold(self.current_gray, max_val, method, cv2.THRESH_BINARY, block_size, c)
+        return self
+
+    @check({"max_val": "int", "method": ["choices", ["otsu", "gaussian"]], "eps": "float"})
+    def optimal_thresh(self,
+                       max_val: int = 255,
+                       *,
+                       method: str = "otsu"):
+        if method == "otsu":
+            self.result = cv2.threshold(self.current_gray, 0, max_val, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+        elif method == "gaussian":
+            g1, g2, m1, m2 = self.global_thresh(return_info=True)
+            ng1, ng2 = map(len, [g1, g2])
+            q, s1 = min(ng1 / ng2, ng2 / ng1), g1.std()
+            threshold = 0.5 * (m1 + m2) + s1 ** 2 / (m2 - m1) * math.log(q / (1. - q))
+            self.result = cv2.threshold(self.current_gray, threshold, max_val, cv2.THRESH_BINARY)[1]
         return self
 
     # visualization

@@ -113,9 +113,9 @@ class Processor:
     def _filter(self,
                 name: str,
                 i_type: int,
-                is_sharpen: bool) -> np.ndarray:
+                is_edge: bool) -> np.ndarray:
         kernel = filters[name][i_type].copy()
-        if is_sharpen:
+        if not is_edge:
             kernel *= -1
             kernel[1][1] += 1
         return cv2.filter2D(self.current_array, -1, kernel)
@@ -124,48 +124,48 @@ class Processor:
     def roberts(self,
                 *,
                 i_type: int = 1,
-                is_sharpen: bool = True):
-        self.result = self._filter("roberts", i_type, is_sharpen)
+                is_edge: bool = False):
+        self.result = self._filter("roberts", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 5))]})
     def laplace(self,
                 *,
                 i_type: int = 1,
-                is_sharpen: bool = True):
-        self.result = self._filter("laplace", i_type, is_sharpen)
+                is_edge: bool = False):
+        self.result = self._filter("laplace", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
     def prewitt(self,
                 *,
                 i_type: int = 1,
-                is_sharpen: bool = True):
-        self.result = self._filter("prewitt", i_type, is_sharpen)
+                is_edge: bool = False):
+        self.result = self._filter("prewitt", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
     def sobel(self,
               *,
               i_type: int = 1,
-              is_sharpen: bool = True):
-        self.result = self._filter("sobel", i_type, is_sharpen)
+              is_edge: bool = False):
+        self.result = self._filter("sobel", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
     def robinson(self,
                  *,
                  i_type: int = 1,
-                 is_sharpen: bool = True):
-        self.result = self._filter("robinson", i_type, is_sharpen)
+                 is_edge: bool = False):
+        self.result = self._filter("robinson", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
     def kirsch(self,
                *,
                i_type: int = 1,
-               is_sharpen: bool = True):
-        self.result = self._filter("kirsch", i_type, is_sharpen)
+               is_edge: bool = False):
+        self.result = self._filter("kirsch", i_type, is_edge)
         return self
 
     # corner detection methods

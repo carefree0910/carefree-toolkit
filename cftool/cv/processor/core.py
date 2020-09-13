@@ -185,6 +185,8 @@ class Processor:
         self.result = img
         return self
 
+    # visualization
+
     def visualize(self,
                   saving_path: str = None) -> "Processor":
         if saving_path is not None:

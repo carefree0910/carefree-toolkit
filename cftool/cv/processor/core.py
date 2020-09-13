@@ -1,6 +1,7 @@
 import cv2
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from ..utils import Reader
 from ...misc import check
@@ -182,6 +183,15 @@ class Processor:
         dst = cv2.dilate(dst, None)
         img[dst > threshold * dst.max()] = [0, 0, 255]
         self.result = img
+        return self
+
+    def visualize(self,
+                  saving_path: str = None) -> "Processor":
+        if saving_path is not None:
+            cv2.imwrite(saving_path, self.result)
+        else:
+            plt.imshow(self.result[..., ::-1])
+            plt.show()
         return self
 
 

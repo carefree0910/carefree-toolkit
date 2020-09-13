@@ -189,6 +189,18 @@ class TestMisc(unittest.TestCase):
                 mean, std = incrementer.mean, incrementer.std
                 self.assertTrue(np.allclose([mean, std], [sub_sequence.mean(), sub_sequence.std()]))
 
+    def test_check(self):
+        @check({"arg1": "int", "arg2": ["int", "odd"]})
+        def foo(arg1, arg2):
+            pass
+        foo(1, 1)
+        with self.assertRaises(ValueError):
+            foo(1, 2)
+        with self.assertRaises(ValueError):
+            foo(1.1, 1)
+        with self.assertRaises(ValueError):
+            foo(1, 1.1)
+
 
 if __name__ == '__main__':
     unittest.main()

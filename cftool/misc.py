@@ -363,7 +363,80 @@ def register_core(name: str,
     return _register
 
 
+def check(constraints: Dict[str, Union[str, List[str]]],
+          *,
+          raise_error: bool = True):
+    def wrapper(fn):
+        def _check_core(k, v):
+            new_v = v
+            constraint_list = constraints.get(k)
+            if constraint_list is not None:
+                if isinstance(constraint_list, str):
+                    constraint_list = [constraint_list]
+                if constraint_list[0] == "choices":
+                    choices = constraint_list[1]
+                    if v not in choices:
+                        raise ValueError(f"given value ({v}) is not included in given choices ({choices})")
+                else:
+                    for constraint in constraint_list:
+                        check_rs = getattr(SanityChecker, constraint)(v)
+                        if not check_rs["suc"]:
+                            raise ValueError(check_rs["info"])
+                        new_v = check_rs["n"]
+            if v != new_v:
+                if raise_error:
+                    raise ValueError(f"'{k}' ({v}, {type(v)}) does not satisfy Constraints({constraint_list})")
+                print(f"{LoggingMixin.warning_prefix}'{k}' is cast from {v} -> {new_v}")
+            return new_v
+        def inner(*args, **kwargs):
+            signature_keys = list(inspect.signature(fn).parameters.keys())
+            new_args = []
+            for arg, signature_key in zip(args, signature_keys[:len(args)]):
+                new_args.append(_check_core(signature_key, arg))
+            new_kwargs = {}
+            for k, v in kwargs.items():
+                new_kwargs[k] = _check_core(k, v)
+            return fn(*new_args, **new_kwargs)
+        return inner
+    return wrapper
+
+
 # util modules
+
+class SanityChecker:
+    @staticmethod
+    def int(n):
+        rs = {"suc": True}
+        try:
+            rs["n"] = int(n)
+            return rs
+        except Exception as e:
+            rs["suc"], rs["info"] = False, e
+            return rs
+
+    @staticmethod
+    def odd(n):
+        rs = {"suc": True}
+        try:
+            n = rs["n"] = int(n)
+            if n % 2 == 1:
+                return rs
+            rs["suc"], rs["info"] = False, "input is not an odd number"
+            return rs
+        except Exception as e:
+            rs["suc"], rs["info"] = False, e
+            return rs
+
+    @staticmethod
+    def float(n):
+        rs = {"suc": True}
+        try:
+            rs["n"] = float(n)
+            return rs
+        except Exception as e:
+            rs["suc"], rs["info"] = False, e
+            return rs
+
 
 class Incrementer:
     """

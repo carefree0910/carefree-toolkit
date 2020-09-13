@@ -68,6 +68,7 @@ class Processor:
         if not reader.is_valid:
             raise ValueError(f"'{img_path}' is not a valid image")
         self.result = self.img_array = reader.img_array
+        self.img_gray = reader.to_gray()
         self._in_pipeline = False
 
     def enter_pipeline(self) -> "Processor":
@@ -78,10 +79,22 @@ class Processor:
     def exit_pipeline(self) -> "Processor":
         self._in_pipeline = False
         return self
+
+    @property
+    def result_is_gray(self) -> bool:
+        return len(self.result.shape) == 2
     
     @property
     def current_array(self) -> np.ndarray:
         return self.result if self._in_pipeline else self.img_array
+
+    @property
+    def current_gray(self) -> np.ndarray:
+        if not self._in_pipeline:
+            return self.img_gray
+        if self.result_is_gray:
+            return self.result
+        return cv2.cvtColor(self.result, cv2.COLOR_RGB2GRAY)
 
     # smoothen methods
 
@@ -192,7 +205,9 @@ class Processor:
         if saving_path is not None:
             cv2.imwrite(saving_path, self.result)
         else:
-            plt.imshow(self.result[..., ::-1])
+            img = self.result if self.result_is_gray else self.result[..., ::-1]
+            kwargs = {"cmap": "gray"} if self.result_is_gray else {}
+            plt.imshow(img, **kwargs)
             plt.show()
         return self
 

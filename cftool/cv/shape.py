@@ -4,25 +4,11 @@ import math
 import numpy as np
 
 from typing import *
-from PIL import Image
 from collections import defaultdict
 from scipy.optimize import linear_sum_assignment
 
+from .utils import *
 from ..misc import LoggingMixin, timing_context
-
-
-def draw_contours(w: int,
-                  h: int,
-                  contours: List[np.ndarray],
-                  *,
-                  saving_path: str = None,
-                  color: Tuple[int, int, int] = (0, 255, 0)) -> Image.Image:
-    canvas = np.zeros([h, w, 3]).astype(np.uint8)
-    cv2.drawContours(canvas, contours, -1, color, 3)
-    im = Image.fromarray(canvas)
-    if saving_path is not None:
-        im.save(saving_path)
-    return im
 
 
 class BBox(NamedTuple):
@@ -72,35 +58,6 @@ class BBox(NamedTuple):
         x, y, w, h = cv2.boundingRect(contour)
         x, y, w, h = map(int, [x + 0.5 * w, y + 0.5 * h, w, h])
         return BBox(x, y, w, h, 0.)
-
-
-class Reader:
-    def __init__(self,
-                 img_path: str,
-                 flag: int = cv2.IMREAD_UNCHANGED):
-        try:
-            self.img_array = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), flag)
-        except:
-            self.img_array = None
-
-    @property
-    def is_valid(self):
-        return self.img_array is not None
-
-    def to_gray(self,
-                *,
-                reverse: bool = False) -> Union[np.ndarray, None]:
-        if not self.is_valid:
-            return
-        if len(self.img_array.shape) == 2:
-            gray = self.img_array
-        elif self.img_array.shape[-1] == 4:
-            gray = self.img_array[..., -1]
-        else:
-            gray = cv2.cvtColor(self.img_array, cv2.COLOR_RGB2GRAY)
-            if reverse:
-                gray = 255 - gray
-        return gray
 
 
 class ShapeObject(LoggingMixin):
@@ -608,4 +565,4 @@ class ShapeObject(LoggingMixin):
         return cls(threshold, **kwargs)
 
 
-__all__ = ["draw_contours", "BBox", "Reader", "ShapeObject"]
+__all__ = ["BBox", "ShapeObject"]

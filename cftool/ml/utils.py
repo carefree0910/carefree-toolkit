@@ -958,20 +958,28 @@ class Visualizer:
             tmp_save_name = f"{save_name}_{counter}"
         return tmp_save_name
 
-    def bar(self, data: np.ndarray, classes: list, categories: list, save_name="bar_plot", title="",
-            padding=1e-3, expand_floor=5, overwrite=True):
-        n_class, n_categories = map(len, [classes, categories])
-        data = [data / data.sum() + padding] if n_class == 1 else data / data.sum(0) + padding
-        expand_floor = expand_floor * 2 if n_class == 1 else expand_floor
-        colors = plt.cm.Paired([i / n_class for i in range(n_class)])
-        x_base = np.arange(1, n_categories + 1)
-        expand_ratio = max(1., n_categories / expand_floor)
+    def bar(self,
+            data: np.ndarray,
+            classes: List[str, Any],
+            categories: List[str, Any],
+            *,
+            title: str = "",
+            save_name: str = "bar_plot",
+            padding: float = 1e-3,
+            expand_floor: int = 5,
+            overwrite: bool = True):
+        num_classes, num_categories = map(len, [classes, categories])
+        data = [data / data.sum() + padding] if num_classes == 1 else data / data.sum(0) + padding
+        expand_floor = expand_floor * 2 if num_classes == 1 else expand_floor
+        colors = plt.cm.Paired([i / num_classes for i in range(num_classes)])
+        x_base = np.arange(1, num_categories + 1)
+        expand_ratio = max(1., num_categories / expand_floor)
         fig = plt.figure(figsize=(6.4 * expand_ratio, 4.8))
         plt.title(title)
-        n_divide = n_class - 1
+        n_divide = num_classes - 1
         width = 0.35 / max(1, n_divide)
-        cls_ratio = 0.5 if n_class == 1 else 1
-        for cls in range(n_class):
+        cls_ratio = 0.5 if num_classes == 1 else 1
+        for cls in range(num_classes):
             plt.bar(x_base - width * (0.5 * n_divide - cls_ratio * cls), data[cls], width=width,
                     facecolor=colors[cls], edgecolor="white",
                     label=classes[cls])
@@ -988,23 +996,31 @@ class Visualizer:
         plt.savefig(os.path.join(self.export_folder, f"{save_name}.png"))
         plt.close()
 
-    def function(self, f: Callable[[np.ndarray], np.ndarray], x_min: np.ndarray, x_max: np.ndarray,
-                 classes: list, categories: list, save_names=None, n_sample=1000,
-                 expand_floor=5, overwrite=True):
-        n_class, n_categories = map(len, [classes, categories])
+    def function(self,
+                 f: Callable[[np.ndarray], np.ndarray],
+                 x_min: np.ndarray,
+                 x_max: np.ndarray,
+                 classes: List[str, Any],
+                 categories: List[str, Any],
+                 *,
+                 save_names: List[str] = None,
+                 num_sample: int = 1000,
+                 expand_floor: int = 5,
+                 overwrite: bool = True):
+        num_classes, num_categories = map(len, [classes, categories])
         gaps = x_max - x_min
-        x_base = np.linspace(x_min - 0.1 * gaps, x_max + 0.1 * gaps, n_sample)
-        f_values = np.split(f(x_base), n_class, axis=1)
+        x_base = np.linspace(x_min - 0.1 * gaps, x_max + 0.1 * gaps, num_sample)
+        f_values = np.split(f(x_base), num_classes, axis=1)
         if save_names is None:
-            save_names = ["function_plot"] * n_categories
-        colors = plt.cm.Paired([i / n_class for i in range(n_class)])
+            save_names = ["function_plot"] * num_categories
+        colors = plt.cm.Paired([i / num_classes for i in range(num_classes)])
         expand_ratios = np.maximum(1., np.abs(x_min) / expand_floor, x_max / expand_floor)
         for i, (category, save_name, ratio, local_min, local_max, gap) in enumerate(zip(
                 categories, save_names, expand_ratios, x_min, x_max, gaps)):
             plt.figure(figsize=(6.4 * ratio, 4.8))
             plt.title(f"pdf for {category}")
             local_base = x_base[..., i]
-            for c in range(n_class):
+            for c in range(num_classes):
                 f_value = f_values[c][..., i].ravel()
                 plt.plot(local_base, f_value, c=colors[c], label=f"class: {classes[c]}")
             plt.xlim(local_min - 0.2 * gap, local_max + 0.2 * gap)

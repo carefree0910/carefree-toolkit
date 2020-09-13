@@ -1786,5 +1786,6 @@ __all__ = [
     "register_core", "Incrementer", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Saving", "Grid",
     "Sampler", "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context",
     "data_tuple_saving_controller", "nested_type", "all_nested_type", "union_nested_type",
-    "flattened_type", "all_flattened_type", "union_flattened_type", "Nested"
+    "flattened_type", "all_flattened_type", "union_flattened_type", "Nested",
+    "check", "SanityChecker",
 ]

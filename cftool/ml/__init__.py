@@ -11,5 +11,5 @@ def register_metric(name, sign, requires_prob):
 __all__ = [
     "Anneal", "Metrics", "ScalarEMA", "Visualizer", "Tracker",
     "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
-    "register_metric"
+    "register_metric", "DataInspector",
 ]

@@ -264,13 +264,15 @@ class Processor:
         self.result = cv2.adaptiveThreshold(self.current_gray, max_val, method, cv2.THRESH_BINARY, block_size, c)
         return self
 
-    @check({"max_val": "int", "method": ["choices", ["otsu", "gaussian"]], "eps": "float"})
+    @check({"max_val": "int", "ksize": "int", "method": ["choices", ["otsu", "gaussian"]], "eps": "float"})
     def optimal_thresh(self,
                        max_val: int = 255,
                        *,
+                       ksize: int = 5,
                        method: str = "otsu"):
         if method == "otsu":
-            self.result = cv2.threshold(self.current_gray, 0, max_val, cv2.THRESH_BINARY+cv2.THRESH_OTSU)[1]
+            blur = cv2.GaussianBlur(self.current_gray, (ksize, ksize), 0.)
+            self.result = cv2.threshold(blur, 0, max_val, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
         elif method == "gaussian":
             g1, g2, m1, m2 = self.global_thresh(return_info=True)
             ng1, ng2 = map(len, [g1, g2])

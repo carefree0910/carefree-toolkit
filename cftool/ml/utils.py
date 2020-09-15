@@ -1467,20 +1467,20 @@ class DataInspector:
     def upper_cutoff(self) -> float:
         return self.q3 + 1.5 * self.iqr
 
-    def draw_histogram(self, bin_size: int = 10):
+    def draw_histogram(self, bin_size: int = 10, export_path: str = None, **kwargs) -> None:
         bins = np.arange(self._sorted_data[0] - self.iqr, self._sorted_data[-1] + self.iqr, bin_size)
         plt.hist(self._data, bins=bins, alpha=0.5)
         plt.title(f"Histogram (bin_size: {bin_size})")
-        plt.show()
+        show_or_save(export_path, **kwargs)
 
-    def qq_plot(self):
+    def qq_plot(self, export_path: str = None, **kwargs) -> None:
         stats.probplot(self._data, dist="norm", plot=plt)
-        plt.show()
+        show_or_save(export_path, **kwargs)
 
-    def box_plot(self):
+    def box_plot(self, export_path: str = None, **kwargs) -> None:
         plt.figure()
         plt.boxplot(self._data, vert=False, showmeans=True)
-        plt.show()
+        show_or_save(export_path, **kwargs)
 
 
 __all__ = [

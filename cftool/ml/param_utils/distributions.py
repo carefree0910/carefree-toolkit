@@ -115,7 +115,7 @@ class Choice(DistributionBase):
         return random.choice(self.values)
 
     def clip(self, value: generic_number_type) -> generic_number_type:
-        if isinstance(value, str):
+        if value is None or isinstance(value, str):
             return value
         diff = np.array([v - value for v in self.values], np.float32)
         best_idx = np.argmin(np.abs(diff)).item()

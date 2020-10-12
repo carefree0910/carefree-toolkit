@@ -67,12 +67,22 @@ filters = {
 
 class Processor:
     def __init__(self,
-                 img_path: str):
-        reader = Reader(img_path)
-        if not reader.is_valid:
-            raise ValueError(f"'{img_path}' is not a valid image")
-        self.result = self.img_array = reader.img_array
-        self.img_gray = reader.to_gray()
+                 *,
+                 rgb: np.ndarray = None,
+                 bgr: np.ndarray = None,
+                 img_path: str = None):
+        if rgb is not None or bgr is not None:
+            img_array = bgr if bgr is not None else rgb[..., ::-1]
+            img_array = img_array.copy()
+            gray = img_array.mean(-1)
+        else:
+            reader = Reader(img_path)
+            if not reader.is_valid:
+                raise ValueError(f"'{img_path}' is not a valid image")
+            img_array = reader.img_array
+            gray = reader.to_gray()
+        self.img_gray = gray
+        self.result = self.img_array = img_array
         self._in_pipeline = False
 
     def enter_pipeline(self) -> "Processor":

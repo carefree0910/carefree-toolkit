@@ -74,7 +74,7 @@ class Processor:
         if rgb is not None or bgr is not None:
             img_array = bgr if bgr is not None else rgb[..., ::-1]
             img_array = img_array.copy()
-            gray = img_array.mean(-1)
+            gray = img_array.mean(-1).astype(np.uint8)
         else:
             reader = Reader(img_path)
             if not reader.is_valid:

@@ -1670,6 +1670,7 @@ class timing_context(context_error_handler):
     ----------
     logging_mixin : LoggingMixin, arbitrary base classes of LoggingMixin.
     name : str, explain what the wrapped codes are doing.
+    enable : bool, whether enable this `timing_context`.
 
     Examples
     --------
@@ -1688,18 +1689,23 @@ class timing_context(context_error_handler):
 
     def __init__(self,
                  logging_mixin: LoggingMixin,
-                 name: str):
+                 name: str,
+                 *,
+                 enable: bool = True):
         self._cls, self._name = logging_mixin, name
+        self._enable = enable
 
     @property
     def timer_name(self):
         return f"[{type(self._cls).__name__:^24s}] {self._name}"
 
     def __enter__(self):
-        self._cls.start_timer(self.timer_name)
+        if self._enable:
+            self._cls.start_timer(self.timer_name)
 
     def _normal_exit(self, exc_type, exc_val, exc_tb):
-        self._cls.end_timer(self.timer_name)
+        if self._enable:
+            self._cls.end_timer(self.timer_name)
 
 
 class data_tuple_saving_controller(context_error_handler):

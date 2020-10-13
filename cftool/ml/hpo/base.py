@@ -71,7 +71,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
               param: nested_type,
               *,
               convert: bool = True,
-              parallel_run: bool = False) -> List[Union[pattern_type, created_type]]:
+              parallel_run: bool = False) -> List[created_type]:
         range_list = list(range(self._num_retry))
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         tqdm_config = {"position": 1, "leave": False}

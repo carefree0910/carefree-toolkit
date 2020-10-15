@@ -1,23 +1,29 @@
+import platform
+
 from setuptools import setup, find_packages
 
-VERSION = "0.2.0-rc.3"
+VERSION = "0.2.0-rc.4"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:
     LONG_DESCRIPTION = f.read()
 
+INSTALL_REQUIRES = [
+    "opencv-python",
+    "dill", "future", "psutil", "pillow", "pathos",
+    "cython>=0.29.12", "numpy>=1.16.2", "scipy>=1.2.1",
+    "scikit-learn>=0.20.3", "matplotlib>=3.0.3",
+    "mkdocs", "mkdocs-material", "mkdocs-minify-plugin",
+    "Pygments", "pymdown-extensions"
+]
+if platform.system() != "Windows":
+    INSTALL_REQUIRES.append("SharedArray")
+
 setup(
     name="carefree-toolkit",
     version=VERSION,
     packages=find_packages(exclude=("tests",)),
-    install_requires=[
-        "opencv-python",
-        "dill", "future", "psutil", "pillow", "pathos",
-        "cython>=0.29.12", "numpy>=1.16.2", "scipy>=1.2.1",
-        "scikit-learn>=0.20.3", "matplotlib>=3.0.3",
-        "mkdocs", "mkdocs-material", "mkdocs-minify-plugin",
-        "Pygments", "pymdown-extensions"
-    ],
+    install_requires=INSTALL_REQUIRES,
     author="carefree0910",
     author_email="syameimaru_kurumi@pku.edu.cn",
     url="https://github.com/carefree0910/carefree-toolkit",

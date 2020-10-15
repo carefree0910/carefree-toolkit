@@ -19,8 +19,10 @@ class SharedArray:
                  dtype: np.dtype = np.float32,
                  *,
                  base_folder: str = None,
-                 overwrite: bool = False):
+                 overwrite: bool = False,
+                 verbose: bool = False):
         self.name = name
+        self._verbose = verbose
 
         def _check_shape():
             if shape is None:
@@ -38,11 +40,12 @@ class SharedArray:
                 base_folder = self.default_base_folder
             self.base_folder = base_folder
             if os.path.isfile(self.np_path) and not overwrite:
-                print(
-                    f"{LoggingMixin.warning_prefix}POSIX is not available "
-                    "so read-only array is returned. "
-                    "Call `to_mutable` to make it mutable."
-                )
+                if verbose:
+                    print(
+                        f"{LoggingMixin.warning_prefix}POSIX is not available "
+                        "so read-only array is returned. "
+                        "Call `to_mutable` to make it mutable."
+                    )
                 self.array = np.load(self.np_path)
                 self.array.flags.writeable = False
             else:
@@ -79,10 +82,11 @@ class SharedArray:
 
     def save(self) -> "SharedArray":
         if sa is not None:
-            print(
-                f"{LoggingMixin.warning_prefix}`save` method will take not effect "
-                "when POSIX is available"
-            )
+            if self._verbose:
+                print(
+                    f"{LoggingMixin.warning_prefix}`save` method will take not effect "
+                    "when POSIX is available"
+                )
             return self
         np.save(self.np_path, self.array)
         return self

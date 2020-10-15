@@ -2,7 +2,7 @@ import platform
 
 from setuptools import setup, find_packages
 
-VERSION = "0.2.0-rc.4"
+VERSION = "0.2.0-rc.3"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:

@@ -1097,9 +1097,14 @@ class Saving(LoggingMixin):
                         raise ValueError(f"unrecognized file type '{array_file}' occurred")
 
     @staticmethod
-    def load_instance(instance, folder, *, log_method=None):
-        Saving.log_with_external_method(
-            f"loading '{instance}' from '{folder}'", Saving.info_prefix, log_method, 5)
+    def load_instance(instance, folder, *, log_method=None, verbose=True):
+        if verbose:
+            Saving.log_with_external_method(
+                f"loading '{instance}' from '{folder}'",
+                Saving.info_prefix,
+                log_method,
+                5,
+            )
         with open(os.path.join(folder, Saving.get_cache_file(instance)), "rb") as f:
             instance.__dict__.update(dill.load(f))
         delim, array_folder = Saving.delim, os.path.join(folder, Saving.array_sub_folder)

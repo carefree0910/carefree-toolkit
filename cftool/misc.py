@@ -867,12 +867,12 @@ class SavingMixin(LoggingMixin):
 
     @property
     @abstractmethod
-    def data_tuple_base(self) -> Union[None, Type[NamedTuple]]:
+    def data_tuple_base(self) -> Optional[Type[NamedTuple]]:
         pass
 
     @property
     @abstractmethod
-    def data_tuple_attributes(self) -> Union[None, List[str]]:
+    def data_tuple_attributes(self) -> Optional[List[str]]:
         pass
 
     @property

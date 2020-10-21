@@ -11,12 +11,14 @@ from .types import *
 
 
 class DistributionBase(metaclass=ABCMeta):
-    def __init__(self,
-                 lower: number_type = None,
-                 upper: number_type = None,
-                 *,
-                 values: List[Any] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        lower: number_type = None,
+        upper: number_type = None,
+        *,
+        values: List[Any] = None,
+        **kwargs,
+    ):
         number_types = (int, float)
         if lower is not None and not isinstance(lower, number_types):
             raise ValueError(f"lower should be a number, {type(lower)} found")
@@ -47,10 +49,11 @@ class DistributionBase(metaclass=ABCMeta):
         if self.values is not None:
             return f"{type(self).__name__}[{', '.join(map(str, self.values))}]"
         if not self.config:
-            config_str = ""
+            cfg_str = ""
         else:
-            config_str = f", {', '.join([f'{k}={self.config[k]}' for k in sorted(self.config)])}"
-        return f"{type(self).__name__}[{self.lower:.2f}, {self.upper:.2f}{config_str}]"
+            sorted_key = sorted(self.config)
+            cfg_str = f", {', '.join([f'{k}={self.config[k]}' for k in sorted_key])}"
+        return f"{type(self).__name__}[{self.lower:.2f}, {self.upper:.2f}{cfg_str}]"
 
     __repr__ = __str__
 
@@ -83,18 +86,25 @@ class Uniform(DistributionBase):
 
 
 class Exponential(Uniform):
-    def __init__(self,
-                 lower: number_type = None,
-                 upper: number_type = None,
-                 *,
-                 values: List[Any] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        lower: number_type = None,
+        upper: number_type = None,
+        *,
+        values: List[Any] = None,
+        **kwargs,
+    ):
         super().__init__(lower, upper, values=values, **kwargs)
         self._assert_lower_and_upper()
-        assert self.lower > 0, "lower should be greater than 0 in exponential distribution"
+        assert_msg = "lower should be greater than 0 in exponential distribution"
+        assert self.lower > 0, assert_msg
         self.base = self.config.setdefault("base", 2)
         assert self.base > 1, "base should be greater than 1"
-        self.lower, self.upper = map(math.log, [self.lower, self.upper], 2 * [self.base])
+        self.lower, self.upper = map(
+            math.log,
+            [self.lower, self.upper],
+            2 * [self.base],
+        )
 
     @property
     def bounds(self) -> bounds_type:

@@ -15,9 +15,7 @@ single_normalizer_dict: Dict[str, Type["SingleNormalizer"]] = {}
 
 
 class SingleNormalizer(ABC):
-    def __init__(self,
-                 data_type: DataType,
-                 **kwargs):
+    def __init__(self, data_type: DataType, **kwargs):
         self.core, self.dist = data_type, data_type.dist
         self._is_string = isinstance(data_type, String)
         self._is_exponential = isinstance(self.dist, Exponential)
@@ -58,41 +56,48 @@ class SingleNormalizer(ABC):
 
 
 class IterableNormalizer:
-    def __init__(self,
-                 data_type: Iterable,
-                 single_normalizer_base: Type[SingleNormalizer],
-                 **kwargs):
+    def __init__(
+        self,
+        data_type: Iterable,
+        single_normalizer_base: Type[SingleNormalizer],
+        **kwargs
+    ):
         self._data_type = data_type
-        self._normalizers = list(map(partial(single_normalizer_base, **kwargs), data_type.values))
+        self._normalizers = list(
+            map(partial(single_normalizer_base, **kwargs), data_type.values)
+        )
 
     @property
     def bounds(self) -> List[bounds_type]:
         return [normalizer.bounds for normalizer in self._normalizers]
 
-    def normalize(self,
-                  value: iterable_generic_number_type) -> List[float]:
-        return [normalizer.normalize(v) for normalizer, v in zip(self._normalizers, value)]
+    def normalize(self, value: iterable_generic_number_type) -> List[float]:
+        return [
+            normalizer.normalize(v) for normalizer, v in zip(self._normalizers, value)
+        ]
 
-    def recover(self,
-                value: List[float]) -> iterable_generic_number_type:
-        results = [normalizer.recover(v) for normalizer, v in zip(self._normalizers, value)]
+    def recover(self, value: List[float]) -> iterable_generic_number_type:
+        results = [
+            normalizer.recover(v) for normalizer, v in zip(self._normalizers, value)
+        ]
         if not self._data_type.is_list:
             results = tuple(results)
         return results
 
 
 class Normalizer:
-    def __init__(self,
-                 method: str,
-                 data_type: union_data_type,
-                 **kwargs):
+    def __init__(self, method: str, data_type: union_data_type, **kwargs):
         self._data_type = data_type
         self.is_iterable = isinstance(data_type, Iterable)
         single_normalizer_base = single_normalizer_dict[method]
         if not self.is_iterable:
             self._single_normalizer = single_normalizer_base(data_type, **kwargs)
         else:
-            self._iterable_normalizer = IterableNormalizer(data_type, single_normalizer_base, **kwargs)
+            self._iterable_normalizer = IterableNormalizer(
+                data_type,
+                single_normalizer_base,
+                **kwargs,
+            )
 
     @property
     def bounds(self) -> union_bounds_type:
@@ -100,14 +105,12 @@ class Normalizer:
             return self._iterable_normalizer.bounds
         return self._single_normalizer.bounds
 
-    def normalize(self,
-                  value: union_value_type) -> union_float_type:
+    def normalize(self, value: union_value_type) -> union_float_type:
         if self.is_iterable:
             return self._iterable_normalizer.normalize(value)
         return self._single_normalizer.normalize(value)
 
-    def recover(self,
-                value: union_float_type) -> union_value_type:
+    def recover(self, value: union_float_type) -> union_value_type:
         if self.is_iterable:
             return self._iterable_normalizer.recover(value)
         return self._single_normalizer.recover(value)

@@ -19,7 +19,7 @@ class PCManager:
         try:
             process = psutil.Process(pid)
         except psutil.NoSuchProcess:
-            return 0.
+            return 0.0
         return process.memory_info().rss / 1024 ** 2
 
 
@@ -41,34 +41,56 @@ class GPUManager:
 
     """
 
-    def __init__(self,
-                 available_cuda_list: Union[List[Union[str, int]], None] = None,
-                 *,
-                 reuse: bool = True):
+    def __init__(
+        self,
+        available_cuda_list: Optional[List[Union[str, int]]] = None,
+        *,
+        reuse: bool = True,
+    ):
         self._reuse = reuse
-        self._available_cuda = None if available_cuda_list is None else set(map(int, available_cuda_list))
+        if available_cuda_list is None:
+            self._available_cuda = None
+        else:
+            self._available_cuda = set(map(int, available_cuda_list))
 
     @staticmethod
     def _query_gpu() -> List[Dict[str, int]]:
         q_args = ["index", "gpu_name", "memory.free", "memory.total"]
         cmd = f"nvidia-smi --query-gpu={','.join(q_args)} --format=csv,noheader"
-        results = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, close_fds=True).communicate()[0]
+        results = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            close_fds=True,
+        ).communicate()[0]
         results = list(filter(bool, results.decode("utf-8").strip().split("\n")))
+
         def _parse(line):
             numeric_args = ["memory.free", "memory.total"]
             power_manage_enable = lambda v: ("Not Support" not in v)
-            to_numeric = lambda v: float(v.upper().strip().replace("MIB", "").replace("W", ""))
+            to_numeric = lambda v: float(
+                v.upper().strip().replace("MIB", "").replace("W", "")
+            )
             process = lambda k, v: (
-                (int(to_numeric(v)) if power_manage_enable(v) else 1) if k in numeric_args else v.strip())
+                (int(to_numeric(v)) if power_manage_enable(v) else 1)
+                if k in numeric_args
+                else v.strip()
+            )
             rs = {k: process(k, v) for k, v in zip(q_args, line.strip().split(","))}
             rs["index"] = int(rs["index"])
             return rs
+
         return list(map(_parse, results))
 
     @staticmethod
     def _query_pid() -> List[Tuple[int, int]]:
         cmd = "nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader"
-        results = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, close_fds=True).communicate()[0]
+        results = subprocess.Popen(
+            cmd,
+            shell=True,
+            stdout=subprocess.PIPE,
+            close_fds=True,
+        ).communicate()[0]
         results = list(filter(bool, results.decode("utf-8").strip().split("\n")))
         pid_list = []
         for line in results:
@@ -77,11 +99,17 @@ class GPUManager:
         return pid_list
 
     @staticmethod
-    def _sort_by_memory(gpus: List[Dict[str, int]],
-                        by_size: bool = False) -> List[Dict[str, int]]:
+    def _sort_by_memory(
+        gpus: List[Dict[str, int]],
+        by_size: bool = False,
+    ) -> List[Dict[str, int]]:
         if by_size:
             return sorted(gpus, key=lambda d: d["memory.free"], reverse=True)
-        return sorted(gpus, key=lambda d: float(d["memory.free"]) / d["memory.total"], reverse=True)
+        return sorted(
+            gpus,
+            key=lambda d: float(d["memory.free"]) / d["memory.total"],
+            reverse=True,
+        )
 
     def _gpu_filter(self, gpu: Dict[str, int]):
         return self._available_cuda is None or gpu["index"] in self._available_cuda
@@ -89,10 +117,11 @@ class GPUManager:
     def choose(self) -> int:
         if isinstance(self._available_cuda, set) and not self._available_cuda:
             raise ValueError("No more CUDAs are available")
-        chosen_gpu = int(next(filter(
-            self._gpu_filter,
-            self._sort_by_memory(self._query_gpu(), True)
-        ))["index"])
+        chosen_gpu = int(
+            next(
+                filter(self._gpu_filter, self._sort_by_memory(self._query_gpu(), True))
+            )["index"]
+        )
         if not self._reuse and self._available_cuda is not None:
             self._available_cuda.remove(chosen_gpu)
         return chosen_gpu
@@ -115,36 +144,47 @@ class ResourceManager:
 
     """
 
-    def __init__(self,
-                 config: Dict[str, Any],
-                 get_task_name: Callable[[int], Union[str, None]],
-                 refresh_patience: int):
+    def __init__(
+        self,
+        config: Dict[str, Any],
+        get_task_name: Callable[[int], Union[str, None]],
+        refresh_patience: int,
+    ):
         self._resources, self._info_dict, self._overwritten_task_info = [], {}, {}
         self._init_logger = self._meta_log_name = None
-        self._log_msg = self._log_block_msg = self._log_meta_msg = self._log_with_meta = None
+        self._log_msg = self._log_block_msg = None
+        self._log_meta_msg = self._log_with_meta = None
         self.pid2task_idx, self._get_task_name = {}, get_task_name
         self.config, self._refresh_patience = config, refresh_patience
 
-    def register(self,
-                 resource_name: str,
-                 methods: Dict[str, Callable]) -> None:
+    def register(self, resource_name: str, methods: Dict[str, Callable]) -> None:
         self._resources.append(resource_name)
         resource_config = self.config.setdefault(f"{resource_name.lower()}_config", {})
         preset_usages = resource_config.setdefault("preset_usages", {})
         minimum_resource = resource_config.setdefault(
-            "minimum_resource", preset_usages.setdefault("__default__", 1024))
+            "minimum_resource",
+            preset_usages.setdefault("__default__", 1024),
+        )
         counter_threshold = resource_config.setdefault("counter_threshold", 4)
         warning_threshold = resource_config.setdefault("warning_threshold", 1024)
-        info = self._info_dict.setdefault(resource_name, {
-            "preset_usages": preset_usages,
-            "minimum_resource": minimum_resource,
-            "counter_threshold": counter_threshold,
-            "warning_threshold": warning_threshold
-        })
+        info = self._info_dict.setdefault(
+            resource_name,
+            {
+                "preset_usages": preset_usages,
+                "minimum_resource": minimum_resource,
+                "counter_threshold": counter_threshold,
+                "warning_threshold": warning_threshold,
+            },
+        )
         get_pid_usage, get_pid_usage_dict, get_available_dict = map(
-            methods.get, ["get_pid_usage", "get_pid_usage_dict", "get_available_dict"])
+            methods.get,
+            ["get_pid_usage", "get_pid_usage_dict", "get_available_dict"],
+        )
         if get_pid_usage is None and get_pid_usage_dict is None:
-            raise ValueError("either get_pid_usage or get_pid_usage_dict should be provided in methods")
+            raise ValueError(
+                "either get_pid_usage or get_pid_usage_dict "
+                "should be provided in methods"
+            )
         if get_available_dict is None:
             raise ValueError("get_available_dict should be provided in methods")
         info["get_pid_usage"] = get_pid_usage
@@ -155,12 +195,15 @@ class ResourceManager:
         info["inference_usages_initialized"] = False
         info["pid2resource_id"] = {}
 
-    def register_logging(self,
-                         init_logger: Callable[[str], None],
-                         mixin: PureLoggingMixin):
+    def register_logging(
+        self,
+        init_logger: Callable[[str], None],
+        mixin: PureLoggingMixin,
+    ):
         self._init_logger, self._meta_log_name = init_logger, mixin.meta_log_name
         self._log_msg, self._log_block_msg = mixin.log_msg, mixin.log_block_msg
-        self._log_meta_msg, self._log_with_meta = mixin._log_meta_msg, mixin._log_with_meta
+        self._log_meta_msg = mixin._log_meta_msg
+        self._log_with_meta = mixin._log_with_meta
 
     @property
     def inference_usages_initialized(self) -> bool:
@@ -193,7 +236,9 @@ class ResourceManager:
         for pid in info["running_pid_usages"].keys():
             try:
                 processes = ResourceManager._get_all_relevant_processes(pid)
-                pid_usages[pid] = int(sum(get_pid_usage(process.pid) for process in processes))
+                pid_usages[pid] = int(
+                    sum(get_pid_usage(process.pid) for process in processes)
+                )
             except psutil.NoSuchProcess:
                 pid_usages[pid] = 0
         return pid_usages
@@ -205,7 +250,8 @@ class ResourceManager:
         header = " | ".join(map(lambda pid: f"{pid:^12s}", map(str, keys)))
         body = " | ".join(map(lambda usage: f"{int(usage):^10d}MB", values))
         len_header = len(header)
-        return f"{'=' * len_header}\n{header}\n{'-' * len_header}\n{body}\n{'-' * len_header}"
+        above = f"{'=' * len_header}\n{header}\n{'-' * len_header}"
+        return f"{above}\n{body}\n{'-' * len_header}"
 
     def default_usage(self, resource: str) -> int:
         return int(self._info_dict[resource]["preset_usages"]["__default__"])
@@ -223,31 +269,52 @@ class ResourceManager:
         for resource in self._resources:
             info = self._info_dict[resource]
             self._log_block_msg(
-                self._meta_log_name, f"current pid {resource} usages",
-                self.get_dict_block_msg(self._get_pid_usages(info)), logging.DEBUG
+                self._meta_log_name,
+                f"current pid {resource} usages",
+                self.get_dict_block_msg(self._get_pid_usages(info)),
+                logging.DEBUG,
             )
             self._log_block_msg(
-                self._meta_log_name, f"current inference {resource} frees",
-                self.get_dict_block_msg(info["inference_frees"]), logging.DEBUG
+                self._meta_log_name,
+                f"current inference {resource} frees",
+                self.get_dict_block_msg(info["inference_frees"]),
+                logging.DEBUG,
             )
 
     def check(self) -> None:
         for resource in self._resources:
             info = self._info_dict[resource]
             checkpoint_pid_usages, running_pid_usages, running_pid_counters = map(
-                info.get, ["checkpoint_pid_usages", "running_pid_usages", "running_pid_counters"])
-            get_pid_usage, get_pid_usage_dict = map(info.get, ["get_pid_usage", "get_pid_usage_dict"])
+                info.get,
+                [
+                    "checkpoint_pid_usages",
+                    "running_pid_usages",
+                    "running_pid_counters",
+                ],
+            )
+            get_pid_usage, get_pid_usage_dict = map(
+                info.get,
+                ["get_pid_usage", "get_pid_usage_dict"],
+            )
             if get_pid_usage is None:
                 pid_usage_dict = get_pid_usage_dict()
                 get_pid_usage = lambda pid_: pid_usage_dict.get(pid_, 0)
             for pid, checkpoint_usage in checkpoint_pid_usages.items():
                 task_name = self._get_task_name(self.pid2task_idx[pid])
-                self._log_msg(task_name, f"checkpoint {resource} usage : {checkpoint_usage} MB", logging.DEBUG)
+                self._log_msg(
+                    task_name,
+                    f"checkpoint {resource} usage : {checkpoint_usage} MB",
+                    logging.DEBUG,
+                )
                 children_pid_usages = {}
                 try:
                     processes = self._get_all_relevant_processes(pid)
                 except psutil.NoSuchProcess as err:
-                    self._log_with_meta(task_name, f"already finished, {err}", logging.INFO)
+                    self._log_with_meta(
+                        task_name,
+                        f"already finished, {err}",
+                        logging.INFO,
+                    )
                     continue
                 current_usage = get_pid_usage(pid)
                 for process in processes[1:]:
@@ -256,84 +323,129 @@ class ResourceManager:
                     current_usage += process_usage
                 if children_pid_usages:
                     self._log_block_msg(
-                        task_name, f"children {resource} usages",
-                        self.get_dict_block_msg(children_pid_usages), logging.DEBUG
+                        task_name,
+                        f"children {resource} usages",
+                        self.get_dict_block_msg(children_pid_usages),
+                        logging.DEBUG,
                     )
-                self._log_msg(task_name, f"current {resource} usage : {current_usage} MB", logging.DEBUG)
+                self._log_msg(
+                    task_name,
+                    f"current {resource} usage : {current_usage} MB",
+                    logging.DEBUG,
+                )
                 if current_usage == 0:
                     continue
                 running_usage = running_pid_usages[pid]
-                self._log_msg(task_name, f"running {resource} usage : {running_usage} MB", logging.DEBUG)
+                self._log_msg(
+                    task_name,
+                    f"running {resource} usage : {running_usage} MB",
+                    logging.DEBUG,
+                )
                 if running_usage > checkpoint_usage:
                     running_pid_counters[pid] = self._refresh_patience
                     self._log_msg(
                         task_name,
                         f"increasing {resource} counter directly to "
-                        f"{self._refresh_patience}", logging.DEBUG
+                        f"{self._refresh_patience}",
+                        logging.DEBUG,
                     )
                 elif abs(running_usage - current_usage) <= info["counter_threshold"]:
                     running_pid_counters[pid] += 1
                     self._log_msg(
                         task_name,
                         f"increasing {resource} counter to "
-                        f"{running_pid_counters[pid]}", logging.DEBUG
+                        f"{running_pid_counters[pid]}",
+                        logging.DEBUG,
                     )
                 else:
                     running_pid_counters[pid] = 0
-                    self._log_msg(task_name, f"reset {resource} counter", logging.DEBUG)
+                    msg = f"reset {resource} counter"
+                    self._log_msg(task_name, msg, logging.DEBUG)
                 running_pid_usages[pid] = current_usage
                 if running_pid_counters[pid] >= self._refresh_patience:
                     d_usage = current_usage - checkpoint_usage
-                    self._log_msg(task_name, f"delta {resource} usage : {d_usage} MB", logging.DEBUG)
+                    self._log_msg(
+                        task_name,
+                        f"delta {resource} usage : {d_usage} MB",
+                        logging.DEBUG,
+                    )
                     checkpoint_pid_usages[pid] = current_usage
                     inference_frees = info["inference_frees"]
                     actual_frees = info["get_available_dict"]()
                     inference_frees[info["pid2resource_id"][pid]] -= d_usage
                     self._log_block_msg(
-                        task_name, f"inference {resource} frees after updating delta usage",
-                        self.get_dict_block_msg(inference_frees), logging.DEBUG
+                        task_name,
+                        f"inference {resource} frees after updating delta usage",
+                        self.get_dict_block_msg(inference_frees),
+                        logging.DEBUG,
                     )
                     self._log_block_msg(
-                        task_name, f"actual {resource} frees",
-                        self.get_dict_block_msg(actual_frees), logging.DEBUG
+                        task_name,
+                        f"actual {resource} frees",
+                        self.get_dict_block_msg(actual_frees),
+                        logging.DEBUG,
                     )
                     running_pid_counters[pid] = 0
-                    self._log_msg(task_name, f"reset {resource} counter", logging.DEBUG)
+                    msg = f"reset {resource} counter"
+                    self._log_msg(task_name, msg, logging.DEBUG)
 
-    def get_process(self,
-                    task_idx: int,
-                    sleep_method: Callable,
-                    start: bool) -> Dict[str, Any]:
+    def get_process(
+        self,
+        task_idx: int,
+        sleep_method: Callable,
+        start: bool,
+    ) -> Dict[str, Any]:
         task_name = self._get_task_name(task_idx)
-        results: Dict[str, Any] = {"__task_name__": task_name, "__create_process__": True}
+        results: Dict[str, Any] = {
+            "__task_name__": task_name,
+            "__create_process__": True,
+        }
         for resource in self._resources:
             info = self._info_dict[resource]
             local_results = results.setdefault(resource, {})
-            preset_usage = info["preset_usages"].setdefault(task_idx, self.default_usage(resource))
+            preset_usage = info["preset_usages"].setdefault(
+                task_idx,
+                self.default_usage(resource),
+            )
             self._log_with_meta(
-                task_name, f"preset {resource} usage : {preset_usage} MB; "
-                           f"minimum {resource} memory needed : {info['minimum_resource']} MB"
+                task_name,
+                f"preset {resource} usage : {preset_usage} MB; "
+                f"minimum {resource} memory needed : {info['minimum_resource']} MB",
             )
             try:
                 while True:
-                    inference_frees, minimum_resource = map(info.get, ["inference_frees", "minimum_resource"])
+                    inference_frees, minimum_resource = map(
+                        info.get,
+                        ["inference_frees", "minimum_resource"],
+                    )
                     self._log_msg(task_name, f"checking {resource}")
                     if len(inference_frees) == 1:
                         tgt_resource_id = next(iter(inference_frees.keys()))
                         free_memory = inference_frees[tgt_resource_id]
                     else:
-                        tgt_resource_id, free_memory = sorted(inference_frees.items(), key=lambda kv: kv[1])[-1]
-                    self._log_msg(task_name, f"best choice : {resource} {tgt_resource_id} with "
-                                             f"{free_memory} MB free memory", logging.DEBUG)
+                        tgt_resource_id, free_memory = sorted(
+                            inference_frees.items(), key=lambda kv: kv[1]
+                        )[-1]
+                    self._log_msg(
+                        task_name,
+                        f"best choice : {resource} {tgt_resource_id} with "
+                        f"{free_memory} MB free memory",
+                        logging.DEBUG,
+                    )
                     local_results["preset_usage"] = preset_usage
                     local_results["tgt_resource_id"] = tgt_resource_id
                     if preset_usage < free_memory - minimum_resource:
-                        self._log_msg(task_name, f"acceptable, {resource} checked", logging.DEBUG)
+                        self._log_msg(
+                            task_name,
+                            f"acceptable, {resource} checked",
+                            logging.DEBUG,
+                        )
                         break
                     if not start:
                         self._log_msg(
                             task_name,
-                            "not acceptable, also break out because it's initializing", logging.DEBUG
+                            "not acceptable, also break out because it's initializing",
+                            logging.DEBUG,
                         )
                         results["__create_process__"] = False
                         break
@@ -346,14 +458,17 @@ class ResourceManager:
                 return results
         return results
 
-    def record_process(self,
-                       task_idx: int,
-                       process: psutil.Process,
-                       rs: Dict[str, Any]) -> None:
+    def record_process(
+        self,
+        task_idx: int,
+        process: psutil.Process,
+        rs: Dict[str, Any],
+    ) -> None:
         pid = process.pid
         task_name = self._get_task_name(task_idx)
         rs_task_name = rs["__task_name__"]
-        assert task_name == rs_task_name, f"internal error occurred, {task_name} != {rs_task_name}"
+        assert_msg = f"internal error occurred, {task_name} != {rs_task_name}"
+        assert task_name == rs_task_name, assert_msg
         task_info, overwritten = None, False
         self.pid2task_idx[pid] = task_idx
         for resource in self._resources:
@@ -361,26 +476,45 @@ class ResourceManager:
             info = self._info_dict[resource]
             pid2resource_id = info["pid2resource_id"]
             checkpoint_pid_usages, running_pid_usages, running_pid_counters = map(
-                info.get, ["checkpoint_pid_usages", "running_pid_usages", "running_pid_counters"])
+                info.get,
+                [
+                    "checkpoint_pid_usages",
+                    "running_pid_usages",
+                    "running_pid_counters",
+                ],
+            )
             if pid in pid2resource_id:
-                self._log_with_meta(task_name, f"pid ({pid}) collision started for {resource}", logging.WARNING)
+                self._log_with_meta(
+                    task_name,
+                    f"pid ({pid}) collision started for {resource}",
+                    logging.WARNING,
+                )
                 if not overwritten:
                     overwritten = True
                     task_info = self._overwritten_task_info.setdefault(task_name, {})
-                    task_info["pid"], task_info["task_idx"] = pid, self.pid2task_idx[pid]
+                    task_info["pid"], task_info["task_idx"] = (
+                        pid,
+                        self.pid2task_idx[pid],
+                    )
                 task_resource_info = task_info.setdefault(f"{resource}_info", {})
                 task_resource_info["ckpt_usage"] = checkpoint_pid_usages[pid]
                 task_resource_info["running_usage"] = running_pid_usages[pid]
                 task_resource_info["resource_id"] = pid2resource_id[pid]
             running_pid_counters[pid] = 0
             resource_id = pid2resource_id[pid] = local_rs["tgt_resource_id"]
-            usage = checkpoint_pid_usages[pid] = running_pid_usages[pid] = local_rs["preset_usage"]
+            usage = local_rs["preset_usage"]
+            checkpoint_pid_usages[pid] = running_pid_usages[pid] = usage
             self._log_with_meta(
-                task_name, f"record : using {resource} {resource_id} with {usage} MB memory usage (pid : {pid})")
+                task_name,
+                f"record : using {resource} {resource_id} with {usage} MB "
+                f"memory usage (pid : {pid})",
+            )
 
-    def handle_finish(self,
-                      task_idx: int,
-                      process: psutil.Process) -> Union[str, None]:
+    def handle_finish(
+        self,
+        task_idx: int,
+        process: psutil.Process,
+    ) -> Union[str, None]:
         if process is None:
             return
         pid = process.pid
@@ -392,52 +526,73 @@ class ResourceManager:
         else:
             task_info = self._overwritten_task_info.pop(task_name)
             recorded_pid, pid_task_idx = map(task_info.get, ["pid", "task_idx"])
-            assert pid == recorded_pid, f"internal error occurred ({pid} != {recorded_pid})"
-        assert task_idx == pid_task_idx, "task_idx should be identical with pid_task_idx, internal error occurred"
+            assert_msg = f"internal error occurred ({pid} != {recorded_pid})"
+            assert pid == recorded_pid, assert_msg
+        msg = "task_idx should be identical with pid_task_idx, internal error occurred"
+        assert task_idx == pid_task_idx, msg
         for resource in self._resources:
             resource_info = self._info_dict[resource]
             if task_info is not None:
                 task_resource_info = task_info[f"{resource}_info"]
                 resource_id = task_resource_info["resource_id"]
-                pid_ckpt_usage, pid_running_usage = map(task_resource_info.get, ["ckpt_usage", "running_usage"])
-                self._log_with_meta(task_name, f"pid ({pid}) collision ended for {resource}", logging.WARNING)
+                pid_ckpt_usage, pid_running_usage = map(
+                    task_resource_info.get, ["ckpt_usage", "running_usage"]
+                )
+                self._log_with_meta(
+                    task_name,
+                    f"pid ({pid}) collision ended for {resource}",
+                    logging.WARNING,
+                )
             else:
                 pid_ckpt_usage, pid_running_usage, _ = map(
-                    dict.pop, [
+                    dict.pop,
+                    [
                         resource_info["checkpoint_pid_usages"],
-                        resource_info["running_pid_usages"], resource_info["running_pid_counters"]
-                    ], [pid] * 3
+                        resource_info["running_pid_usages"],
+                        resource_info["running_pid_counters"],
+                    ],
+                    [pid] * 3,
                 )
                 resource_id = resource_info["pid2resource_id"].pop(pid)
             pid_usage = pid_running_usage
             if pid_running_usage != pid_ckpt_usage:
                 self._log_with_meta(
-                    task_name, f"running pid {resource} usage ({pid_running_usage}) != "
-                               f"checkpoint pid {resource} usage ({pid_ckpt_usage}), "
-                               f"checkpoint {resource} usage will be used to inference {resource} free",
-                    logging.WARNING
+                    task_name,
+                    f"running pid {resource} usage ({pid_running_usage}) != "
+                    f"checkpoint pid {resource} usage ({pid_ckpt_usage}), "
+                    f"checkpoint {resource} usage will be used to inference "
+                    f"{resource} free",
+                    logging.WARNING,
                 )
                 pid_usage = pid_ckpt_usage
             preset_usage = resource_info["preset_usages"][task_idx]
             if pid_running_usage >= preset_usage + resource_info["warning_threshold"]:
                 self._log_with_meta(
-                    task_name, f"running pid {resource} usage ({pid_running_usage}) exceeded "
-                               f"preset cuda {resource} usage ({preset_usage}) so much, "
-                               f"it may cause {resource} out of memory", logging.WARNING
+                    task_name,
+                    f"running pid {resource} usage ({pid_running_usage}) exceeded "
+                    f"preset cuda {resource} usage ({preset_usage}) so much, "
+                    f"it may cause {resource} out of memory",
+                    logging.WARNING,
                 )
             self._log_with_meta(
-                task_name, f"finished, releasing {pid_ckpt_usage} MB (inference) memory "
-                           f"from {resource} {resource_id}")
+                task_name,
+                f"finished, releasing {pid_ckpt_usage} MB (inference) memory "
+                f"from {resource} {resource_id}",
+            )
             inference_frees = resource_info["inference_frees"]
             inference_frees[resource_id] += pid_usage
             for name in [task_name, self._meta_log_name]:
                 self._log_block_msg(
-                    name, f"inference {resource} frees after releasing",
-                    self.get_dict_block_msg(inference_frees), logging.DEBUG
+                    name,
+                    f"inference {resource} frees after releasing",
+                    self.get_dict_block_msg(inference_frees),
+                    logging.DEBUG,
                 )
                 self._log_block_msg(
-                    name, f"actual {resource} frees",
-                    self.get_dict_block_msg(resource_info["get_available_dict"]()), logging.DEBUG
+                    name,
+                    f"actual {resource} frees",
+                    self.get_dict_block_msg(resource_info["get_available_dict"]()),
+                    logging.DEBUG,
                 )
         return task_name
 

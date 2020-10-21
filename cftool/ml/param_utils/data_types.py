@@ -10,9 +10,7 @@ from ...misc import prod, Grid
 
 
 class DataType(metaclass=ABCMeta):
-    def __init__(self,
-                 distribution: DistributionBase = None,
-                 **kwargs):
+    def __init__(self, distribution: DistributionBase = None, **kwargs):
         self.dist, self.config = distribution, kwargs
 
     @property
@@ -74,8 +72,7 @@ class DataType(metaclass=ABCMeta):
             raise ValueError("'all' method could be called iff n_params is finite")
         return self._all()
 
-    def transform(self,
-                  value: generic_number_type) -> generic_number_type:
+    def transform(self, value: generic_number_type) -> generic_number_type:
         return self._transform(self.dist.clip(value))
 
 
@@ -151,7 +148,9 @@ class String(DataType):
 
 
 iterable_data_type = Union[List[DataType], Tuple[DataType, ...]]
-iterable_generic_number_type = Union[List[generic_number_type], Tuple[generic_number_type, ...]]
+iterable_generic_number_type = Union[
+    List[generic_number_type], Tuple[generic_number_type, ...]
+]
 
 
 class Iterable:
@@ -174,8 +173,10 @@ class Iterable:
         for v in grid:
             yield self._constructor(v)
 
-    def transform(self,
-                  value: iterable_generic_number_type) -> iterable_generic_number_type:
+    def transform(
+        self,
+        value: iterable_generic_number_type,
+    ) -> iterable_generic_number_type:
         return self._constructor(v.transform(vv) for v, vv in zip(self._values, value))
 
     @property
@@ -195,6 +196,14 @@ class Iterable:
 
 
 __all__ = [
-    "DataType", "Any", "Int", "Float", "Bool", "String", "Iterable",
-    "iterable_data_type", "iterable_generic_number_type", "bounds_type"
+    "DataType",
+    "Any",
+    "Int",
+    "Float",
+    "Bool",
+    "String",
+    "Iterable",
+    "iterable_data_type",
+    "iterable_generic_number_type",
+    "bounds_type",
 ]

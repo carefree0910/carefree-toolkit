@@ -24,7 +24,8 @@ class Anneal:
     Parameters
     ----------
     method : str, indicates which anneal method to be used.
-    n_iter : int, indicates how much 'steps' will be taken to reach `ceiling` from `floor`.
+    n_iter : int, indicates how much 'steps' will be taken to reach
+                  `ceiling` from `floor`.
     floor : float, indicates the start point of the annealed number.
     ceiling : float, indicates the end point of the annealed number.
 
@@ -120,9 +121,16 @@ class Metrics(LoggingMixin):
     """
 
     sign_dict = {
-        "f1_score": 1, "r2_score": 1, "auc": 1,
-        "acc": 1, "mae": -1, "mse": -1, "ber": -1,
-        "quantile": -1, "cdf_loss": -1, "correlation": 1
+        "f1_score": 1,
+        "r2_score": 1,
+        "auc": 1,
+        "acc": 1,
+        "mae": -1,
+        "mse": -1,
+        "ber": -1,
+        "quantile": -1,
+        "cdf_loss": -1,
+        "correlation": 1,
     }
     requires_prob_metrics = {"auc"}
     optimized_binary_metrics = {"acc", "ber"}
@@ -131,7 +139,9 @@ class Metrics(LoggingMixin):
     def __init__(self, metric_type=None, config=None, verbose_level=None):
         if config is None:
             config = {}
-        self.type, self.config, self._verbose_level = metric_type, config, verbose_level
+        self.type = metric_type
+        self.config = config
+        self._verbose_level = verbose_level
 
     def __str__(self):
         return f"Metrics({self.type})"
@@ -159,7 +169,9 @@ class Metrics(LoggingMixin):
         if valid_ratio != 1:
             self.log_msg(
                 f"pred contains nan (ratio={valid_ratio:6.4f})",
-                self.error_prefix, 2, logging.ERROR
+                self.error_prefix,
+                2,
+                logging.ERROR,
             )
             y, pred = y[pred_valid_mask], pred[pred_valid_mask]
         return y, pred
@@ -167,19 +179,23 @@ class Metrics(LoggingMixin):
     @classmethod
     def add_metric(cls, f, name, sign, requires_prob):
         if name in cls.sign_dict:
-            print(f"{LoggingMixin.warning_prefix}'{name}' is already registered in Metrics")
+            print(
+                f"{LoggingMixin.warning_prefix}'{name}' "
+                "is already registered in Metrics"
+            )
         cls.sign_dict[name] = sign
         cls.custom_metrics[name] = {
             "f": f,
             "sign": sign,
-            "requires_prob": requires_prob
+            "requires_prob": requires_prob,
         }
         if requires_prob:
             cls.requires_prob_metrics.add(name)
 
     def metric(self, y, pred):
         if self.type is None:
-            raise ValueError("`score` method was called but type is not specified in Metrics")
+            msg = "`score` method was called but type is not specified in Metrics"
+            raise ValueError(msg)
         y, pred = self._handle_nan(y, pred)
         if y is None or pred is None:
             return float("nan")
@@ -266,7 +282,8 @@ class Metrics(LoggingMixin):
         elif metric_type == "acc":
             metric = tpr * pos + (1 - fpr) * (1 - pos)
         else:
-            raise NotImplementedError(f"transformation from fpr, tpr -> '{metric_type}' is not implemented")
+            msg = f"transformation from fpr, tpr -> '{metric_type}' is not implemented"
+            raise NotImplementedError(msg)
         metric *= Metrics.sign_dict[metric_type]
         return thresholds[np.argmax(metric)]
 
@@ -275,6 +292,7 @@ def register_metric(name, sign, requires_prob):
     def _register(f):
         Metrics.add_metric(f, name, sign, requires_prob)
         return f
+
     return _register
 
 
@@ -292,7 +310,8 @@ class Statistics(NamedTuple):
 
 class Estimator(LoggingMixin):
     """
-    Util class to estimate the performances of a group of methods, on specific dataset & metric.
+    Util class to estimate the performances of a group of methods,
+    on specific dataset & metric.
 
     Parameters
     ----------
@@ -314,15 +333,18 @@ class Estimator(LoggingMixin):
     >>> # |             identical  |    mae     |  1.000000  |
     >>> # |             minus_one  |    mae     |  0.666667  |  <-
     >>> # ----------------------------------------------------------
-    >>> Estimator("mae").estimate(x, y, {"identical": identical, "minus_one": minus_one})
+    >>> estimator = Estimator("mae")
+    >>> estimator.estimate(x, y, {"identical": identical, "minus_one": minus_one})
 
     """
 
-    def __init__(self,
-                 metric_type: str,
-                 *,
-                 verbose_level: int = 2,
-                 metric_config: Dict[str, Any] = None):
+    def __init__(
+        self,
+        metric_type: str,
+        *,
+        verbose_level: int = 2,
+        metric_config: Dict[str, Any] = None,
+    ):
         self._reset()
         self._verbose_level = verbose_level
         self._metric = Metrics(metric_type, metric_config)
@@ -356,8 +378,10 @@ class Estimator(LoggingMixin):
 
     # API
 
-    def get_statistics(self,
-                       scoring_function: Union[str, scoring_fn_type] = "default") -> Statistics:
+    def get_statistics(
+        self,
+        scoring_function: Union[str, scoring_fn_type] = "default",
+    ) -> Statistics:
         msg_list = []
         statistics = {}
         best_idx, best_score = -1, -math.inf
@@ -367,7 +391,8 @@ class Estimator(LoggingMixin):
         for i, name in enumerate(sorted_method_names):
             raw_metrics = self.raw_metrics[name]
             mean, std = raw_metrics.mean().item(), raw_metrics.std().item()
-            msg_list.append(f"|  {name:>20s}  |  {self.type:^8s}  |  {mean:8.6f} ± {std:8.6f}  |")
+            msg = f"|  {name:>20s}  |  {self.type:^8s}  |  {mean:8.6f} ± {std:8.6f}  |"
+            msg_list.append(msg)
             new_score = scoring_function(raw_metrics, mean, std) * self.sign
             self.final_scores[name] = new_score
             if new_score > best_score:
@@ -382,31 +407,35 @@ class Estimator(LoggingMixin):
         msg_list.append("-" * width)
         return Statistics("\n".join(msg_list), statistics)
 
-    def estimate(self,
-                 x: generic_data_type,
-                 y: generic_data_type,
-                 methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
-                 *,
-                 scoring_function: Union[str, scoring_fn_type] = "default",
-                 verbose_level: int = 1) -> Dict[str, Dict[str, float]]:
+    def estimate(
+        self,
+        x: generic_data_type,
+        y: generic_data_type,
+        methods: Dict[str, Union[estimate_fn_type, List[estimate_fn_type]]],
+        *,
+        scoring_function: Union[str, scoring_fn_type] = "default",
+        verbose_level: int = 1,
+    ) -> Dict[str, Dict[str, float]]:
         self._reset()
         for k, v in methods.items():
             if not isinstance(v, list):
                 methods[k] = [v]
         self.raw_metrics = {
-            name: np.array([self._metric.metric(y, method(x)) for method in sub_methods], np.float32)
+            name: np.array(
+                [self._metric.metric(y, method(x)) for method in sub_methods],
+                np.float32,
+            )
             for name, sub_methods in methods.items()
         }
         statistics = self.get_statistics(scoring_function)
         self.log_block_msg(statistics.msg, self.info_prefix, "Results", verbose_level)
         return statistics.data
 
-    def select(self,
-               method_names: List[str]) -> "Estimator":
+    def select(self, method_names: List[str]) -> "Estimator":
         new_estimator = Estimator(
             self.type,
             verbose_level=self._verbose_level,
-            metric_config=self._metric.config
+            metric_config=self._metric.config,
         )
         new_estimator.raw_metrics = {k: self.raw_metrics[k] for k in method_names}
         new_estimator.final_scores = {k: self.final_scores[k] for k in method_names}
@@ -417,8 +446,9 @@ class Estimator(LoggingMixin):
         new_raw_metrics, new_final_scores = {}, {}
         for estimator in estimators:
             for key, value in estimator.raw_metrics.items():
+                final_score = estimator.final_scores[key]
                 new_raw_metrics.setdefault(key, []).append(value)
-                new_final_scores.setdefault(key, []).append(estimator.final_scores[key])
+                new_final_scores.setdefault(key, []).append(final_score)
         new_raw_metrics = {k: np.concatenate(v) for k, v in new_raw_metrics.items()}
         new_final_scores = {k: sum(v) / len(v) for k, v in new_final_scores.items()}
         first_estimator = estimators[0]
@@ -426,7 +456,7 @@ class Estimator(LoggingMixin):
         new_estimator = cls(
             first_metric_ins.type,
             verbose_level=first_estimator._verbose_level,
-            metric_config=first_metric_ins.config
+            metric_config=first_metric_ins.config,
         )
         new_estimator.raw_metrics = new_raw_metrics
         new_estimator.final_scores = new_final_scores
@@ -435,23 +465,26 @@ class Estimator(LoggingMixin):
 
 class PatternBase(ABC):
     @abstractmethod
-    def predict_method(self,
-                       requires_prob: bool) -> predict_method_type:
+    def predict_method(self, requires_prob: bool) -> predict_method_type:
         pass
 
-    def predict(self,
-                x: Union[np.ndarray, Any],
-                *,
-                requires_prob: bool = False) -> np.ndarray:
+    def predict(
+        self,
+        x: Union[np.ndarray, Any],
+        *,
+        requires_prob: bool = False,
+    ) -> np.ndarray:
         predict_method = self.predict_method(requires_prob)
         if predict_method is None:
-            raise ValueError(f"predicting with requires_prob={requires_prob} is not defined")
+            msg = f"predicting with requires_prob={requires_prob} is not defined"
+            raise ValueError(msg)
         return predict_method(x)
 
 
 class ModelPattern(PatternBase, LoggingMixin):
     """
-    Util class to create an interface for users to leverage `Comparer` & `HPO` (and more in the future).
+    Util class to create an interface for users to leverage `Comparer` & `HPO`
+    (and more in the future).
 
     Parameters
     ----------
@@ -460,17 +493,21 @@ class ModelPattern(PatternBase, LoggingMixin):
     * If Callable, then `ModelPattern` will initialize a model with it.
     train_method : Callable[[object], None]
     * If None, then `ModelPattern` will not perform model training.
-    * If Callable, then `ModelPattern` will train the created model (from `init_method`) with it.
+    * If Callable, then `ModelPattern` will train the created model
+      (from `init_method`) with it.
     predict_method : Union[str, Callable[[np.ndarray], np.ndarray]]
-    * If str, then `ModelPattern` will use `getattr` to get the label predict method of the model obtained
-        from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can
-        create a trained model in `init_method`).
+    * If str, then `ModelPattern` will use `getattr` to get the label
+      predict method of the model obtained from above. In this case, `init_method`
+      must be provided (`train_method` is still optional, because you can create
+      a trained model in `init_method`).
     * If Callable, then `ModelPattern` will use it for label prediction.
-    * Notice that predict_method should return a column vector (e.g. out.shape = [n, 1])
+    * Notice that predict_method should return a column vector
+      (e.g. out.shape = [n, 1])
     predict_prob_method : Union[str, Callable[[np.ndarray], np.ndarray]]
-    * If str, then `ModelPattern` will use `getattr` to get the probability prediction method of the model obtained
-        from above. In this case, `init_method` must be provided (`train_method` is still optional, because you can
-        create a trained model in `init_method`).
+    * If str, then `ModelPattern` will use `getattr` to get the probability prediction
+      method of the model obtained from above. In this case, `init_method` must be
+      provided (`train_method` is still optional, because you can create a trained
+      model in `init_method`).
     * If Callable, then `ModelPattern` will use it for probability prediction.
 
     Examples
@@ -481,20 +518,26 @@ class ModelPattern(PatternBase, LoggingMixin):
     >>>
     >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> predict_method = lambda x_: x_ - 1
-    >>> init_method = lambda: type("Test", (), {"predict": lambda self, x_: predict_method(x_)})()
+    >>> init_method = lambda: type(
+    >>>     "Test",
+    >>>     (),
+    >>>     {"predict": lambda self, x_: predict_method(x_)},
+    >>> )()
     >>> # Will both be [[0., 1., 2.]]
     >>> ModelPattern(init_method=init_method).predict(x)
     >>> ModelPattern(predict_method=predict_method).predict(x)
 
     """
 
-    def __init__(self,
-                 *,
-                 init_method: Callable[[], object] = None,
-                 train_method: Callable[[object], None] = None,
-                 predict_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict",
-                 predict_prob_method: Union[str, Callable[[np.ndarray], np.ndarray]] = "predict_prob",
-                 verbose_level: int = 2):
+    def __init__(
+        self,
+        *,
+        init_method: Callable[[], object] = None,
+        train_method: Callable[[object], None] = None,
+        predict_method: Union[str, predict_method_type] = "predict",
+        predict_prob_method: Union[str, predict_method_type] = "predict_prob",
+        verbose_level: int = 2,
+    ):
         if init_method is None:
             self.model = None
         else:
@@ -505,14 +548,15 @@ class ModelPattern(PatternBase, LoggingMixin):
         self._predict_prob_method = predict_prob_method
         self._verbose_level = verbose_level
 
-    def predict_method(self,
-                       requires_prob: bool) -> predict_method_type:
-        predict_method = self._predict_prob_method if requires_prob else self._predict_method
+    def predict_method(self, requires_prob: bool) -> predict_method_type:
+        predict_method = (
+            self._predict_prob_method if requires_prob else self._predict_method
+        )
         if isinstance(predict_method, str):
             if self.model is None:
                 raise ValueError(
-                    "Either init_method or Callable predict_method is required in ModelPattern "
-                    f"(requires_prob={requires_prob})"
+                    "Either init_method or Callable predict_method is required "
+                    f"in ModelPattern (requires_prob={requires_prob})"
                 )
             predict_method = getattr(self.model, predict_method, None)
         return predict_method
@@ -524,16 +568,20 @@ class ModelPattern(PatternBase, LoggingMixin):
 
 class EnsemblePattern(PatternBase):
     """
-    Util class to create an interface for users to leverage `Comparer` & `HPO` in an ensembled way.
+    Util class to create an interface for users to leverage `Comparer` & `HPO`
+    in an ensembled way.
 
     Parameters
     ----------
-    model_patterns : List[ModelPattern], list of `ModelPattern` we want to ensemble from.
-    ensemble_method : Union[str, collate_fn_type], ensemble method we use to collate the results.
+    model_patterns : List[ModelPattern]
+      list of `ModelPattern` we want to ensemble from.
+    ensemble_method : Union[str, collate_fn_type]
+      ensemble method we use to collate the results.
     * If str, then `EnsemblePattern` will use `getattr` to get the collate function.
-        Currently only 'default' is supported, which implements voting for classification
-        and averaging for regression.
-    * If collate_fn_type, then `EnsemblePattern` will use it to collate the results directly.
+        * Currently only 'default' is supported, which implements voting for
+          classification and averaging for regression.
+    * If collate_fn_type, then `EnsemblePattern` will use it to collate the
+      results directly.
 
     Examples
     --------
@@ -553,9 +601,11 @@ class EnsemblePattern(PatternBase):
 
     """
 
-    def __init__(self,
-                 model_patterns: List[ModelPattern],
-                 ensemble_method: Union[str, collate_fn_type] = "default"):
+    def __init__(
+        self,
+        model_patterns: List[ModelPattern],
+        ensemble_method: Union[str, collate_fn_type] = "default",
+    ):
         self._patterns = model_patterns
         self._ensemble_method = ensemble_method
 
@@ -569,15 +619,16 @@ class EnsemblePattern(PatternBase):
         return getattr(self, f"_{self._ensemble_method}_collate")
 
     # Core
-    
+
     @staticmethod
     def vote(arr: np.ndarray, num_classes: int) -> np.ndarray:
-        counts = np.apply_along_axis(partial(np.bincount, minlength=num_classes), 1, arr)
+        counts = np.apply_along_axis(
+            partial(np.bincount, minlength=num_classes), 1, arr
+        )
         return counts.argmax(1).reshape([-1, 1])
 
     @staticmethod
-    def _default_collate(arrays: List[np.ndarray],
-                         requires_prob: bool) -> np.ndarray:
+    def _default_collate(arrays: List[np.ndarray], requires_prob: bool) -> np.ndarray:
         predictions = np.array(arrays)
         if not requires_prob and np.issubdtype(predictions.dtype, np.integer):
             num_classes = predictions.max() + 1
@@ -589,22 +640,31 @@ class EnsemblePattern(PatternBase):
 
     # API
 
-    def predict_method(self,
-                       requires_prob: bool) -> predict_method_type:
-        predict_methods = list(map(ModelPattern.predict_method, self._patterns, len(self) * [requires_prob]))
+    def predict_method(self, requires_prob: bool) -> predict_method_type:
+        predict_methods = list(
+            map(
+                ModelPattern.predict_method,
+                self._patterns,
+                len(self) * [requires_prob],
+            )
+        )
         predict_methods = [method for method in predict_methods if method is not None]
         if not predict_methods:
             return
+
         def _predict(x: np.ndarray):
             predictions = [method(x) for method in predict_methods]
             return self.collate_fn(predictions, requires_prob)
+
         return _predict
 
     @classmethod
-    def from_same_methods(cls,
-                          n: int,
-                          ensemble_method: Union[str, collate_fn_type] = "default",
-                          **kwargs):
+    def from_same_methods(
+        cls,
+        n: int,
+        ensemble_method: Union[str, collate_fn_type] = "default",
+        **kwargs,
+    ):
         return cls([ModelPattern(**kwargs) for _ in range(n)], ensemble_method)
 
 
@@ -620,10 +680,12 @@ class Comparer(LoggingMixin):
     Parameters
     ----------
     patterns : Dict[str, Union[patterns_type, Dict[str, patterns_type]]]
-    * If values are `patterns_type`, then all estimators will use this only `patterns_type` make predictions.
-    * If values are Dict[str, patterns_type], then each estimator will use values.get(estimator.type) to
-      make predictions. If corresponding `patterns` does not exist (values.get(estimator.type) is None),
-      then corresponding estimation will be skipped.
+    * If values are `patterns_type`, then all estimators will use this only
+      `patterns_type` make predictions.
+    * If values are Dict[str, patterns_type], then each estimator will use
+      values.get(estimator.type) to make predictions. If corresponding `patterns`
+      does not exist (values.get(estimator.type) is None), then corresponding
+      estimation will be skipped.
     estimators : List[Estimator], list of estimators which we are interested in.
     verbose_level : int, verbose level used in `LoggingMixin`.
 
@@ -660,13 +722,20 @@ class Comparer(LoggingMixin):
 
     """
 
-    def __init__(self,
-                 patterns: Dict[str, Union[patterns_type, Dict[str, patterns_type]]],
-                 estimators: List[Estimator],
-                 *,
-                 verbose_level: int = 2):
+    def __init__(
+        self,
+        patterns: Dict[str, Union[patterns_type, Dict[str, patterns_type]]],
+        estimators: List[Estimator],
+        *,
+        verbose_level: int = 2,
+    ):
         self.patterns = patterns
-        self.estimators = dict(zip([estimator.type for estimator in estimators], estimators))
+        self.estimators = dict(
+            zip(
+                [estimator.type for estimator in estimators],
+                estimators,
+            )
+        )
         self._verbose_level = verbose_level
 
     @property
@@ -681,41 +750,43 @@ class Comparer(LoggingMixin):
     def best_methods(self) -> Dict[str, str]:
         return {k: v.best_method for k, v in self.estimators.items()}
 
-    def log_statistics(self,
-                       verbose_level: int = 1,
-                       **kwargs) -> str:
+    def log_statistics(self, verbose_level: int = 1, **kwargs) -> str:
         sorted_metrics = sorted(self.estimator_statistics)
         body = {}
         same_choices: choices_type = None
         best_choices: choices_type = None
         need_display_best_choice = False
         sub_header = sorted_methods = None
-        statistic_types = ["mean", "std", "score"]
+        stat_types = ["mean", "std", "score"]
         for metric_idx, metric_type in enumerate(sorted_metrics):
             statistics = self.estimator_statistics[metric_type]
             if sorted_methods is None:
                 sorted_methods = sorted(statistics)
                 need_display_best_choice = len(sorted_methods) > 1
             if sub_header is None:
-                sub_header = statistic_types * len(sorted_metrics)
+                sub_header = stat_types * len(sorted_metrics)
             if best_choices is None and need_display_best_choice:
                 same_choices = [None] * len(sub_header)
                 best_choices = [None] * len(sub_header)
             for method_idx, method in enumerate(sorted_methods):
                 method_statistics = statistics.get(method)
                 if method_statistics is None:
-                    method_statistics = [math.nan for _ in statistic_types]
+                    method_statistics = [math.nan for _ in stat_types]
                 else:
-                    method_statistics = [method_statistics[stat_type] for stat_type in statistic_types]
+                    method_statistics = [
+                        method_statistics[stat_type] for stat_type in stat_types
+                    ]
                     if best_choices is not None:
-                        for statistic_idx, method_statistic in enumerate(method_statistics):
-                            choice_idx = metric_idx * len(statistic_types) + statistic_idx
+                        for stat_idx, method_statistic in enumerate(method_statistics):
+                            choice_idx = metric_idx * len(stat_types) + stat_idx
                             current_idx_choice = best_choices[choice_idx]
                             if current_idx_choice is None:
                                 best_choices[choice_idx] = method_idx
                             else:
-                                stat_type = statistic_types[statistic_idx]
-                                chosen_stat = statistics[sorted_methods[current_idx_choice]][stat_type]
+                                stat_type = stat_types[stat_idx]
+                                chosen_stat = statistics[
+                                    sorted_methods[current_idx_choice]
+                                ][stat_type]
                                 if method_statistic == chosen_stat:
                                     if same_choices[choice_idx] is None:
                                         same_choices[choice_idx] = {method_idx}
@@ -740,39 +811,36 @@ class Comparer(LoggingMixin):
         method_length = kwargs.get("method_length", 16) + padding
         float_length = kwargs.get("float_length", 8)
         cell_length = float_length + padding
-        num_statistic_types = len(statistic_types)
+        num_statistic_types = len(stat_types)
         metric_type_length = num_statistic_types * cell_length + 2
         header_msg = (
             f"|{'metrics':^{method_length}s}|"
-            + "|".join([
-                f"{metric_type:^{metric_type_length}s}"
-                for metric_type in sorted_metrics
-            ])
+            + "|".join(
+                [
+                    f"{metric_type:^{metric_type_length}s}"
+                    for metric_type in sorted_metrics
+                ]
+            )
             + "|"
         )
-        sub_header_msg = (
-            f"|{' ' * method_length}|"
-            + "|".join([f"{sub_header_item:^{cell_length}s}" for sub_header_item in sub_header])
-            + "|"
-        )
+        subs = [f"{sub_header_item:^{cell_length}s}" for sub_header_item in sub_header]
+        sub_header_msg = f"|{' ' * method_length}|" + "|".join(subs) + "|"
         body_msgs = []
         for method_idx, method in enumerate(sorted_methods):
             cell_msgs = []
             for cell_idx, cell_item in enumerate(body[method]):
                 cell_str = fix_float_to_length(cell_item, float_length)
-                if (
-                    best_choices is not None
-                    and (best_choices[cell_idx] == method_idx
-                         or same_choices[cell_idx] is not None and method_idx in same_choices[cell_idx])
+                if best_choices is not None and (
+                    best_choices[cell_idx] == method_idx
+                    or same_choices[cell_idx] is not None
+                    and method_idx in same_choices[cell_idx]
                 ):
                     cell_str = f" -- {cell_str} -- "
                 else:
                     cell_str = f"{cell_str:^{cell_length}s}"
                 cell_msgs.append(cell_str)
             body_msgs.append(
-                f"|{method:^{method_length}s}|"
-                + "|".join(cell_msgs)
-                + "|"
+                f"|{method:^{method_length}s}|" + "|".join(cell_msgs) + "|"
             )
         msgs = [header_msg, sub_header_msg] + body_msgs
         length = len(body_msgs[0])
@@ -783,13 +851,15 @@ class Comparer(LoggingMixin):
         self.log_block_msg(final_msg, self.info_prefix, "Results", verbose_level)
         return final_msg
 
-    def compare(self,
-                x: np.ndarray,
-                y: np.ndarray,
-                *,
-                scoring_function: Union[str, scoring_fn_type] = "default",
-                verbose_level: int = 1,
-                **kwargs) -> "Comparer":
+    def compare(
+        self,
+        x: np.ndarray,
+        y: np.ndarray,
+        *,
+        scoring_function: Union[str, scoring_fn_type] = "default",
+        verbose_level: int = 1,
+        **kwargs,
+    ) -> "Comparer":
         self.estimator_statistics: Dict[str, Dict[str, Dict[str, float]]] = {}
         for estimator in self.estimators.values():
             methods = {}
@@ -811,45 +881,58 @@ class Comparer(LoggingMixin):
                     if predict_methods[-1] is None:
                         invalid = True
                         self.log_msg(
-                            f"{estimator} requires probability predictions but {model_name} "
-                            f"does not have probability predicting method, skipping",
-                            self.warning_prefix, verbose_level, logging.WARNING
+                            f"{estimator} requires probability predictions but "
+                            f"{model_name} does not have probability predicting "
+                            "method, skipping",
+                            self.warning_prefix,
+                            verbose_level,
+                            logging.WARNING,
                         )
                         break
                 if invalid:
                     continue
                 methods[model_name] = predict_methods
             self.estimator_statistics[estimator.type] = estimator.estimate(
-                x, y, methods,
+                x,
+                y,
+                methods,
                 scoring_function=scoring_function,
-                verbose_level=None if verbose_level is None else verbose_level + 5
+                verbose_level=None if verbose_level is None else verbose_level + 5,
             )
         self.log_statistics(verbose_level, **kwargs)
         return self
 
-    def select(self,
-               method_names: List[str]) -> "Comparer":
+    def select(self, method_names: List[str]) -> "Comparer":
         new_patterns = {}
         for name in method_names:
             pattern = self.patterns.get(name)
             if pattern is None:
                 raise ValueError(f"'{name}' is not found in current patterns")
             new_patterns[name] = pattern
-        new_estimators = [estimator.select(method_names) for estimator in self.estimators.values()]
-        return Comparer(new_patterns, new_estimators, verbose_level=self._verbose_level)
+        new_estimators = [
+            estimator.select(method_names) for estimator in self.estimators.values()
+        ]
+        return Comparer(
+            new_patterns,
+            new_estimators,
+            verbose_level=self._verbose_level,
+        )
 
     @classmethod
-    def merge(cls,
-              comparer_list: List["Comparer"],
-              scoring_function: Union[str, scoring_fn_type] = "default") -> "Comparer":
+    def merge(
+        cls,
+        comparer_list: List["Comparer"],
+        scoring_function: Union[str, scoring_fn_type] = "default",
+    ) -> "Comparer":
         first_comparer = comparer_list[0]
         new_estimators = [
             Estimator.merge([comparer.estimators[k] for comparer in comparer_list])
             for k in first_comparer.estimators.keys()
         ]
         new_comparer = cls(
-            first_comparer.patterns, new_estimators,
-            verbose_level=first_comparer._verbose_level
+            first_comparer.patterns,
+            new_estimators,
+            verbose_level=first_comparer._verbose_level,
         )
         new_comparer.estimator_statistics = {
             estimator.type: estimator.get_statistics(scoring_function).data
@@ -913,38 +996,48 @@ class Visualizer:
             * (len(classes), len(categories)), otherwise.
         * classes : list(str), list of str which indicates each class.
             * each class will has its own color.
-            * len(classes) indicates how many bars are there in one category (side by side).
+            * len(classes) indicates how many bars are there in one category
+              (side by side).
         * categories : list(str), list of str which indicates each category.
             * a category will be a tick along x-axis.
         * save_name : str, saving name of this bar plot.
         * title : str, title of this bar plot.
         * padding : float, minimum value of each bar.
-        * expand_floor : int, when len(categories) > `expand_floor`, the width of the figure will expand.
+        * expand_floor : int, when len(categories) > `expand_floor`, the width of
+          the figure will expand.
             * for len(classes) == 1, `expand_floor` will be multiplied by 2 internally.
         * overwrite : bool
-            whether overwrite the existing file with the same file name of this plot's saving name.
+            whether overwrite the existing file with the same file name of this
+            plot's saving name.
 
     function(self, f, x_min, x_max, classes, categories, save_names=None,
              n_sample=1000, expand_floor=5, overwrite=True):
         Make multiple (len(categories)) line plots with given function (`f`)
         * f : function
             * input should be an np.ndarray with shape == (n, n_categories).
-            * output should be an np.ndarray with shape == (n, n_categories, n_categories).
+            * output should be an np.ndarray with
+              shape == (n, n_categories, n_categories).
         * x_min : np.ndarray, minimum x-values for each line plot.
             * len(x_min) should be len(categories).
         * x_max : np.ndarray, maximum x-values for each line plot.
             * len(x_max) should be len(categories).
         * classes : list(str), list of str which indicates each class.
             * each class will has its own color.
-            * len(classes) indicates how many bars are there in one category (side by side).
+            * len(classes) indicates how many bars are there in one category
+              (side by side).
         * categories : list(str), list of str which indicates each category.
             * every category will correspond to a line plot.
         * save_names : list(str), saving names of these line plots.
         * n_sample : int, sample density along x-axis.
-        * expand_floor : int, the width of the figures will be expanded with ratios calculated by:
-            expand_ratios = np.maximum(1., np.abs(x_min) / expand_floor, x_max / expand_floor)
+        * expand_floor : int, the width of the figures will be expanded with
+          ratios calculated by:
+            expand_ratios = np.maximum(
+                1.0,
+                np.abs(x_min) / expand_floor, x_max / expand_floor,
+            )
         * overwrite : bool
-            whether overwrite the existing file with the same file name of this plot's saving name.
+            whether overwrite the existing file with the same file name of
+            this plot's saving name.
 
     """
 
@@ -959,37 +1052,45 @@ class Visualizer:
             tmp_save_name = f"{save_name}_{counter}"
         return tmp_save_name
 
-    def bar(self,
-            data: np.ndarray,
-            classes: List[Union[str, Any]],
-            categories: List[Union[str, Any]],
-            *,
-            title: str = "",
-            save_name: str = "bar_plot",
-            padding: float = 1e-3,
-            expand_floor: int = 5,
-            overwrite: bool = True):
+    def bar(
+        self,
+        data: np.ndarray,
+        classes: List[Union[str, Any]],
+        categories: List[Union[str, Any]],
+        *,
+        title: str = "",
+        save_name: str = "bar_plot",
+        padding: float = 1e-3,
+        expand_floor: int = 5,
+        overwrite: bool = True,
+    ):
         num_classes, num_categories = map(len, [classes, categories])
-        data = [data / data.sum() + padding] if num_classes == 1 else data / data.sum(0) + padding
+        data = (
+            [data / data.sum() + padding]
+            if num_classes == 1
+            else data / data.sum(0) + padding
+        )
         expand_floor = expand_floor * 2 if num_classes == 1 else expand_floor
         colors = plt.cm.Paired([i / num_classes for i in range(num_classes)])
         x_base = np.arange(1, num_categories + 1)
-        expand_ratio = max(1., num_categories / expand_floor)
+        expand_ratio = max(1.0, num_categories / expand_floor)
         fig = plt.figure(figsize=(6.4 * expand_ratio, 4.8))
         plt.title(title)
         n_divide = num_classes - 1
         width = 0.35 / max(1, n_divide)
         cls_ratio = 0.5 if num_classes == 1 else 1
         for cls in range(num_classes):
-            plt.bar(x_base - width * (0.5 * n_divide - cls_ratio * cls), data[cls], width=width,
-                    facecolor=colors[cls], edgecolor="white",
-                    label=classes[cls])
-        plt.xticks(
-            [i for i in range(len(categories) + 2)],
-            [""] + categories + [""]
-        )
+            plt.bar(
+                x_base - width * (0.5 * n_divide - cls_ratio * cls),
+                data[cls],
+                width=width,
+                facecolor=colors[cls],
+                edgecolor="white",
+                label=classes[cls],
+            )
+        plt.xticks([i for i in range(len(categories) + 2)], [""] + categories + [""])
         plt.legend()
-        plt.setp(plt.xticks()[1], rotation=30, horizontalalignment='right')
+        plt.setp(plt.xticks()[1], rotation=30, horizontalalignment="right")
         plt.ylim(0, 1.2 + padding)
         fig.tight_layout()
         if not overwrite:
@@ -997,17 +1098,19 @@ class Visualizer:
         plt.savefig(os.path.join(self.export_folder, f"{save_name}.png"))
         plt.close()
 
-    def function(self,
-                 f: Callable[[np.ndarray], np.ndarray],
-                 x_min: np.ndarray,
-                 x_max: np.ndarray,
-                 classes: List[Union[str, Any]],
-                 categories: List[Union[str, Any]],
-                 *,
-                 save_names: List[str] = None,
-                 num_sample: int = 1000,
-                 expand_floor: int = 5,
-                 overwrite: bool = True):
+    def function(
+        self,
+        f: Callable[[np.ndarray], np.ndarray],
+        x_min: np.ndarray,
+        x_max: np.ndarray,
+        classes: List[Union[str, Any]],
+        categories: List[Union[str, Any]],
+        *,
+        save_names: List[str] = None,
+        num_sample: int = 1000,
+        expand_floor: int = 5,
+        overwrite: bool = True,
+    ):
         num_classes, num_categories = map(len, [classes, categories])
         gaps = x_max - x_min
         x_base = np.linspace(x_min - 0.1 * gaps, x_max + 0.1 * gaps, num_sample)
@@ -1015,15 +1118,23 @@ class Visualizer:
         if save_names is None:
             save_names = ["function_plot"] * num_categories
         colors = plt.cm.Paired([i / num_classes for i in range(num_classes)])
-        expand_ratios = np.maximum(1., np.abs(x_min) / expand_floor, x_max / expand_floor)
-        for i, (category, save_name, ratio, local_min, local_max, gap) in enumerate(zip(
-                categories, save_names, expand_ratios, x_min, x_max, gaps)):
+        expand_ratios = np.maximum(
+            1.0, np.abs(x_min) / expand_floor, x_max / expand_floor
+        )
+        for i, (category, save_name, ratio, local_min, local_max, gap) in enumerate(
+            zip(categories, save_names, expand_ratios, x_min, x_max, gaps)
+        ):
             plt.figure(figsize=(6.4 * ratio, 4.8))
             plt.title(f"pdf for {category}")
             local_base = x_base[..., i]
             for c in range(num_classes):
                 f_value = f_values[c][..., i].ravel()
-                plt.plot(local_base, f_value, c=colors[c], label=f"class: {classes[c]}")
+                plt.plot(
+                    local_base,
+                    f_value,
+                    c=colors[c],
+                    label=f"class: {classes[c]}",
+                )
             plt.xlim(local_min - 0.2 * gap, local_max + 0.2 * gap)
             plt.legend()
             if not overwrite:
@@ -1031,14 +1142,16 @@ class Visualizer:
             plt.savefig(os.path.join(self.export_folder, f"{save_name}.png"))
 
     @staticmethod
-    def visualize1d(method: Callable,
-                    x: np.ndarray,
-                    y: np.ndarray = None,
-                    *,
-                    title: str = None,
-                    num_samples: int = 100,
-                    expand_ratio: float = 0.25,
-                    return_canvas: bool = False) -> Union[None, np.ndarray]:
+    def visualize1d(
+        method: Callable,
+        x: np.ndarray,
+        y: np.ndarray = None,
+        *,
+        title: str = None,
+        num_samples: int = 100,
+        expand_ratio: float = 0.25,
+        return_canvas: bool = False,
+    ) -> Union[None, np.ndarray]:
         if x.shape[1] != 1:
             raise ValueError("visualize1d only supports 1-dimensional features")
         plt.figure()
@@ -1052,17 +1165,19 @@ class Visualizer:
         return show_or_return(return_canvas)
 
     @staticmethod
-    def visualize2d(method,
-                    x: np.ndarray,
-                    y: np.ndarray = None,
-                    *,
-                    title: str = None,
-                    dense: int = 200,
-                    padding: float = 0.1,
-                    return_canvas: bool = False,
-                    draw_background: bool = True,
-                    extra_scatters: np.ndarray = None,
-                    emphasize_indices: np.ndarray = None) -> Union[None, np.ndarray]:
+    def visualize2d(
+        method,
+        x: np.ndarray,
+        y: np.ndarray = None,
+        *,
+        title: str = None,
+        dense: int = 200,
+        padding: float = 0.1,
+        return_canvas: bool = False,
+        draw_background: bool = True,
+        extra_scatters: np.ndarray = None,
+        emphasize_indices: np.ndarray = None,
+    ) -> Union[None, np.ndarray]:
         axis = x.T
         if axis.shape[0] != 2:
             raise ValueError("visualize2d only supports 2-dimensional features")
@@ -1095,16 +1210,26 @@ class Visualizer:
             xy_xf, xy_yf = np.meshgrid(xf, yf, sparse=True)
             plt.pcolormesh(xy_xf, xy_yf, z, cmap=plt.cm.Pastel1)
         else:
-            plt.contour(xf, yf, z, c='k-', levels=[0])
+            plt.contour(xf, yf, z, c="k-", levels=[0])
         plt.scatter(axis[0], axis[1], c=colors)
 
         if emphasize_indices is not None:
             indices = np.array([False] * len(axis[0]))
             indices[np.asarray(emphasize_indices)] = True
-            plt.scatter(axis[0][indices], axis[1][indices], s=80,
-                        facecolors="None", zorder=10)
+            plt.scatter(
+                axis[0][indices],
+                axis[1][indices],
+                s=80,
+                facecolors="None",
+                zorder=10,
+            )
         if extra_scatters is not None:
-            plt.scatter(*np.asarray(extra_scatters).T, s=80, zorder=25, facecolors="red")
+            plt.scatter(
+                *np.asarray(extra_scatters).T,
+                s=80,
+                zorder=25,
+                facecolors="red",
+            )
 
         return show_or_return(return_canvas)
 
@@ -1136,12 +1261,14 @@ class Tracker:
 
     """
 
-    def __init__(self,
-                 project_name: str = None,
-                 task_name: str = None,
-                 *,
-                 base_folder: str = None,
-                 overwrite: bool = False):
+    def __init__(
+        self,
+        project_name: str = None,
+        task_name: str = None,
+        *,
+        base_folder: str = None,
+        overwrite: bool = False,
+    ):
         if base_folder is None:
             base_folder = self.default_base_folder()
         if project_name is None:
@@ -1156,10 +1283,16 @@ class Tracker:
         exists = os.path.isdir(self.log_folder)
         if exists:
             if not overwrite:
-                print(f"{LoggingMixin.info_prefix}loading tracker from '{self.log_folder}'")
+                print(
+                    f"{LoggingMixin.info_prefix}loading tracker "
+                    f"from '{self.log_folder}'"
+                )
                 self._load()
             else:
-                print(f"{LoggingMixin.warning_prefix}'{self.log_folder}' already exists, it will be overwritten")
+                print(
+                    f"{LoggingMixin.warning_prefix}'{self.log_folder}' already exists,"
+                    " it will be overwritten"
+                )
                 self.clear(confirm=False)
         if not exists or overwrite:
             os.makedirs(self.log_folder)
@@ -1222,11 +1355,7 @@ class Tracker:
         self.messages: Dict[str, str] = {}
         self.scalars: Dict[str, List[Tuple[int, float]]] = {}
 
-    def track_scalar(self,
-                     name: str,
-                     value: float,
-                     *,
-                     iteration: int = None) -> None:
+    def track_scalar(self, name: str, value: float, *, iteration: int = None) -> None:
         file = os.path.join(self.scalars_folder, f"{name}.txt")
         data = self.scalars.setdefault(name, [])
         if iteration is None:
@@ -1239,11 +1368,7 @@ class Tracker:
             with open(file, "a") as f:
                 f.write(f"\n{iteration} {value}")
 
-    def track_message(self,
-                      name: str,
-                      message: str,
-                      *,
-                      append: bool = True) -> None:
+    def track_message(self, name: str, message: str, *, append: bool = True) -> None:
         file = os.path.join(self.messages_folder, f"{name}.txt")
         existing_message = self.messages.get(name, "")
         if not existing_message or not append:
@@ -1255,11 +1380,13 @@ class Tracker:
         with open(file, "a") as f:
             f.write(f"\n{message}")
 
-    def visualize_scalars(self,
-                          types: List[str] = None,
-                          *,
-                          export_folder: str = None,
-                          merge: bool = True) -> None:
+    def visualize_scalars(
+        self,
+        types: List[str] = None,
+        *,
+        export_folder: str = None,
+        merge: bool = True,
+    ) -> None:
         if export_folder is not None:
             os.makedirs(export_folder, exist_ok=True)
         if types is None:
@@ -1272,13 +1399,21 @@ class Tracker:
             plt.plot(iterations[mask], values[mask], label=name)
             if not merge:
                 plt.legend()
-                export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
+                export_path = (
+                    None
+                    if export_folder is None
+                    else os.path.join(export_folder, f"{name}.png")
+                )
                 show_or_save(export_path)
                 if i != len(types) - 1:
                     plt.figure()
         if merge:
             plt.legend()
-            export_path = None if export_folder is None else os.path.join(export_folder, "merged.png")
+            export_path = (
+                None
+                if export_folder is None
+                else os.path.join(export_folder, "merged.png")
+            )
             show_or_save(export_path)
 
     # clear
@@ -1292,23 +1427,17 @@ class Tracker:
             return False
         return True
 
-    def clear(self,
-              *,
-              confirm: bool = True) -> None:
+    def clear(self, *, confirm: bool = True) -> None:
         print(f"{LoggingMixin.info_prefix}clearing '{self.log_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.log_folder)
 
-    def clear_project(self,
-                      *,
-                      confirm: bool = True) -> None:
+    def clear_project(self, *, confirm: bool = True) -> None:
         print(f"{LoggingMixin.info_prefix}clearing '{self.project_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.project_folder)
 
-    def clear_all(self,
-                  *,
-                  confirm: bool = True) -> None:
+    def clear_all(self, *, confirm: bool = True) -> None:
         print(f"{LoggingMixin.info_prefix}clearing '{self.base_folder}'")
         if self._confirm(confirm):
             shutil.rmtree(self.base_folder)
@@ -1316,15 +1445,17 @@ class Tracker:
     # class methods
 
     @classmethod
-    def compare(cls,
-                project_name: str = None,
-                task_names: List[str] = None,
-                *,
-                base_folder: str = None,
-                visualize: bool = True,
-                types: List[str] = None,
-                export_folder: str = None,
-                merge: bool = False) -> List["Tracker"]:
+    def compare(
+        cls,
+        project_name: str = None,
+        task_names: List[str] = None,
+        *,
+        base_folder: str = None,
+        visualize: bool = True,
+        types: List[str] = None,
+        export_folder: str = None,
+        merge: bool = False,
+    ) -> List["Tracker"]:
         if base_folder is None:
             base_folder = Tracker.default_base_folder()
         if project_name is None:
@@ -1354,16 +1485,28 @@ class Tracker:
                     if data is not None:
                         iterations, values = map(np.array, map(list, zip(*data)))
                         mask = iterations >= 0
-                        plt.plot(iterations[mask], values[mask], label=f"{name} - {task_name}")
+                        plt.plot(
+                            iterations[mask],
+                            values[mask],
+                            label=f"{name} - {task_name}",
+                        )
                 if not merge:
                     plt.legend()
-                    export_path = None if export_folder is None else os.path.join(export_folder, f"{name}.png")
+                    export_path = (
+                        None
+                        if export_folder is None
+                        else os.path.join(export_folder, f"{name}.png")
+                    )
                     show_or_save(export_path)
                     if i != len(types) - 1:
                         plt.figure()
             if merge:
                 plt.legend()
-                export_path = None if export_folder is None else os.path.join(export_folder, "merged.png")
+                export_path = (
+                    None
+                    if export_folder is None
+                    else os.path.join(export_folder, "merged.png")
+                )
                 show_or_save(export_path)
         return trackers
 
@@ -1380,18 +1523,21 @@ class DataInspector:
     def get_moment(self, k: int) -> float:
         if len(self._moments) < k:
             self._moments += [None] * (k - len(self._moments))
-        if self._moments[k-1] is None:
-            self._moments[k-1] = np.sum((self._data - self.mean) ** k) / self._num_samples
-        return self._moments[k-1]
+        if self._moments[k - 1] is None:
+            self._moments[k - 1] = (
+                np.sum((self._data - self.mean) ** k) / self._num_samples
+            )
+        return self._moments[k - 1]
 
     def get_quantile(self, q: float) -> float:
-        if not 0. <= q <= 1.:
+        if not 0.0 <= q <= 1.0:
             raise ValueError("`q` should be in [0, 1]")
         anchor = self._num_samples * q
         int_anchor = int(anchor)
         if not int(anchor % 1):
             return self._sorted_data[int_anchor]
-        return 0.5 * (self._sorted_data[int_anchor-1] + self._sorted_data[int_anchor])
+        dq = self._sorted_data[int_anchor - 1] + self._sorted_data[int_anchor]
+        return 0.5 * dq
 
     @property
     def min(self) -> float:
@@ -1410,7 +1556,8 @@ class DataInspector:
     @property
     def variance(self) -> float:
         if self._variance is None:
-            self._variance = np.sum((self._data - self.mean) ** 2) / (self._num_samples - 1)
+            square_sum = np.sum((self._data - self.mean) ** 2)
+            self._variance = square_sum / (self._num_samples - 1)
         return self._variance
 
     @property
@@ -1427,7 +1574,9 @@ class DataInspector:
     @property
     def kurtosis(self) -> float:
         n, moment4 = self._num_samples, self.get_moment(4)
-        return n**2*(n+1)*moment4 / ((n-1)*(n-2)*(n-3)*self.std**4) - 3*(n-1)**2/((n-2)*(n-3))
+        return n ** 2 * (n + 1) * moment4 / (
+            (n - 1) * (n - 2) * (n - 3) * self.std ** 4
+        ) - 3 * (n - 1) ** 2 / ((n - 2) * (n - 3))
 
     @property
     def median(self) -> float:
@@ -1467,8 +1616,14 @@ class DataInspector:
     def upper_cutoff(self) -> float:
         return self.q3 + 1.5 * self.iqr
 
-    def draw_histogram(self, bin_size: int = 10, export_path: str = None, **kwargs) -> None:
-        bins = np.arange(self._sorted_data[0] - self.iqr, self._sorted_data[-1] + self.iqr, bin_size)
+    def draw_histogram(
+        self, bin_size: int = 10, export_path: str = None, **kwargs
+    ) -> None:
+        bins = np.arange(
+            self._sorted_data[0] - self.iqr,
+            self._sorted_data[-1] + self.iqr,
+            bin_size,
+        )
         plt.hist(self._data, bins=bins, alpha=0.5)
         plt.title(f"Histogram (bin_size: {bin_size})")
         show_or_save(export_path, **kwargs)
@@ -1484,9 +1639,21 @@ class DataInspector:
 
 
 __all__ = [
-    "Anneal", "Metrics", "ScalarEMA", "Visualizer", "Tracker",
-    "Estimator", "ModelPattern", "EnsemblePattern", "Comparer",
-    "collate_fn_type", "estimate_fn_type", "scoring_fn_type",
-    "generic_data_type", "pattern_type", "patterns_type",
-    "register_metric", "DataInspector",
+    "Anneal",
+    "Metrics",
+    "ScalarEMA",
+    "Visualizer",
+    "Tracker",
+    "Estimator",
+    "ModelPattern",
+    "EnsemblePattern",
+    "Comparer",
+    "collate_fn_type",
+    "estimate_fn_type",
+    "scoring_fn_type",
+    "generic_data_type",
+    "pattern_type",
+    "patterns_type",
+    "register_metric",
+    "DataInspector",
 ]

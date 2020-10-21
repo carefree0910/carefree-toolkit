@@ -13,14 +13,16 @@ except:
 
 
 class SharedArray:
-    def __init__(self,
-                 name: str,
-                 shape: List[int] = None,
-                 dtype: np.dtype = np.float32,
-                 *,
-                 base_folder: str = None,
-                 overwrite: bool = False,
-                 verbose: bool = False):
+    def __init__(
+        self,
+        name: str,
+        shape: List[int] = None,
+        dtype: np.dtype = np.float32,
+        *,
+        base_folder: str = None,
+        overwrite: bool = False,
+        verbose: bool = False,
+    ):
         self.name = name
         self._verbose = verbose
 

@@ -4,5 +4,7 @@ from .gd import *
 
 __all__ = [
     "BayesianOptimization",
-    "Optimizer", "GradientDescentMixin", "optimizer_dict"
+    "Optimizer",
+    "GradientDescentMixin",
+    "optimizer_dict",
 ]

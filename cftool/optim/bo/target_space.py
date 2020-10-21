@@ -14,17 +14,19 @@ class Result(NamedTuple):
 
 
 class TargetSpace:
-    def __init__(self,
-                 fn: fn_type,
-                 params: params_type,
-                 *,
-                 normalization: Union[str, None],
-                 normalization_config: Dict[str, Any]):
+    def __init__(
+        self,
+        fn: fn_type,
+        params: params_type,
+        *,
+        normalization: Union[str, None],
+        normalization_config: Dict[str, Any]
+    ):
         self.fn = fn
         self.params_gen = ParamsGenerator(
             params,
             normalize_method=normalization,
-            normalize_config=normalization_config
+            normalize_config=normalization_config,
         )
         self._codes2scores = {}
         self._sorted_keys = self.params_gen.sorted_flattened_keys
@@ -66,27 +68,25 @@ class TargetSpace:
         nested = self.params_gen.nest_flattened(flattened)
         return Result(nested, self._tried_scores[idx])
 
-    def param2array(self,
-                    param: flattened_type) -> np.ndarray:
+    def param2array(self, param: flattened_type) -> np.ndarray:
         return self.params_gen.flattened2array(param)
 
-    def array2param(self,
-                    array: np.ndarray) -> flattened_type:
+    def array2param(self, array: np.ndarray) -> flattened_type:
         return self.params_gen.array2flattened(array)
 
-    def register(self,
-                 param: flattened_type,
-                 score: float) -> "TargetSpace":
+    def register(self, param: flattened_type, score: float) -> "TargetSpace":
         self._codes2scores[hash_code(str(param))] = score
         param_array = self.param2array(param).reshape(1, -1)
-        self._tried_flattened_arrays = np.concatenate([self._tried_flattened_arrays, param_array])
+        self._tried_flattened_arrays = np.concatenate(
+            [self._tried_flattened_arrays, param_array]
+        )
         self._tried_scores = np.concatenate([self._tried_scores, [score]])
         return self
 
-    def probe(self,
-              param: flattened_type) -> "TargetSpace":
+    def probe(self, param: flattened_type) -> "TargetSpace":
         if self.fn is None:
-            raise ValueError("fn is not provided, so `probe` method should not be called")
+            msg = "fn is not provided, so `probe` method should not be called"
+            raise ValueError(msg)
         code = hash_code(str(param))
         score = self._codes2scores.get(code)
         if score is not None:

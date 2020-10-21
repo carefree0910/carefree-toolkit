@@ -15,11 +15,10 @@ class TestML(unittest.TestCase):
         for i in range(100):
             self.assertEqual(
                 f"{anneal.pop():.4f}",
-                f"{i * 0.02 + 0.01 if i <= 49 else 0.99:.4f}"
+                f"{i * 0.02 + 0.01 if i <= 49 else 0.99:.4f}",
             )
 
     def test_register_metric(self):
-
         @register_metric("large_is_good", 1, True)
         def large_is_good(self_, _, pred):
             threshold = self_.config.get("threshold", 0.5)
@@ -47,14 +46,15 @@ class TestML(unittest.TestCase):
         l_svc_patterns = ModelPattern.repeat(
             3,
             init_method=l_svc_creator,
-            train_method=train_method
+            train_method=train_method,
         )
         lr_patterns = ModelPattern.repeat(
             3,
             init_method=lr_creator,
-            train_method=train_method
+            train_method=train_method,
         )
-        l_svc_ensemble, lr_ensemble = map(EnsemblePattern, [l_svc_patterns, lr_patterns])
+        l_svc_ensemble = EnsemblePattern(l_svc_patterns)
+        lr_ensemble = EnsemblePattern(lr_patterns)
         l_svc_ensemble.predict(x)
         lr_ensemble.predict(x)
         estimators = [Estimator("acc")]
@@ -68,7 +68,10 @@ class TestML(unittest.TestCase):
         l_svc_comparer = comparer.select(["l_svc"])
         lr_comparer = comparer.select(["lr"])
         merged_comparer = Comparer.merge([l_svc_comparer, lr_comparer])
-        self.assertDictEqual(comparer.estimator_statistics, merged_comparer.estimator_statistics)
+        self.assertDictEqual(
+            comparer.estimator_statistics,
+            merged_comparer.estimator_statistics,
+        )
 
     def test_scalar_ema(self):
         ema = ScalarEMA(0.5)
@@ -80,21 +83,23 @@ class TestML(unittest.TestCase):
         tracker = Tracker("__unittest__", "test_tracker", overwrite=True)
         for name in ["s1", "s2"]:
             for i in range(3):
-                tracker.track_scalar(name, i, iteration=i+1)
+                tracker.track_scalar(name, i, iteration=i + 1)
         tracker.track_message("m1", "Hello!")
         tracker = Tracker("__unittest__", "test_tracker")
         for name in ["s1", "s2"]:
-            self.assertListEqual(tracker.scalars[name], [(i+1, i) for i in range(3)])
+            self.assertListEqual(tracker.scalars[name], [(i + 1, i) for i in range(3)])
         self.assertEqual(tracker.messages["m1"], "Hello!")
 
     def test_param_generator(self):
         params = {
             "a": Any(Choice(values=[[1, 2], [2, 3]])),
-            "b": Iterable([
-                Int(Choice(values=[5, 6])),
-                Float(Choice(values=[5.1, 5.9])),
-                String(Choice(values=["b1", "b2"]))
-            ]),
+            "b": Iterable(
+                [
+                    Int(Choice(values=[5, 6])),
+                    Float(Choice(values=[5.1, 5.9])),
+                    String(Choice(values=["b1", "b2"])),
+                ]
+            ),
             "c": {
                 "d": Int(Choice(values=[7, 8])),
                 "e": Any(Choice(values=[10, 9])),
@@ -103,24 +108,28 @@ class TestML(unittest.TestCase):
                     "h": Int(Choice(values=[13, 14])),
                     "i": {
                         "j": Int(Choice(values=[15, 16])),
-                        "k": String(Choice(values=["k1", "k2"]))
-                    }
-                }
+                        "k": String(Choice(values=["k1", "k2"])),
+                    },
+                },
             },
             "d": {
-                "d1": Iterable([
-                    Int(Choice(values=[17, 18])),
-                    Float(Choice(values=[16.9, 17.5, 18.1]))
-                ]),
-                "d2": Iterable((
-                    Int(Choice(values=[19, 20, 21])),
-                    Float(Choice(values=[18.5, 19.5, 20.5, 21.5]))
-                ))
-            }
+                "d1": Iterable(
+                    [
+                        Int(Choice(values=[17, 18])),
+                        Float(Choice(values=[16.9, 17.5, 18.1])),
+                    ]
+                ),
+                "d2": Iterable(
+                    (
+                        Int(Choice(values=[19, 20, 21])),
+                        Float(Choice(values=[18.5, 19.5, 20.5, 21.5])),
+                    )
+                ),
+            },
         }
         pg = ParamsGenerator(params)
         self.assertEqual(pg.num_params, 2 ** 11 * 3 ** 2 * 4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

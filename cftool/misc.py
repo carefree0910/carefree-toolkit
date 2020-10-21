@@ -32,8 +32,8 @@ dill._dill._reverse_typemap["ClassType"] = type
 
 # util functions
 
-def timestamp(simplify: bool = False,
-              ensure_different: bool = False) -> str:
+
+def timestamp(simplify: bool = False, ensure_different: bool = False) -> str:
     """
     Return current timestamp.
 
@@ -126,7 +126,9 @@ def truncate_string_to_length(string: str, length: int) -> str:
     if len(string) <= length:
         return string
     half_length = int(0.5 * length) - 1
-    return string[:half_length] + "." * (length - 2 * half_length) + string[-half_length:]
+    head = string[:half_length]
+    tail = string[-half_length:]
+    return f"{head}{'.' * (length - 2 * half_length)}{tail}"
 
 
 def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
@@ -172,9 +174,7 @@ def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
     return one_hot
 
 
-def show_or_save(export_path: str,
-                 fig: plt.figure = None,
-                 **kwargs) -> None:
+def show_or_save(export_path: str, fig: plt.figure = None, **kwargs) -> None:
     """
     Utility function to deal with figure.
 
@@ -192,7 +192,10 @@ def show_or_save(export_path: str,
     if export_path is None:
         fig.show(**kwargs) if fig is not None else plt.show(**kwargs)
     else:
-        fig.savefig(export_path) if fig is not None else plt.savefig(export_path, **kwargs)
+        if fig is not None:
+            fig.savefig(export_path)
+        else:
+            plt.savefig(export_path, **kwargs)
     plt.close()
 
 
@@ -220,8 +223,7 @@ def show_or_return(return_canvas: bool) -> Union[None, np.ndarray]:
     return canvas
 
 
-def get_indices_from_another(base: np.ndarray,
-                             segment: np.ndarray) -> np.ndarray:
+def get_indices_from_another(base: np.ndarray, segment: np.ndarray) -> np.ndarray:
     """
     Get `segment` elements' indices in `base`.
 
@@ -254,10 +256,14 @@ class UniqueIndices(NamedTuple):
     """
     unique           : np.ndarray, unique values of the given array (`arr`).
     unique_cnt       : np.ndarray, counts of each unique value.
-    sorting_indices  : np.ndarray, indices which can (stably) sort the given array by its value.
-    split_arr        : np.ndarray, array which can split the `sorting_indices` to make sure that.
-                       each portion of the split indices belong & only belong to one of the unique values.
+    sorting_indices  : np.ndarray, indices which can (stably) sort the given
+                                   array by its value.
+    split_arr        : np.ndarray, array which can split the `sorting_indices`
+                                   to make sure that. Each portion of the split
+                                   indices belong & only belong to one of the
+                                   unique values.
     """
+
     unique: np.ndarray
     unique_cnt: np.ndarray
     sorting_indices: np.ndarray
@@ -289,13 +295,21 @@ def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
     >>> #   unique_cnt      = array([1, 3, 2, 1, 1], dtype=int64),
     >>> #   sorting_indices = array([6, 0, 5, 7, 1, 3, 2, 4], dtype=int64),
     >>> #   split_arr       = array([1, 4, 6, 7], dtype=int64))
-    >>> #   split_indices   = [array([6], dtype=int64), array([0, 5, 7], dtype=int64), array([1, 3], dtype=int64),
-    >>> #                      array([2], dtype=int64), array([4], dtype=int64)]
+    >>> #   split_indices   = [array([6], dtype=int64), array([0, 5, 7], dtype=int64),
+    >>> #                      array([1, 3], dtype=int64), array([2], dtype=int64),
+    >>> #                      array([4], dtype=int64)]
     >>> print(get_unique_indices(arr))
 
     """
-    unique, unique_inv, unique_cnt = np.unique(arr, return_inverse=True, return_counts=True)
-    sorting_indices, split_arr = np.argsort(unique_inv, kind="mergesort"), np.cumsum(unique_cnt)[:-1]
+    unique, unique_inv, unique_cnt = np.unique(
+        arr,
+        return_inverse=True,
+        return_counts=True,
+    )
+    sorting_indices, split_arr = (
+        np.argsort(unique_inv, kind="mergesort"),
+        np.cumsum(unique_cnt)[:-1],
+    )
     return UniqueIndices(unique, unique_cnt, sorting_indices, split_arr)
 
 
@@ -344,28 +358,32 @@ def allclose(*arrays: np.ndarray, **kwargs) -> bool:
     return True
 
 
-def register_core(name: str,
-                  global_dict: Dict[str, type], *,
-                  before_register: callable = None,
-                  after_register: callable = None):
+def register_core(
+    name: str,
+    global_dict: Dict[str, type],
+    *,
+    before_register: callable = None,
+    after_register: callable = None,
+):
     def _register(cls):
         if before_register is not None:
             before_register(cls)
         registered = global_dict.get(name)
         if registered is not None:
-            print(f"~~~ [warning] '{name}' has already registered "
-                  f"in the given global dict ({global_dict})")
+            print(
+                f"~~~ [warning] '{name}' has already registered "
+                f"in the given global dict ({global_dict})"
+            )
             return cls
         global_dict[name] = cls
         if after_register is not None:
             after_register(cls)
         return cls
+
     return _register
 
 
-def check(constraints: Dict[str, Union[str, List[str]]],
-          *,
-          raise_error: bool = True):
+def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = True):
     def wrapper(fn):
         def _check_core(k, v):
             new_v = v
@@ -376,7 +394,10 @@ def check(constraints: Dict[str, Union[str, List[str]]],
                 if constraint_list[0] == "choices":
                     choices = constraint_list[1]
                     if v not in choices:
-                        raise ValueError(f"given value ({v}) is not included in given choices ({choices})")
+                        raise ValueError(
+                            f"given value ({v}) is not included in "
+                            f"given choices ({choices})"
+                        )
                 else:
                     for constraint in constraint_list:
                         check_rs = getattr(SanityChecker, constraint)(v)
@@ -385,23 +406,31 @@ def check(constraints: Dict[str, Union[str, List[str]]],
                         new_v = check_rs["n"]
             if v != new_v:
                 if raise_error:
-                    raise ValueError(f"'{k}' ({v}, {type(v)}) does not satisfy Constraints({constraint_list})")
-                print(f"{LoggingMixin.warning_prefix}'{k}' is cast from {v} -> {new_v}")
+                    raise ValueError(
+                        f"'{k}' ({v}, {type(v)}) does not satisfy "
+                        f"Constraints({constraint_list})"
+                    )
+                msg = f"{LoggingMixin.warning_prefix}'{k}' is cast from {v} -> {new_v}"
+                print(msg)
             return new_v
+
         def inner(*args, **kwargs):
             signature_keys = list(inspect.signature(fn).parameters.keys())
             new_args = []
-            for arg, signature_key in zip(args, signature_keys[:len(args)]):
+            for arg, signature_key in zip(args, signature_keys[: len(args)]):
                 new_args.append(_check_core(signature_key, arg))
             new_kwargs = {}
             for k, v in kwargs.items():
                 new_kwargs[k] = _check_core(k, v)
             return fn(*new_args, **new_kwargs)
+
         return inner
+
     return wrapper
 
 
 # util modules
+
 
 class SanityChecker:
     @staticmethod
@@ -460,11 +489,14 @@ class Incrementer:
     def __init__(self, window_size: int = None):
         if window_size is not None:
             if not isinstance(window_size, int):
-                raise ValueError(f"window size should be integer, {type(window_size)} found")
+                msg = f"window size should be integer, {type(window_size)} found"
+                raise ValueError(msg)
             if window_size < 2:
-                raise ValueError(f"window size should be greater than 2, {window_size} found")
+                msg = f"window size should be greater than 2, {window_size} found"
+                raise ValueError(msg)
         self._window_size = window_size
-        self._n_record = self._running_sum = self._running_square_sum = self._previous = None
+        self._n_record = self._previous = None
+        self._running_sum = self._running_square_sum = None
 
     @property
     def mean(self):
@@ -472,7 +504,12 @@ class Incrementer:
 
     @property
     def std(self):
-        return math.sqrt(max(self._running_square_sum / self._n_record - self.mean ** 2, 0.))
+        return math.sqrt(
+            max(
+                0.0,
+                self._running_square_sum / self._n_record - self.mean ** 2,
+            )
+        )
 
     @property
     def n_record(self):
@@ -480,7 +517,9 @@ class Incrementer:
 
     def update(self, new_value):
         if self._n_record is None:
-            self._n_record, self._running_sum, self._running_square_sum = 1, new_value, new_value ** 2
+            self._n_record = 1
+            self._running_sum = new_value
+            self._running_square_sum = new_value ** 2
         else:
             self._n_record += 1
             self._running_sum += new_value
@@ -533,7 +572,8 @@ class LoggingMixin:
         * prefix : str
             Prefix added to `body` when logging message goes through console.
         * verbose_level : int
-            If `self._verbose_level_` >= verbose_level, then logging message will go through console.
+            If `self._verbose_level_` >= verbose_level, then logging message
+            will go through console.
 
     log_block_msg(self, body, prefix="", title="", verbose_level=1)
         Almost the same as `log_msg`, except adding `title` on top of `body`.
@@ -547,7 +587,8 @@ class LoggingMixin:
     _date_format_string_ = "%Y-%m-%d %H:%M:%S.%f"
     _formatter_ = _Formatter(
         "[ {asctime:s} ] [ {levelname:^8s} ] {func_prefix:s} {message:s}",
-        _date_format_string_, style="{"
+        _date_format_string_,
+        style="{",
     )
     _timing_dict_, _time_cache_dict_ = {}, {}
 
@@ -580,7 +621,9 @@ class LoggingMixin:
         frame_info = inspect.getframeinfo(frame)
         file_name = truncate_string_to_length(os.path.basename(frame_info.filename), 16)
         func_name = truncate_string_to_length(frame_info.function, 24)
-        func_prefix = f"[ {func_name:^24s} ] [ {file_name:>16s}:{frame_info.lineno:<4d} ]"
+        func_prefix = (
+            f"[ {func_name:^24s} ] [ {file_name:>16s}:{frame_info.lineno:<4d} ]"
+        )
         return func_prefix
 
     @staticmethod
@@ -593,9 +636,7 @@ class LoggingMixin:
     def generate_logging_path(folder: str) -> str:
         return os.path.join(folder, f"{timestamp()}.log")
 
-    def _init_logging(self,
-                      verbose_level: Union[int, None] = 2,
-                      trigger: bool = True):
+    def _init_logging(self, verbose_level: Union[int, None] = 2, trigger: bool = True):
         if LoggingMixin._initialized_:
             return self
         LoggingMixin._initialized_ = True
@@ -625,12 +666,14 @@ class LoggingMixin:
         self.log_block_msg(sys.version, title="system version", verbose_level=None)
         return self
 
-    def log_msg(self,
-                body: str,
-                prefix: str = "",
-                verbose_level: Union[int, None] = 1,
-                msg_level: int = logging.INFO,
-                frame=None):
+    def log_msg(
+        self,
+        body: str,
+        prefix: str = "",
+        verbose_level: Union[int, None] = 1,
+        msg_level: int = logging.INFO,
+        frame=None,
+    ):
         preset_verbose_level = getattr(self, "_verbose_level", None)
         if preset_verbose_level is not None:
             self._verbose_level_ = preset_verbose_level
@@ -647,38 +690,53 @@ class LoggingMixin:
             print(prefix + body)
         elif LoggingMixin._triggered_:
             func_prefix = self._get_func_prefix(frame)
-            self._logger_.log(msg_level, body, extra={"func_prefix": func_prefix, "custom_prefix": prefix})
+            self._logger_.log(
+                msg_level,
+                body,
+                extra={"func_prefix": func_prefix, "custom_prefix": prefix},
+            )
         if console_handler is not None:
             console_handler.setLevel(logging.INFO)
 
-    def log_block_msg(self,
-                      body: str,
-                      prefix: str = "",
-                      title: str = "",
-                      verbose_level: Union[int, None] = 1,
-                      msg_level: int = logging.INFO,
-                      frame=None):
+    def log_block_msg(
+        self,
+        body: str,
+        prefix: str = "",
+        title: str = "",
+        verbose_level: Union[int, None] = 1,
+        msg_level: int = logging.INFO,
+        frame=None,
+    ):
         frame = self._get_func_prefix(frame, False)
         self.log_msg(f"{title}\n{body}\n", prefix, verbose_level, msg_level, frame)
 
     def exception(self, body, frame=None):
-        self._logger_.exception(body, extra={
-            "custom_prefix": self.error_prefix,
-            "func_prefix": LoggingMixin._get_func_prefix(frame)
-        })
+        self._logger_.exception(
+            body,
+            extra={
+                "custom_prefix": self.error_prefix,
+                "func_prefix": LoggingMixin._get_func_prefix(frame),
+            },
+        )
 
     @staticmethod
     def log_with_external_method(body, prefix, log_method, *args, **kwargs):
         if log_method is None:
             print(prefix + body)
         else:
-            kwargs["frame"] = LoggingMixin._get_func_prefix(kwargs.pop("frame", None), False)
+            kwargs["frame"] = LoggingMixin._get_func_prefix(
+                kwargs.pop("frame", None),
+                False,
+            )
             log_method(body, prefix, *args, **kwargs)
 
     @staticmethod
     def merge_logs_by_time(*log_files, tgt_file):
         tgt_folder = os.path.dirname(tgt_file)
-        date_str_len = len(datetime.datetime.today().strftime(LoggingMixin._date_format_string_)) + 4
+        date_str_len = (
+            len(datetime.datetime.today().strftime(LoggingMixin._date_format_string_))
+            + 4
+        )
         with lock_manager(tgt_folder, [tgt_file], clear_stuffs_after_exc=False):
             msg_dict, msg_block, last_searched = {}, [], None
             for log_file in log_files:
@@ -687,24 +745,31 @@ class LoggingMixin:
                         date_str = line[:date_str_len]
                         if date_str[:2] == "[ " and date_str[-2:] == " ]":
                             searched_time = datetime.datetime.strptime(
-                                date_str[2:-2], LoggingMixin._date_format_string_)
+                                date_str[2:-2],
+                                LoggingMixin._date_format_string_,
+                            )
                         else:
                             msg_block.append(line)
                             continue
                         if last_searched is not None:
-                            msg_dict.setdefault(last_searched, []).append("".join(msg_block))
+                            msg_block_ = "".join(msg_block)
+                            msg_dict.setdefault(last_searched, []).append(msg_block_)
                         last_searched = searched_time
                         msg_block = [line]
                     if msg_block:
-                        msg_dict.setdefault(last_searched, []).append("".join(msg_block))
+                        msg_dict.setdefault(last_searched, []).append(
+                            "".join(msg_block)
+                        )
             with open(tgt_file, "w") as f:
                 f.write("".join(["".join(msg_dict[key]) for key in sorted(msg_dict)]))
 
     @classmethod
     def start_timer(cls, name):
         if name in cls._time_cache_dict_:
-            print(f"{cls.warning_prefix}'{name}' was already in time cache dict, "
-                  "this may cause by calling `start_timer` repeatedly")
+            print(
+                f"{cls.warning_prefix}'{name}' was already in time cache dict, "
+                "this may cause by calling `start_timer` repeatedly"
+            )
             return
         cls._time_cache_dict_[name] = time.time()
 
@@ -712,8 +777,10 @@ class LoggingMixin:
     def end_timer(cls, name):
         start_time = cls._time_cache_dict_.pop(name, None)
         if start_time is None:
-            print(f"{cls.warning_prefix}'{name}' was not found in time cache dict, "
-                  "this may cause by not calling `start_timer` method")
+            print(
+                f"{cls.warning_prefix}'{name}' was not found in time cache dict, "
+                "this may cause by not calling `start_timer` method"
+            )
             return
         incrementer = cls._timing_dict_.setdefault(name, Incrementer())
         incrementer.update(time.time() - start_time)
@@ -730,8 +797,10 @@ class LoggingMixin:
             )
             timing_str_list.append("-" * 138)
         self.log_block_msg(
-            "\n".join(timing_str_list), title="timing",
-            verbose_level=None, msg_level=logging.DEBUG
+            "\n".join(timing_str_list),
+            title="timing",
+            verbose_level=None,
+            msg_level=logging.DEBUG,
         )
         return self
 
@@ -791,7 +860,10 @@ class PureLoggingMixin:
     def _get_logger_info(self, name):
         logger = name if isinstance(name, logging.Logger) else self._loggers_.get(name)
         if logger is None:
-            raise ValueError(f"logger for '{name}' is not defined, please call `_setup_logger` first")
+            raise ValueError(
+                f"logger for '{name}' is not defined, "
+                "please call `_setup_logger` first"
+            )
         if isinstance(name, str):
             logging_path = self._logger_paths_[name]
         else:
@@ -831,8 +903,16 @@ class PureLoggingMixin:
 
     def log_msg(self, name, msg, msg_level=logging.INFO, frame=None):
         logger, logging_folder, logging_path = self._get_logger_info(name)
-        with lock_manager(logging_folder, [logging_path], clear_stuffs_after_exc=False):
-            logger.log(msg_level, msg, extra={"func_prefix": LoggingMixin._get_func_prefix(frame)})
+        with lock_manager(
+            logging_folder,
+            [logging_path],
+            clear_stuffs_after_exc=False,
+        ):
+            logger.log(
+                msg_level,
+                msg,
+                extra={"func_prefix": LoggingMixin._get_func_prefix(frame)},
+            )
         return logger
 
     def log_block_msg(self, name, title, body, msg_level=logging.INFO, frame=None):
@@ -841,8 +921,14 @@ class PureLoggingMixin:
 
     def exception(self, name, msg, frame=None):
         logger, logging_folder, logging_path = self._get_logger_info(name)
-        with lock_manager(logging_folder, [logging_path], clear_stuffs_after_exc=False):
-            logger.exception(msg, extra={"func_prefix": LoggingMixin._get_func_prefix(frame)})
+        with lock_manager(
+            logging_folder,
+            [logging_path],
+            clear_stuffs_after_exc=False,
+        ):
+            logger.exception(
+                msg, extra={"func_prefix": LoggingMixin._get_func_prefix(frame)}
+            )
 
     def del_logger(self, name):
         logger = self.log_msg(name, f"clearing up logger information of '{name}'")
@@ -886,15 +972,10 @@ class SavingMixin(LoggingMixin):
             return False
         return verbose_level >= 5
 
-    def _data_tuple_context(self,
-                            *,
-                            is_saving: bool):
+    def _data_tuple_context(self, *, is_saving: bool):
         return data_tuple_saving_controller(self, is_saving=is_saving)
 
-    def save(self,
-             folder: str,
-             *,
-             compress: bool = True):
+    def save(self, folder: str, *, compress: bool = True):
         with self._data_tuple_context(is_saving=True):
             Saving.save_instance(self, folder, self.log_msg)
         if compress:
@@ -904,13 +985,15 @@ class SavingMixin(LoggingMixin):
                 Saving.compress(abs_folder, remove_original=True)
         return self
 
-    def load(self,
-             folder: str,
-             *,
-             compress: bool = True):
+    def load(self, folder: str, *, compress: bool = True):
         base_folder = os.path.dirname(os.path.abspath(folder))
         with lock_manager(base_folder, [folder]):
-            with Saving.compress_loader(folder, compress, remove_extracted=True, logging_mixin=self):
+            with Saving.compress_loader(
+                folder,
+                compress,
+                remove_extracted=True,
+                logging_mixin=self,
+            ):
                 with self._data_tuple_context(is_saving=False):
                     Saving.load_instance(self, folder, log_method=self.log_msg)
         return self
@@ -1039,10 +1122,16 @@ class Saving(LoggingMixin):
     def save_instance(instance, folder, log_method=None):
         instance_str = str(instance)
         Saving.log_with_external_method(
-            f"saving '{instance_str}' to '{folder}'", Saving.info_prefix, log_method, 5)
+            f"saving '{instance_str}' to '{folder}'",
+            Saving.info_prefix,
+            log_method,
+            5,
+        )
+
         def _record_array(k, v):
             extension = ".npy" if isinstance(v, np.ndarray) else ".lst"
             array_attribute_dict[f"{k}{extension}"] = v
+
         def _check_array(attr_key_, attr_value_, depth=0):
             if isinstance(attr_value_, dict):
                 for k in list(attr_value_.keys()):
@@ -1057,20 +1146,31 @@ class Saving(LoggingMixin):
                 _record_array(attr_key_, attr_value_)
                 if depth == 0:
                     cache_excludes.add(attr_key_)
-        main_file, instance_dict = Saving.get_cache_file(instance), shallow_copy_dict(instance.__dict__)
+
+        main_file = Saving.get_cache_file(instance)
+        instance_dict = shallow_copy_dict(instance.__dict__)
         verbose, cache_excludes = map(
-            getattr, [instance] * 2,
-            ["lock_verbose", "cache_excludes"], [False, set()]
+            getattr,
+            [instance] * 2,
+            ["lock_verbose", "cache_excludes"],
+            [False, set()],
         )
         if os.path.isdir(folder):
             if verbose:
                 prefix = Saving.warning_prefix
                 msg = f"'{folder}' will be cleaned up when saving '{instance_str}'"
-                Saving.log_with_external_method(msg, prefix, log_method, msg_level=logging.WARNING)
+                Saving.log_with_external_method(
+                    msg, prefix, log_method, msg_level=logging.WARNING
+                )
             shutil.rmtree(folder)
         save_path = os.path.join(folder, main_file)
         array_folder = os.path.join(folder, Saving.array_sub_folder)
-        tuple(map(lambda folder_: os.makedirs(folder_, exist_ok=True), [folder, array_folder]))
+        tuple(
+            map(
+                lambda folder_: os.makedirs(folder_, exist_ok=True),
+                [folder, array_folder],
+            )
+        )
         sorted_attributes, array_attribute_dict = sorted(instance_dict), {}
         delim, array_types = Saving.delim, (list, np.ndarray)
         for attr_key in sorted_attributes:
@@ -1079,14 +1179,27 @@ class Saving(LoggingMixin):
             attr_value = instance_dict[attr_key]
             _check_array(attr_key, attr_value)
         cache_excludes.add("_verbose_level_")
-        with lock_manager(folder, [os.path.join(folder, main_file)], name=instance_str):
+        with lock_manager(
+            folder,
+            [os.path.join(folder, main_file)],
+            name=instance_str,
+        ):
             with open(save_path, "wb") as f:
-                dill.dump({k: v for k, v in instance_dict.items() if k not in cache_excludes}, f, recurse=True)
+                d = {k: v for k, v in instance_dict.items() if k not in cache_excludes}
+                dill.dump(d, f, recurse=True)
         if array_attribute_dict:
             sorted_array_files = sorted(array_attribute_dict)
-            sorted_array_files_full_path = list(map(lambda f_: os.path.join(array_folder, f_), sorted_array_files))
-            with lock_manager(array_folder, sorted_array_files_full_path, name=f"{instance_str} (arrays)"):
-                for array_file, array_file_full_path in zip(sorted_array_files, sorted_array_files_full_path):
+            sorted_array_files_full_path = list(
+                map(lambda f_: os.path.join(array_folder, f_), sorted_array_files)
+            )
+            with lock_manager(
+                array_folder,
+                sorted_array_files_full_path,
+                name=f"{instance_str} (arrays)",
+            ):
+                for array_file, array_file_full_path in zip(
+                    sorted_array_files, sorted_array_files_full_path
+                ):
                     array_value = array_attribute_dict[array_file]
                     if array_file.endswith(".npy"):
                         np.save(array_file_full_path, array_value)
@@ -1094,7 +1207,9 @@ class Saving(LoggingMixin):
                         with open(array_file_full_path, "wb") as f:
                             np.save(f, array_value)
                     else:
-                        raise ValueError(f"unrecognized file type '{array_file}' occurred")
+                        raise ValueError(
+                            f"unrecognized file type '{array_file}' occurred"
+                        )
 
     @staticmethod
     def load_instance(instance, folder, *, log_method=None, verbose=True):
@@ -1107,14 +1222,17 @@ class Saving(LoggingMixin):
             )
         with open(os.path.join(folder, Saving.get_cache_file(instance)), "rb") as f:
             instance.__dict__.update(dill.load(f))
-        delim, array_folder = Saving.delim, os.path.join(folder, Saving.array_sub_folder)
+        delim = Saving.delim
+        array_folder = os.path.join(folder, Saving.array_sub_folder)
         for array_file in os.listdir(array_folder):
             attr_name, attr_ext = os.path.splitext(array_file)
             if attr_ext == ".npy":
                 load_method = np.load
             elif attr_ext == ".lst":
+
                 def load_method(path):
                     return np.load(path).tolist()
+
             else:
                 raise ValueError(f"unrecognized file type '{array_file}' occurred")
             array_value = load_method(os.path.join(array_folder, array_file))
@@ -1132,7 +1250,8 @@ class Saving(LoggingMixin):
         if os.path.isdir(folder):
             instance.log_msg(
                 f"'{folder}' already exists, it will be cleared up to save our model",
-                instance.warning_prefix, msg_level=logging.WARNING
+                instance.warning_prefix,
+                msg_level=logging.WARNING,
             )
             shutil.rmtree(folder)
         os.makedirs(folder)
@@ -1144,20 +1263,29 @@ class Saving(LoggingMixin):
             shutil.rmtree(abs_folder)
 
     @staticmethod
-    def compress_loader(folder: str,
-                        is_compress: bool,
-                        *,
-                        remove_extracted: bool = True,
-                        logging_mixin: LoggingMixin = None):
+    def compress_loader(
+        folder: str,
+        is_compress: bool,
+        *,
+        remove_extracted: bool = True,
+        logging_mixin: LoggingMixin = None,
+    ):
         class _manager(context_error_handler):
             def __enter__(self):
                 if is_compress:
                     if os.path.isdir(folder):
-                        msg = f"'{folder}' already exists, it will be cleared up to load our model"
+                        msg = (
+                            f"'{folder}' already exists, "
+                            "it will be cleared up to load our model"
+                        )
                         if logging_mixin is None:
                             print(msg)
                         else:
-                            logging_mixin.log_msg(msg, logging_mixin.warning_prefix, msg_level=logging.WARNING)
+                            logging_mixin.log_msg(
+                                msg,
+                                logging_mixin.warning_prefix,
+                                msg_level=logging.WARNING,
+                            )
                         shutil.rmtree(folder)
                     with zipfile.ZipFile(f"{folder}.zip", "r") as zip_ref:
                         zip_ref.extractall(folder)
@@ -1165,6 +1293,7 @@ class Saving(LoggingMixin):
             def _normal_exit(self, exc_type, exc_val, exc_tb):
                 if is_compress and remove_extracted:
                     shutil.rmtree(folder)
+
         return _manager()
 
 
@@ -1175,7 +1304,8 @@ candidates_type = Union[List[candidate_type], Dict[str, candidate_type]]
 class Grid:
     """
     Util class provides permutation of simple, flattened candidates.
-    * For permutation of complex, nested param dicts, please refers to `ParamGenerator` in `cftool.param_utils.core`.
+    * For permutation of complex, nested param dicts, please refers to
+      `ParamGenerator` in `cftool.param_utils.core`.
 
     Parameters
     ----------
@@ -1229,18 +1359,19 @@ def _offset_fn(value) -> int:
 
 
 class Nested:
-    def __init__(self,
-                 nested: union_nested_type,
-                 *,
-                 offset_fn: Callable[[Any], int] = _offset_fn,
-                 delim: str = "^_^"):
+    def __init__(
+        self,
+        nested: union_nested_type,
+        *,
+        offset_fn: Callable[[Any], int] = _offset_fn,
+        delim: str = "^_^",
+    ):
         self.nested = nested
         self.offset_fn, self.delim = offset_fn, delim
         self._flattened = self._sorted_flattened_keys = None
         self._sorted_flattened_offsets = None
 
-    def apply(self,
-              fn: Callable[[Any], Any]) -> "Nested":
+    def apply(self, fn: Callable[[Any], Any]) -> "Nested":
         def _apply(src, tgt):
             for k, v in src.items():
                 if isinstance(v, dict):
@@ -1249,6 +1380,7 @@ class Nested:
                 else:
                     tgt[k] = fn(v)
             return tgt
+
         return Nested(_apply(self.nested, {}))
 
     @property
@@ -1279,9 +1411,9 @@ class Nested:
             value = value[sub_key]
         return value
 
-    def flatten_nested(self,
-                       nested: nested_type) -> nested_type:
+    def flatten_nested(self, nested: nested_type) -> nested_type:
         flattened = []
+
         def _flatten(d, pre_key: Union[None, str]):
             for name, value in d.items():
                 if pre_key is None:
@@ -1293,14 +1425,14 @@ class Nested:
                 else:
                     flattened.append((next_pre_key, value))
             return flattened
+
         return dict(_flatten(nested, None))
 
-    def nest_flattened(self,
-                       flattened: flattened_type) -> nested_type:
-        sorted_pairs = sorted(map(
-            lambda k, v: (k.split(self.delim), v),
-            *zip(*flattened.items())
-        ), key=len)
+    def nest_flattened(self, flattened: flattened_type) -> nested_type:
+        sorted_pairs = sorted(
+            map(lambda k, v: (k.split(self.delim), v), *zip(*flattened.items())),
+            key=len,
+        )
         nested = {}
         for key_list, value in sorted_pairs:
             if len(key_list) == 1:
@@ -1312,8 +1444,7 @@ class Nested:
                 parent[key_list[-1]] = value
         return nested
 
-    def flattened2array(self,
-                        flattened: flattened_type) -> np.ndarray:
+    def flattened2array(self, flattened: flattened_type) -> np.ndarray:
         value_list = []
         for key in self.sorted_flattened_keys:
             value = flattened[key]
@@ -1321,11 +1452,13 @@ class Nested:
             value_list.extend(value)
         return np.array(value_list, np.float32)
 
-    def array2flattened(self,
-                        array: np.ndarray) -> flattened_type:
+    def array2flattened(self, array: np.ndarray) -> flattened_type:
         cursor = 0
         flattened = {}
-        for key, offset in zip(self.sorted_flattened_keys, self.sorted_flattened_offsets):
+        for key, offset in zip(
+            self.sorted_flattened_keys,
+            self.sorted_flattened_offsets,
+        ):
             end = cursor + offset
             if offset == 1:
                 value = array[cursor]
@@ -1351,19 +1484,21 @@ class Sampler:
     Examples
     ----------
     >>> import numpy as np
-    >>> probabilities = np.array([[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]], np.float32)
+    >>> arr = [[0.1, 0.2, 0.3, 0.4], [0.4, 0.3, 0.2, 0.1]]
+    >>> probabilities = np.array(arr, np.float32)
     >>> sampler = Sampler("multinomial", probabilities)
     >>> print(sampler.sample(10))
 
     """
 
-    def __init__(self,
-                 method: str,
-                 probabilities: np.ndarray):
+    def __init__(self, method: str, probabilities: np.ndarray):
         self.method = method
         self.p = probabilities
         self._p_shape = list(self.p.shape)
-        self._p_block = self.p if self.is_flat else self.p.reshape([-1, self._p_shape[-1]])
+        if self.is_flat:
+            self._p_block = self.p
+        else:
+            self._p_block = self.p.reshape([-1, self._p_shape[-1]])
 
     def __str__(self):
         return f"Sampler({self.method})"
@@ -1389,11 +1524,13 @@ class Sampler:
         if self.is_flat:
             sampled_indices = self._multinomial_flat(n, self.p)
         else:
-            sampled_indices = np.vstack([self._multinomial_flat(n, p) for p in self._p_block]).T
+            stacks = [self._multinomial_flat(n, p) for p in self._p_block]
+            sampled_indices = np.vstack(stacks).T
         return self._reshape(n, sampled_indices)
 
 
 # contexts
+
 
 class context_error_handler:
     """ Util class which provides exception handling when using context manager. """
@@ -1436,7 +1573,10 @@ class timeit(context_error_handler):
 
     def _normal_exit(self, exc_type, exc_val, exc_tb):
         prefix = LoggingMixin.info_prefix
-        print(f"{prefix}timing for {self._msg:^16s} : {time.time() - self._t:{self._p}.{self._p-2}f}")
+        print(
+            f"{prefix}timing for {self._msg:^16s} : "
+            f"{time.time() - self._t:{self._p}.{self._p-2}f}"
+        )
 
 
 class _lock_file_refresher(threading.Thread):
@@ -1467,7 +1607,8 @@ class _lock_file_refresher(threading.Thread):
 
 class lock_manager(context_error_handler, LoggingMixin):
     """
-    Util class to make simultaneously-write process safe with some hacked (ugly) tricks.
+    Util class to make simultaneously-write process safe with some
+    hacked (ugly) tricks.
 
     Examples
     --------
@@ -1487,8 +1628,16 @@ class lock_manager(context_error_handler, LoggingMixin):
     delay = 0.01
     __lock__ = "__lock__"
 
-    def __init__(self, workplace, stuffs, verbose_level=None,
-                 set_lock=True, clear_stuffs_after_exc=True, name=None, wait=1000):
+    def __init__(
+        self,
+        workplace,
+        stuffs,
+        verbose_level=None,
+        set_lock=True,
+        clear_stuffs_after_exc=True,
+        name=None,
+        wait=1000,
+    ):
         self._workplace = workplace
         self._verbose_level = verbose_level
         self._name, self._wait = name, wait
@@ -1501,27 +1650,47 @@ class lock_manager(context_error_handler, LoggingMixin):
         frame = inspect.currentframe().f_back
         self.log_msg(
             f"waiting for lock at {self.lock_file}",
-            self.info_prefix, 5, logging.DEBUG, frame
+            self.info_prefix,
+            5,
+            logging.DEBUG,
+            frame,
         )
         enter_time = file_modify = None
         while True:
             try:
                 fd = os.open(self.lock_file, os.O_CREAT | os.O_EXCL | os.O_RDWR)
-                self.log_msg("lock acquired", self.info_prefix, 5, logging.DEBUG, frame)
+                self.log_msg(
+                    "lock acquired",
+                    self.info_prefix,
+                    5,
+                    logging.DEBUG,
+                    frame,
+                )
                 if not self._set_lock:
                     self.log_msg(
                         "releasing lock since set_lock=False",
-                        self.info_prefix, 5, logging.DEBUG, frame
+                        self.info_prefix,
+                        5,
+                        logging.DEBUG,
+                        frame,
                     )
                     os.unlink(self.lock_file)
                     self.__refresher = None
                 else:
-                    self.log_msg("writing info to lock file", self.info_prefix, 5, logging.DEBUG, frame)
+                    self.log_msg(
+                        "writing info to lock file",
+                        self.info_prefix,
+                        5,
+                        logging.DEBUG,
+                        frame,
+                    )
                     with os.fdopen(fd, "a") as f:
-                        f.write(f"name      : {self._name}\n"
-                                f"timestamp : {timestamp()}\n"
-                                f"workplace : {self._workplace}\n"
-                                f"stuffs    :\n{self.cache_stuffs_str}")
+                        f.write(
+                            f"name      : {self._name}\n"
+                            f"timestamp : {timestamp()}\n"
+                            f"workplace : {self._workplace}\n"
+                            f"stuffs    :\n{self.cache_stuffs_str}"
+                        )
                     self.__refresher = _lock_file_refresher(self.lock_file)
                     self.__refresher.start()
                 break
@@ -1541,16 +1710,22 @@ class lock_manager(context_error_handler, LoggingMixin):
                             wait_time = time.time() - enter_time
                             if wait_time >= self._wait:
                                 raise ValueError(
-                                    f"'{self.lock_file}' has been waited for too long ({wait_time})")
+                                    f"'{self.lock_file}' has been waited "
+                                    f"for too long ({wait_time})"
+                                )
                     time.sleep(random.random() * self.delay + self.delay)
                 except ValueError:
-                    self.exception(f"lock_manager was blocked by dead lock ({self.lock_file})")
+                    msg = f"lock_manager was blocked by dead lock ({self.lock_file})"
+                    self.exception(msg)
                     raise
                 except FileNotFoundError:
                     pass
         self.log_block_msg(
-            self.cache_stuffs_str, title="start processing following stuffs:",
-            verbose_level=5, msg_level=logging.DEBUG, frame=frame
+            self.cache_stuffs_str,
+            title="start processing following stuffs:",
+            verbose_level=5,
+            msg_level=logging.DEBUG,
+            frame=frame,
         )
         self._is_locked = True
         return self
@@ -1574,10 +1749,22 @@ class lock_manager(context_error_handler, LoggingMixin):
         if self._clear_stuffs:
             for stuff in self._stuffs:
                 if os.path.isfile(stuff):
-                    self.log_msg(f"clearing cached file: {stuff}", "~~~~~~ ", 5, logging.ERROR, frame)
+                    self.log_msg(
+                        f"clearing cached file: {stuff}",
+                        "~~~~~~ ",
+                        5,
+                        logging.ERROR,
+                        frame,
+                    )
                     os.remove(stuff)
                 elif os.path.isdir(stuff):
-                    self.log_msg(f"clearing cached directory: {stuff}", "~~~~~~ ", 5, logging.ERROR, frame)
+                    self.log_msg(
+                        f"clearing cached directory: {stuff}",
+                        "~~~~~~ ",
+                        5,
+                        logging.ERROR,
+                        frame,
+                    )
                     shutil.rmtree(stuff)
         self._normal_exit(exc_type, exc_val, exc_tb, frame)
 
@@ -1614,7 +1801,8 @@ class batch_manager(context_error_handler):
     ----------
     inputs : tuple(np.ndarray), auxiliary array inputs.
     n_elem : {int, float}, indicates how many elements will be processed in a batch.
-    batch_size : int, indicates the batch_size; if None, batch_size will be calculated by n_elem.
+    batch_size : int, indicates the batch_size; if None, batch_size will be
+                      calculated by `n_elem`.
 
     Examples
     --------
@@ -1628,21 +1816,26 @@ class batch_manager(context_error_handler):
 
     """
 
-    def __init__(self,
-                 *inputs,
-                 n_elem: int = 1e6,
-                 batch_size: int = None,
-                 max_batch_size: int = 1024):
+    def __init__(
+        self,
+        *inputs,
+        n_elem: int = 1e6,
+        batch_size: int = None,
+        max_batch_size: int = 1024,
+    ):
         if not inputs:
             raise ValueError("inputs should be provided in general_batch_manager")
         input_lengths = list(map(len, inputs))
         self._n, self._inputs = input_lengths[0], inputs
-        assert all(length == self._n for length in input_lengths), "inputs should be of same length"
+        assert_msg = "inputs should be of same length"
+        assert all(length == self._n for length in input_lengths), assert_msg
         if batch_size is not None:
             self._batch_size = batch_size
         else:
             n_elem = int(n_elem)
-            self._batch_size = int(n_elem / sum(map(lambda arr: prod(arr.shape[1:]), inputs)))
+            self._batch_size = int(
+                n_elem / sum(map(lambda arr: prod(arr.shape[1:]), inputs))
+            )
         self._batch_size = min(max_batch_size, min(self._n, self._batch_size))
         self._n_epoch = int(self._n / self._batch_size)
         self._n_epoch += int(self._n_epoch * self._batch_size < self._n)
@@ -1657,7 +1850,12 @@ class batch_manager(context_error_handler):
     def __next__(self):
         if self._start >= self._n:
             raise StopIteration
-        batched_data = tuple(map(lambda arr: arr[self._start:self._end], self._inputs))
+        batched_data = tuple(
+            map(
+                lambda arr: arr[self._start : self._end],
+                self._inputs,
+            )
+        )
         self._start, self._end = self._end, self._end + self._batch_size
         if len(batched_data) == 1:
             return batched_data[0]
@@ -1692,11 +1890,7 @@ class timing_context(context_error_handler):
 
     """
 
-    def __init__(self,
-                 logging_mixin: LoggingMixin,
-                 name: str,
-                 *,
-                 enable: bool = True):
+    def __init__(self, logging_mixin: LoggingMixin, name: str, *, enable: bool = True):
         self._cls, self._name = logging_mixin, name
         self._enable = enable
 
@@ -1725,21 +1919,23 @@ class data_tuple_saving_controller(context_error_handler):
 
     __prefix__ = "_Data_Tuple__"
 
-    def __init__(self,
-                 instance: SavingMixin,
-                 *, is_saving: bool):
+    def __init__(self, instance: SavingMixin, *, is_saving: bool):
         self._instance = instance
         self._is_saving = is_saving
         self._data_tuple_base = instance.data_tuple_base
         self._data_tuple_attributes = instance.data_tuple_attributes
         if self.trigger and is_saving:
             self._data_tuples: List[NamedTuple] = [
-                instance.__dict__.pop(attr) for attr in self._data_tuple_attributes]
+                instance.__dict__.pop(attr) for attr in self._data_tuple_attributes
+            ]
 
     def __enter__(self):
         if self.trigger and self._is_saving:
             self.__tmp_attr_list = []
-            for attr, data_tuple in zip(self._data_tuple_attributes, self._data_tuples):
+            for attr, data_tuple in zip(
+                self._data_tuple_attributes,
+                self._data_tuples,
+            ):
                 local_attr_list = self._get_attr(attr, data_tuple)
                 for local_attr, data in zip(local_attr_list, data_tuple):
                     setattr(self._instance, local_attr, data)
@@ -1747,12 +1943,18 @@ class data_tuple_saving_controller(context_error_handler):
 
     @property
     def trigger(self):
-        return self._data_tuple_base is not None and self._data_tuple_attributes is not None
+        return (
+            self._data_tuple_base is not None
+            and self._data_tuple_attributes is not None
+        )
 
     def _normal_exit(self, exc_type, exc_val, exc_tb):
         if self.trigger:
             if self._is_saving:
-                for attr, data_tuple in zip(self._data_tuple_attributes, self._data_tuples):
+                for attr, data_tuple in zip(
+                    self._data_tuple_attributes,
+                    self._data_tuples,
+                ):
                     setattr(self._instance, attr, self._data_tuple_base(*data_tuple))
                 for attr in self.__tmp_attr_list:
                     self._instance.__dict__.pop(attr)
@@ -1763,20 +1965,33 @@ class data_tuple_saving_controller(context_error_handler):
                     local_attr_values = []
                     for idx in range(len(attr_dict)):
                         local_attr = attr_dict[idx]
-                        local_attr_values.append(self._instance.__dict__.pop(local_attr))
-                    setattr(self._instance, core_attr, self._data_tuple_base(*local_attr_values))
+                        local_attr_values.append(
+                            self._instance.__dict__.pop(local_attr)
+                        )
+                    setattr(
+                        self._instance,
+                        core_attr,
+                        self._data_tuple_base(*local_attr_values),
+                    )
 
-    def _get_attr(self,
-                  attr: str = None,
-                  data_tuple: NamedTuple = None) -> Union[None, List[str], Dict[str, Dict[int, str]]]:
+    def _get_attr(
+        self,
+        attr: str = None,
+        data_tuple: NamedTuple = None,
+    ) -> Union[None, List[str], Dict[str, Dict[int, str]]]:
         prefix = self.__prefix__
         if self._is_saving:
             if data_tuple is None:
                 raise ValueError("data tuple should be provided in saving context")
             assert isinstance(attr, str), "attr should be string in saving context"
             return [f"{prefix}{attr}_{i}" for i in range(len(data_tuple))]
-        attr_pool = list(filter(lambda attr_: attr_.startswith(prefix), self._instance.__dict__.keys()))
-        attr_pool_split = [attr_[len(prefix):].split("_") for attr_ in attr_pool]
+        attr_pool = list(
+            filter(
+                lambda attr_: attr_.startswith(prefix),
+                self._instance.__dict__.keys(),
+            )
+        )
+        attr_pool_split = [attr_[len(prefix) :].split("_") for attr_ in attr_pool]
         attr_pool_map = {}
         for attr, attr_split in zip(attr_pool, attr_pool_split):
             core_attr, idx = "_".join(attr_split[:-1]), int(attr_split[-1])
@@ -1784,19 +1999,54 @@ class data_tuple_saving_controller(context_error_handler):
             local_map[idx] = attr
         loaded_attr_list = sorted(attr_pool_map)
         preset_attr_list = sorted(self._data_tuple_attributes)
-        assert_msg = f"loaded attributes ({loaded_attr_list}) " \
-                     f"are not identical with preset attributes ({preset_attr_list})"
+        assert_msg = (
+            f"loaded attributes ({loaded_attr_list}) "
+            f"are not identical with preset attributes ({preset_attr_list})"
+        )
         assert loaded_attr_list == preset_attr_list, assert_msg
         return attr_pool_map
 
 
 __all__ = [
-    "timestamp", "prod", "hash_code", "prefix_dict", "shallow_copy_dict", "update_dict", "fix_float_to_length",
-    "truncate_string_to_length", "grouped", "is_numeric", "get_one_hot", "show_or_save", "show_or_return",
-    "get_indices_from_another", "UniqueIndices", "get_unique_indices", "get_counter_from_arr", "allclose",
-    "register_core", "Incrementer", "LoggingMixin", "PureLoggingMixin", "SavingMixin", "Saving", "Grid",
-    "Sampler", "context_error_handler", "timeit", "lock_manager", "batch_manager", "timing_context",
-    "data_tuple_saving_controller", "nested_type", "all_nested_type", "union_nested_type",
-    "flattened_type", "all_flattened_type", "union_flattened_type", "Nested",
-    "check", "SanityChecker",
+    "timestamp",
+    "prod",
+    "hash_code",
+    "prefix_dict",
+    "shallow_copy_dict",
+    "update_dict",
+    "fix_float_to_length",
+    "truncate_string_to_length",
+    "grouped",
+    "is_numeric",
+    "get_one_hot",
+    "show_or_save",
+    "show_or_return",
+    "get_indices_from_another",
+    "UniqueIndices",
+    "get_unique_indices",
+    "get_counter_from_arr",
+    "allclose",
+    "register_core",
+    "Incrementer",
+    "LoggingMixin",
+    "PureLoggingMixin",
+    "SavingMixin",
+    "Saving",
+    "Grid",
+    "Sampler",
+    "context_error_handler",
+    "timeit",
+    "lock_manager",
+    "batch_manager",
+    "timing_context",
+    "data_tuple_saving_controller",
+    "nested_type",
+    "all_nested_type",
+    "union_nested_type",
+    "flattened_type",
+    "all_flattened_type",
+    "union_flattened_type",
+    "Nested",
+    "check",
+    "SanityChecker",
 ]

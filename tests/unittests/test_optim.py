@@ -21,24 +21,28 @@ class TestOptim(unittest.TestCase):
             def parameter_names(self) -> List[str]:
                 return ["w"]
 
-            def loss_function(self,
-                              x_batch: np.ndarray,
-                              y_batch: np.ndarray,
-                              batch_indices: np.ndarray) -> Dict[str, Any]:
+            def loss_function(
+                self,
+                x_batch: np.ndarray,
+                y_batch: np.ndarray,
+                batch_indices: np.ndarray,
+            ) -> Dict[str, Any]:
                 x_batch_stacked = _get_stacked(x_batch)
                 predictions = self.w * x_batch_stacked
                 diff = predictions - y_batch
                 return {
                     "diff": diff,
                     "x_stacked": x_batch_stacked,
-                    "loss": np.abs(diff).mean().item()
+                    "loss": np.abs(diff).mean().item(),
                 }
 
-            def gradient_function(self,
-                                  x_batch: np.ndarray,
-                                  y_batch: np.ndarray,
-                                  batch_indices: np.ndarray,
-                                  loss_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
+            def gradient_function(
+                self,
+                x_batch: np.ndarray,
+                y_batch: np.ndarray,
+                batch_indices: np.ndarray,
+                loss_dict: Dict[str, Any],
+            ) -> Dict[str, np.ndarray]:
                 diff, x_stacked_ = map(loss_dict.get, ["diff", "x_stacked"])
                 return {"w": (np.sign(diff) * x_stacked_).mean(0, keepdims=True)}
 
@@ -54,5 +58,5 @@ class TestOptim(unittest.TestCase):
             self.assertTrue(np.allclose(gd.w, w_true, 1e-3, 1e-3))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -6,12 +6,14 @@ from typing import *
 from PIL import Image
 
 
-def draw_contours(w: int,
-                  h: int,
-                  contours: List[np.ndarray],
-                  *,
-                  saving_path: str = None,
-                  color: Tuple[int, int, int] = (0, 255, 0)) -> Image.Image:
+def draw_contours(
+    w: int,
+    h: int,
+    contours: List[np.ndarray],
+    *,
+    saving_path: str = None,
+    color: Tuple[int, int, int] = (0, 255, 0)
+) -> Image.Image:
     canvas = np.zeros([h, w, 3]).astype(np.uint8)
     cv2.drawContours(canvas, contours, -1, color, 3)
     im = Image.fromarray(canvas)
@@ -21,9 +23,7 @@ def draw_contours(w: int,
 
 
 class Reader:
-    def __init__(self,
-                 img_path: str,
-                 flag: int = cv2.IMREAD_UNCHANGED):
+    def __init__(self, img_path: str, flag: int = cv2.IMREAD_UNCHANGED):
         try:
             self.img_array = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), flag)
         except:
@@ -33,9 +33,7 @@ class Reader:
     def is_valid(self):
         return self.img_array is not None
 
-    def to_gray(self,
-                *,
-                reverse: bool = False) -> Union[np.ndarray, None]:
+    def to_gray(self, *, reverse: bool = False) -> Union[np.ndarray, None]:
         if not self.is_valid:
             return
         if len(self.img_array.shape) == 2:

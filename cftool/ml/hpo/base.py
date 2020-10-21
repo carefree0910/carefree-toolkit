@@ -22,13 +22,15 @@ creator_type = Callable[[np.ndarray, np.ndarray, Dict[str, Any]], created_type]
 
 
 class HPOBase(LoggingMixin, metaclass=ABCMeta):
-    def __init__(self,
-                 creator: creator_type,
-                 params: Dict[str, DataType],
-                 *,
-                 converter: Callable[[List[created_type]], patterns_type] = None,
-                 verbose_level: int = 2,
-                 **kwargs):
+    def __init__(
+        self,
+        creator: creator_type,
+        params: Dict[str, DataType],
+        *,
+        converter: Callable[[List[created_type]], patterns_type] = None,
+        verbose_level: int = 2,
+        **kwargs,
+    ):
         self._caches = {}
         self._init_config(**kwargs)
         self._creator = creator
@@ -61,17 +63,20 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         key = "core"
         comparer = Comparer({key: patterns}, self.estimators)
         final_scores = comparer.compare(
-            self.x_validation, self.y_validation,
+            self.x_validation,
+            self.y_validation,
             scoring_function=self._estimator_scoring_function,
-            verbose_level=6
+            verbose_level=6,
         ).final_scores
         return {metric: scores[key] for metric, scores in final_scores.items()}
 
-    def _core(self,
-              param: nested_type,
-              *,
-              convert: bool = True,
-              parallel_run: bool = False) -> List[created_type]:
+    def _core(
+        self,
+        param: nested_type,
+        *,
+        convert: bool = True,
+        parallel_run: bool = False,
+    ) -> List[created_type]:
         range_list = list(range(self._num_retry))
         _task = lambda _=0: self._creator(self.x_train, self.y_train, param)
         tqdm_config = {"position": 1, "leave": False}
@@ -83,7 +88,7 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
             parallel = Parallel(
                 self._num_jobs,
                 use_tqdm=self._use_tqdm,
-                tqdm_config=tqdm_config
+                tqdm_config=tqdm_config,
             )
             created = parallel(_task, range_list).ordered_results
         if not convert:
@@ -91,21 +96,23 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         patterns = created if self._converter is None else self._converter(created)
         return patterns
 
-    def search(self,
-               x: generic_data_type,
-               y: generic_data_type,
-               estimators: List[Estimator],
-               x_validation: generic_data_type = None,
-               y_validation: generic_data_type = None,
-               *,
-               num_jobs: int = 4,
-               num_retry: int = 4,
-               num_search: Union[str, int, float] = 10,
-               score_weights: Union[Dict[str, float], None] = None,
-               estimator_scoring_function: Union[str, scoring_fn_type] = "default",
-               use_tqdm: bool = True,
-               verbose_level: int = 2,
-               **kwargs) -> "HPOBase":
+    def search(
+        self,
+        x: generic_data_type,
+        y: generic_data_type,
+        estimators: List[Estimator],
+        x_validation: generic_data_type = None,
+        y_validation: generic_data_type = None,
+        *,
+        num_jobs: int = 4,
+        num_retry: int = 4,
+        num_search: Union[str, int, float] = 10,
+        score_weights: Union[Dict[str, float], None] = None,
+        estimator_scoring_function: Union[str, scoring_fn_type] = "default",
+        use_tqdm: bool = True,
+        verbose_level: int = 2,
+        **kwargs,
+    ) -> "HPOBase":
 
         if x_validation is None and y_validation is None:
             x_validation, y_validation = x, y
@@ -117,21 +124,28 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         num_params = self.param_generator.num_params
         if isinstance(num_search, str):
             if num_search != "all":
-                raise ValueError(f"num_search can only be 'all' when it is a string, '{num_search}' found")
+                raise ValueError(
+                    "num_search can only be 'all' when it is a string, "
+                    f"'{num_search}' found"
+                )
             if num_params == math.inf:
-                raise ValueError("num_search is 'all' but we have infinite params to search")
+                raise ValueError(
+                    "num_search is 'all' but we have infinite params to search"
+                )
             num_search = num_params
         if num_search > num_params:
             self.log_msg(
-                f"`n` is larger than total choices we've got ({num_params}), therefore only "
-                f"{num_params} searches will be run", self.warning_prefix, msg_level=logging.WARNING
+                f"`n` is larger than total choices we've got ({num_params}), "
+                f"therefore only {num_params} searches will be run",
+                self.warning_prefix,
+                msg_level=logging.WARNING,
             )
             num_search = num_params
         num_jobs = min(num_search, num_jobs)
 
         self._use_tqdm = use_tqdm
         if score_weights is None:
-            score_weights = {estimator.type: 1. for estimator in estimators}
+            score_weights = {estimator.type: 1.0 for estimator in estimators}
         self._score_weights = score_weights
         self._estimator_scoring_function = estimator_scoring_function
         self._num_retry, self._num_jobs = num_retry, num_jobs
@@ -146,13 +160,16 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
                     param = self._sample_param()
                     self.last_code = hash_code(str(param))
                     self.param_mapping[self.last_code] = param
-                    self.patterns[self.last_code] = self._core(param, convert=True, parallel_run=num_jobs > 1)
+                    self.patterns[self.last_code] = self._core(
+                        param, convert=True, parallel_run=num_jobs > 1
+                    )
             else:
                 if num_params == math.inf:
                     all_params = [self.param_generator.pop() for _ in range(num_search)]
                 else:
                     all_params = []
-                    all_indices = set(random.sample(list(range(num_search)), k=num_search))
+                    sampled = random.sample(list(range(num_search)), k=num_search)
+                    all_indices = set(sampled)
                     for i, param in enumerate(self.param_generator.all()):
                         if i in all_indices:
                             all_params.append(param)
@@ -176,9 +193,10 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
 
         self.comparer = Comparer(self.patterns, estimators)
         self.comparer.compare(
-            x_validation, y_validation,
+            x_validation,
+            y_validation,
             scoring_function=estimator_scoring_function,
-            verbose_level=verbose_level
+            verbose_level=verbose_level,
         )
 
         weighted_scores = defaultdict(float)
@@ -199,21 +217,32 @@ class HPOBase(LoggingMixin, metaclass=ABCMeta):
         for metric in sorted_metrics:
             metric_method = best_methods[metric]
             metric_statistics = estimator_statistics[metric][metric_method]
-            target_statistics.append({
-                "method": metric_method,
-                "mean": fix_float_to_length(metric_statistics["mean"], 8),
-                "std": fix_float_to_length(metric_statistics["std"], 8)
-            })
+            target_statistics.append(
+                {
+                    "method": metric_method,
+                    "mean": fix_float_to_length(metric_statistics["mean"], 8),
+                    "std": fix_float_to_length(metric_statistics["std"], 8),
+                }
+            )
         msg = "\n".join(
-            sum([[
-                "-" * 100,
-                f"{metric}  ({stat['method']}) ({stat['mean']} ± {stat['std']})",
-                "-" * 100,
-                param_msgs[metric]
-            ] for metric, stat in zip(sorted_metrics, target_statistics)], [])
+            sum(
+                [
+                    [
+                        "-" * 100,
+                        f"{metric}  ({stat['method']}) "
+                        f"({stat['mean']} ± {stat['std']})",
+                        "-" * 100,
+                        param_msgs[metric],
+                    ]
+                    for metric, stat in zip(sorted_metrics, target_statistics)
+                ],
+                [],
+            )
             + [
-                "-" * 100, f"best ({best_method})", "-" * 100,
-                pprint.pformat(self.best_param)
+                "-" * 100,
+                f"best ({best_method})",
+                "-" * 100,
+                pprint.pformat(self.best_param),
             ]
             + ["-" * 100]
         )

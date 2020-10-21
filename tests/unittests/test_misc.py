@@ -39,7 +39,10 @@ class TestMisc(unittest.TestCase):
     def test_prefix_dict(self):
         prefix = "^_^"
         d = {"a": 1, "b": 2, "c": 3}
-        self.assertDictEqual(prefix_dict(d, prefix), {"^_^_a": 1, "^_^_b": 2, "^_^_c": 3})
+        self.assertDictEqual(
+            prefix_dict(d, prefix),
+            {"^_^_a": 1, "^_^_b": 2, "^_^_c": 3},
+        )
 
     def test_shallow_copy_dict(self):
         d = {"a": {"b": 1}}
@@ -58,10 +61,10 @@ class TestMisc(unittest.TestCase):
 
     def test_fix_float_to_length(self):
         self.assertEqual(fix_float_to_length(1, 8), "1.000000")
-        self.assertEqual(fix_float_to_length(1., 8), "1.000000")
+        self.assertEqual(fix_float_to_length(1.0, 8), "1.000000")
         self.assertEqual(fix_float_to_length(1.0, 8), "1.000000")
         self.assertEqual(fix_float_to_length(-1, 8), "-1.00000")
-        self.assertEqual(fix_float_to_length(-1., 8), "-1.00000")
+        self.assertEqual(fix_float_to_length(-1.0, 8), "-1.00000")
         self.assertEqual(fix_float_to_length(-1.0, 8), "-1.00000")
         self.assertEqual(fix_float_to_length(1234567, 8), "1234567.")
         self.assertEqual(fix_float_to_length(12345678, 8), "12345678")
@@ -77,14 +80,17 @@ class TestMisc(unittest.TestCase):
     def test_grouped(self):
         lst = [1, 2, 3, 4, 5, 6, 7, 8]
         self.assertEqual(grouped(lst, 3), [(1, 2, 3), (4, 5, 6)])
-        self.assertEqual(grouped(lst, 3, keep_tail=True), [(1, 2, 3), (4, 5, 6), (7, 8)])
+        self.assertEqual(
+            grouped(lst, 3, keep_tail=True),
+            [(1, 2, 3), (4, 5, 6), (7, 8)],
+        )
         unit = 10 ** 5
         lst = list(range(3 * unit + 1))
         gt = [
             tuple(range(unit)),
             tuple(range(unit, 2 * unit)),
             tuple(range(2 * unit, 3 * unit)),
-            (3 * unit,)
+            (3 * unit,),
         ]
         self.assertEqual(grouped(lst, unit, keep_tail=True), gt)
         self.assertEqual(grouped(lst, unit), gt[:-1])
@@ -104,9 +110,9 @@ class TestMisc(unittest.TestCase):
         indices = [1, 4, 2, 3]
         self.assertEqual(
             [[0, 1, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0]],
-            get_one_hot(indices, 5).tolist()
+            get_one_hot(indices, 5).tolist(),
         )
-        
+
     def test_get_indices_from_another(self):
         base, segment = np.arange(100), np.random.permutation(100)[:10]
         self.assertTrue(np.allclose(get_indices_from_another(base, segment), segment))
@@ -116,7 +122,8 @@ class TestMisc(unittest.TestCase):
         rs = get_unique_indices(arr)
         self.assertTrue(np.allclose(rs.unique, np.array([0, 1, 2, 3, 4])))
         self.assertTrue(np.allclose(rs.unique_cnt, np.array([1, 3, 2, 1, 1])))
-        self.assertTrue(np.allclose(rs.sorting_indices, np.array([6, 0, 5, 7, 1, 3, 2, 4])))
+        gt = np.array([6, 0, 5, 7, 1, 3, 2, 4])
+        self.assertTrue(np.allclose(rs.sorting_indices, gt))
         self.assertTrue(np.allclose(rs.split_arr, np.array([1, 4, 6, 7])))
         gt_indices_list = list(map(np.array, [[6], [0, 5, 7], [1, 3], [2], [4]]))
         for rs_indices, gt_indices in zip(rs.split_indices, gt_indices_list):
@@ -148,9 +155,10 @@ class TestMisc(unittest.TestCase):
 
         def register(name):
             return register_core(
-                name, test_dict,
+                name,
+                test_dict,
                 before_register=before_register,
-                after_register=after_register
+                after_register=after_register,
             )
 
         @register("foo")
@@ -174,25 +182,36 @@ class TestMisc(unittest.TestCase):
         incrementer = Incrementer()
         for i, n in enumerate(sequence):
             incrementer.update(n)
-            sub_sequence = sequence[:i+1]
+            sub_sequence = sequence[: i + 1]
             mean, std = incrementer.mean, incrementer.std
-            self.assertTrue(np.allclose([mean, std], [sub_sequence.mean(), sub_sequence.std()]))
+            self.assertTrue(
+                np.allclose(
+                    [mean, std],
+                    [sub_sequence.mean(), sub_sequence.std()],
+                )
+            )
         window_sizes = [3, 10, 30, 100]
         for window_size in window_sizes:
             incrementer = Incrementer(window_size)
             for i, n in enumerate(sequence):
                 incrementer.update(n)
                 if i < window_size:
-                    sub_sequence = sequence[:i + 1]
+                    sub_sequence = sequence[: i + 1]
                 else:
-                    sub_sequence = sequence[i-window_size+1:i+1]
+                    sub_sequence = sequence[i - window_size + 1 : i + 1]
                 mean, std = incrementer.mean, incrementer.std
-                self.assertTrue(np.allclose([mean, std], [sub_sequence.mean(), sub_sequence.std()]))
+                self.assertTrue(
+                    np.allclose(
+                        [mean, std],
+                        [sub_sequence.mean(), sub_sequence.std()],
+                    )
+                )
 
     def test_check(self):
         @check({"arg1": "int", "arg2": ["int", "odd"]})
         def foo(arg1, arg2):
             pass
+
         foo(1, 1)
         with self.assertRaises(ValueError):
             foo(1, 2)
@@ -202,5 +221,5 @@ class TestMisc(unittest.TestCase):
             foo(1, 1.1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

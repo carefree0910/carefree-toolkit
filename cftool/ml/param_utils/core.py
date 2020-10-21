@@ -24,7 +24,10 @@ class ParamsGenerator:
     ----------
     >>> grid = ParamsGenerator({
     >>>     "a": Any(Choice(values=[1, 2, 3])),
-    >>>     "c": {"d": Int(Choice(values=[1, 2, 3])), "e": Float(Choice(values=[1, 2]))}
+    >>>     "c": {
+    >>>         "d": Int(Choice(values=[1, 2, 3])),
+    >>>         "e": Float(Choice(values=[1, 2])),
+    >>>     }
     >>> })
     >>> for param in grid.all():
     >>>     print(param)
@@ -37,11 +40,13 @@ class ParamsGenerator:
 
     """
 
-    def __init__(self,
-                 params: params_type,
-                 *,
-                 normalize_method: Union[str, None] = None,
-                 normalize_config: Dict[str, Any] = None):
+    def __init__(
+        self,
+        params: params_type,
+        *,
+        normalize_method: Union[str, None] = None,
+        normalize_config: Dict[str, Any] = None,
+    ):
         self._data_types = params
 
         def _data_type_offset(value: DataType) -> int:
@@ -56,6 +61,7 @@ class ParamsGenerator:
         else:
             if normalize_config is None:
                 normalize_config = {}
+
             def _data_type_normalizer(value: DataType) -> Normalizer:
                 return Normalizer(normalize_method, value, **normalize_config)
 
@@ -79,12 +85,15 @@ class ParamsGenerator:
             if math.isinf(num_params):
                 return num_params
             return int(num_params)
+
         return _num_params(self._data_types)
 
     @property
     def array_dim(self) -> int:
         if self._array_dim is None:
-            self._array_dim = self.flattened2array(self.flatten_nested(self.pop())).shape[0]
+            self._array_dim = self.flattened2array(
+                self.flatten_nested(self.pop())
+            ).shape[0]
         return self._array_dim
 
     @property
@@ -130,22 +139,20 @@ class ParamsGenerator:
                 else:
                     tgt[k] = v.pop()
             return tgt
+
         return _pop(self._data_types, {})
 
     def all(self) -> Iterator[nested_type]:
         for flattened_params in Grid(self.all_flattened_params):
             yield self._data_types_nested.nest_flattened(flattened_params)
 
-    def flatten_nested(self,
-                       nested: nested_type) -> nested_type:
+    def flatten_nested(self, nested: nested_type) -> nested_type:
         return self._data_types_nested.flatten_nested(nested)
 
-    def nest_flattened(self,
-                       flattened: flattened_type) -> nested_type:
+    def nest_flattened(self, flattened: flattened_type) -> nested_type:
         return self._data_types_nested.nest_flattened(flattened)
 
-    def flattened2array(self,
-                        flattened: flattened_type) -> np.ndarray:
+    def flattened2array(self, flattened: flattened_type) -> np.ndarray:
         if self._normalizers_flattened is None:
             normalized = flattened
         else:
@@ -155,8 +162,7 @@ class ParamsGenerator:
             }
         return self._data_types_nested.flattened2array(normalized)
 
-    def array2flattened(self,
-                        array: np.ndarray) -> flattened_type:
+    def array2flattened(self, array: np.ndarray) -> flattened_type:
         normalized = self._data_types_nested.array2flattened(array)
         if self._normalizers_flattened is None:
             flattened = normalized

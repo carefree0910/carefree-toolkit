@@ -17,9 +17,11 @@ class Optimizer(ABC):
         self._caches = {}
 
     @abstractmethod
-    def step(self,
-             model: "GradientDescentMixin",
-             gradient_dict: Dict[str, np.ndarray]):
+    def step(
+        self,
+        model: "GradientDescentMixin",
+        gradient_dict: Dict[str, np.ndarray],
+    ):
         pass
 
     def reset(self):
@@ -67,7 +69,9 @@ class GradientDescentMixin(ABC):
 
     @abstractmethod
     def parameter_names(self) -> List[str]:
-        """ This method returns all parameters' names, each name should correspond to a property.
+        """
+        This method returns all parameters' names, each name should
+        correspond to a property.
 
         e.g. in LinearRegression, if self._w & self._b are the parameters,
         this method should return : ["_w", "_b"].
@@ -79,11 +83,14 @@ class GradientDescentMixin(ABC):
         """
 
     @abstractmethod
-    def loss_function(self,
-                      x_batch: np.ndarray,
-                      y_batch: np.ndarray,
-                      batch_indices: np.ndarray) -> Dict[str, Any]:
-        """ This method calculate the loss of one batch.
+    def loss_function(
+        self,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        batch_indices: np.ndarray,
+    ) -> Dict[str, Any]:
+        """
+        This method calculate the loss of one batch.
 
         Parameters
         ----------
@@ -93,18 +100,22 @@ class GradientDescentMixin(ABC):
 
         Returns
         -------
-        results : Dict[str, Any], contains loss value and intermediate results which are critical.
+        results : Dict[str, Any], contains loss value and intermediate results
+                                  which are critical.
         * Must contains 'loss' key, whose value should be a float.
 
         """
 
     @abstractmethod
-    def gradient_function(self,
-                          x_batch: np.ndarray,
-                          y_batch: np.ndarray,
-                          batch_indices: np.ndarray,
-                          loss_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
-        """ This method calculate the gradients of one batch.
+    def gradient_function(
+        self,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        batch_indices: np.ndarray,
+        loss_dict: Dict[str, Any],
+    ) -> Dict[str, np.ndarray]:
+        """
+        This method calculate the gradients of one batch.
 
         Parameters
         ----------
@@ -124,13 +135,15 @@ class GradientDescentMixin(ABC):
         if getattr(self, "_optimizer", None) is None:
             self._optimizer = optimizer_dict[self.opt](self.lr, **kwargs)
 
-    def setup_optimizer(self,
-                        optimizer: str,
-                        lr: float,
-                        *,
-                        epoch: int = 20,
-                        batch_size: int = 32,
-                        **kwargs) -> "GradientDescentMixin":
+    def setup_optimizer(
+        self,
+        optimizer: str,
+        lr: float,
+        *,
+        epoch: int = 20,
+        batch_size: int = 32,
+        **kwargs
+    ) -> "GradientDescentMixin":
         self._lr = lr
         self._opt = optimizer
         self._epoch = epoch
@@ -138,9 +151,7 @@ class GradientDescentMixin(ABC):
         self._setup_optimizer(**kwargs)
         return self
 
-    def gradient_descent(self,
-                         x: np.ndarray,
-                         y: np.ndarray) -> "GradientDescentMixin":
+    def gradient_descent(self, x: np.ndarray, y: np.ndarray) -> "GradientDescentMixin":
         self._setup_optimizer(**self.optimizer_config)
         self._optimizer.reset()
         n_sample = len(x)
@@ -155,10 +166,12 @@ class GradientDescentMixin(ABC):
             local_losses = []
             indices = np.random.permutation(n_sample)
             for j in range(n_step):
-                batch_indices = indices[j*b_size:(j+1)*b_size]
+                batch_indices = indices[j * b_size : (j + 1) * b_size]
                 x_batch, y_batch = x[batch_indices], y[batch_indices]
                 loss_dict = self.loss_function(x_batch, y_batch, batch_indices)
-                gradient_dict = self.gradient_function(x_batch, y_batch, batch_indices, loss_dict)
+                gradient_dict = self.gradient_function(
+                    x_batch, y_batch, batch_indices, loss_dict
+                )
                 self._optimizer.step(self, gradient_dict)
                 local_losses.append(loss_dict["loss"])
             if self.show_tqdm:
@@ -170,7 +183,10 @@ class GradientDescentMixin(ABC):
         base = np.arange(len(self._losses))
         to_array = partial(np.array, dtype=np.float32)
         losses = list(map(to_array, self._losses))
-        mean, std = map(to_array, map(list, [map(np.mean, losses), map(np.std, losses)]))
+        mean, std = map(
+            to_array,
+            map(list, [map(np.mean, losses), map(np.std, losses)]),
+        )
         ax = plt.gca()
         ax.plot(base, mean)
         plt.title("loss curve")

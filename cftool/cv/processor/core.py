@@ -12,10 +12,7 @@ from ...misc import check
 
 
 filters = {
-    "roberts": {
-        1: np.array([[1, 0], [0, -1]]),
-        2: np.array([[0, 1], [-1, 0]])
-    },
+    "roberts": {1: np.array([[1, 0], [0, -1]]), 2: np.array([[0, 1], [-1, 0]])},
     "laplace": {
         1: np.array([[0, 1, 0], [1, -4, 1], [0, 1, 0]]),
         2: np.array([[1, 1, 1], [1, -8, 1], [1, 1, 1]]),
@@ -61,16 +58,18 @@ filters = {
         6: np.array([[3, -5, -5], [3, 0, -5], [3, 3, 3]]),
         7: np.array([[3, 3, -5], [3, 0, -5], [3, 3, -5]]),
         8: np.array([[3, 3, 3], [3, 0, -5], [3, -5, -5]]),
-    }
+    },
 }
 
 
 class Processor:
-    def __init__(self,
-                 *,
-                 rgb: np.ndarray = None,
-                 bgr: np.ndarray = None,
-                 img_path: str = None):
+    def __init__(
+        self,
+        *,
+        rgb: np.ndarray = None,
+        bgr: np.ndarray = None,
+        img_path: str = None,
+    ):
         if rgb is not None or bgr is not None:
             img_array = bgr if bgr is not None else rgb[..., ::-1]
             img_array = img_array.copy()
@@ -97,7 +96,7 @@ class Processor:
     @property
     def result_is_gray(self) -> bool:
         return len(self.result.shape) == 2
-    
+
     @property
     def current_array(self) -> np.ndarray:
         return self.result if self._in_pipeline else self.img_array
@@ -113,34 +112,27 @@ class Processor:
     # smoothen methods
 
     @check({"ksize": "int"})
-    def average(self,
-                *,
-                ksize: int = 3) -> "Processor":
+    def average(self, *, ksize: int = 3) -> "Processor":
         self.result = cv2.blur(self.current_array, (ksize, ksize))
         return self
 
     @check({"ksize": "int"})
-    def median(self,
-               *,
-               ksize: int = 3) -> "Processor":
+    def median(self, *, ksize: int = 3) -> "Processor":
         self.result = cv2.medianBlur(self.current_array, ksize)
         return self
 
     @check({"ksize": ["int", "odd"], "sigma_x": "float", "sigma_y": "float"})
-    def gaussian(self,
-                 *,
-                 ksize: int = 3,
-                 sigma_x: float = 0.,
-                 sigma_y: float = 0.) -> "Processor":
-        self.result = cv2.GaussianBlur(self.current_array, (ksize, ksize), sigma_x, sigmaY=sigma_y)
+    def gaussian(
+        self, *, ksize: int = 3, sigma_x: float = 0.0, sigma_y: float = 0.0
+    ) -> "Processor":
+        self.result = cv2.GaussianBlur(
+            self.current_array, (ksize, ksize), sigma_x, sigmaY=sigma_y
+        )
         return self
 
     # sharpen & edge detection methods
 
-    def _filter(self,
-                name: str,
-                i_type: int,
-                is_edge: bool) -> np.ndarray:
+    def _filter(self, name: str, i_type: int, is_edge: bool) -> np.ndarray:
         kernel = filters[name][i_type].copy()
         if not is_edge:
             kernel *= -1
@@ -148,62 +140,53 @@ class Processor:
         return cv2.filter2D(self.current_array, -1, kernel)
 
     @check({"i_type": ["choices", list(range(1, 3))]})
-    def roberts(self,
-                *,
-                i_type: int = 1,
-                is_edge: bool = False):
+    def roberts(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("roberts", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 5))]})
-    def laplace(self,
-                *,
-                i_type: int = 1,
-                is_edge: bool = False):
+    def laplace(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("laplace", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
-    def prewitt(self,
-                *,
-                i_type: int = 1,
-                is_edge: bool = False):
+    def prewitt(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("prewitt", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
-    def sobel(self,
-              *,
-              i_type: int = 1,
-              is_edge: bool = False):
+    def sobel(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("sobel", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
-    def robinson(self,
-                 *,
-                 i_type: int = 1,
-                 is_edge: bool = False):
+    def robinson(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("robinson", i_type, is_edge)
         return self
 
     @check({"i_type": ["choices", list(range(1, 9))]})
-    def kirsch(self,
-               *,
-               i_type: int = 1,
-               is_edge: bool = False):
+    def kirsch(self, *, i_type: int = 1, is_edge: bool = False):
         self.result = self._filter("kirsch", i_type, is_edge)
         return self
 
     # corner detection methods
 
-    @check({"ksize": ["int", "odd"], "k": "float", "threshold": "float", "block_size": "int"})
-    def harris(self,
-               *,
-               ksize: int = 3,
-               k: float = 0.04,
-               threshold: float = 0.01,
-               block_size: int = 2) -> "Processor":
+    @check(
+        {
+            "ksize": ["int", "odd"],
+            "k": "float",
+            "threshold": "float",
+            "block_size": "int",
+        }
+    )
+    def harris(
+        self,
+        *,
+        ksize: int = 3,
+        k: float = 0.04,
+        threshold: float = 0.01,
+        block_size: int = 2,
+    ) -> "Processor":
         img = self.current_array.copy()
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY).astype(np.float32)
         dst = cv2.cornerHarris(gray, block_size, ksize, k)
@@ -215,20 +198,19 @@ class Processor:
     # degradation methods
 
     @check({"mean": "float", "sigma": "float"})
-    def gaussian_noise(self,
-                       mean: float = 0.,
-                       sigma: float = 51.) -> "Processor":
+    def gaussian_noise(self, mean: float = 0.0, sigma: float = 51.0) -> "Processor":
         noise = np.random.normal(mean, sigma, self.current_array.shape)
-        self.result = np.clip(self.current_array + noise, 0., 255.).astype(np.uint8)
+        self.result = np.clip(self.current_array + noise, 0.0, 255.0).astype(np.uint8)
         return self
 
     @check({"length": "int", "angle": "float"})
-    def motion(self,
-               length: int = 8,
-               angle: float = 0.) -> "Processor":
+    def motion(self, length: int = 8, angle: float = 0.0) -> "Processor":
         h, w, c = self.current_array.shape
         kernel = np.zeros([h, w])
-        kernel[int(h / 2):int(h / 2 + 1), int(w / 2 - length / 2):int(w / 2 + length / 2)] = 1
+        kernel[
+            int(h / 2) : int(h / 2 + 1),
+            int(w / 2 - length / 2) : int(w / 2 + length / 2),
+        ] = 1
         kernel = rotate(kernel, angle, reshape=False)
         kernel /= kernel.sum()
         self.result = cv2.filter2D(self.current_array, -1, kernel)
@@ -237,11 +219,13 @@ class Processor:
     # thresholding methods
 
     @check({"max_val": "int", "eps": "float"})
-    def global_thresh(self,
-                      max_val: int = 255,
-                      *,
-                      eps: float = 1.,
-                      return_info: bool = False) -> Union["Processor", Any]:
+    def global_thresh(
+        self,
+        max_val: int = 255,
+        *,
+        eps: float = 1.0,
+        return_info: bool = False,
+    ) -> Union["Processor", Any]:
         img = self.current_gray
         threshold = img.mean()
         while True:
@@ -258,43 +242,70 @@ class Processor:
         self.result = cv2.threshold(img, threshold, max_val, cv2.THRESH_BINARY)[1]
         return self
 
-    @check({
-        "max_val": "int",
-        "method": ["choices", ["mean", "gaussian"]],
-        "block_size": ["int", "odd"],
-        "c": "float",
-    })
-    def adaptive_thresh(self,
-                        max_val: int = 255,
-                        *,
-                        method: str = "gaussian",
-                        block_size: int = 11,
-                        c: int = 2) -> "Processor":
-        method = cv2.ADAPTIVE_THRESH_GAUSSIAN_C if method == "gaussian" else cv2.ADAPTIVE_THRESH_MEAN_C
-        self.result = cv2.adaptiveThreshold(self.current_gray, max_val, method, cv2.THRESH_BINARY, block_size, c)
+    @check(
+        {
+            "max_val": "int",
+            "method": ["choices", ["mean", "gaussian"]],
+            "block_size": ["int", "odd"],
+            "c": "float",
+        }
+    )
+    def adaptive_thresh(
+        self,
+        max_val: int = 255,
+        *,
+        method: str = "gaussian",
+        block_size: int = 11,
+        c: int = 2,
+    ) -> "Processor":
+        method = (
+            cv2.ADAPTIVE_THRESH_GAUSSIAN_C
+            if method == "gaussian"
+            else cv2.ADAPTIVE_THRESH_MEAN_C
+        )
+        self.result = cv2.adaptiveThreshold(
+            self.current_gray,
+            max_val,
+            method,
+            cv2.THRESH_BINARY,
+            block_size,
+            c,
+        )
         return self
 
-    @check({"max_val": "int", "ksize": "int", "method": ["choices", ["otsu", "gaussian"]], "eps": "float"})
-    def optimal_thresh(self,
-                       max_val: int = 255,
-                       *,
-                       ksize: int = 5,
-                       method: str = "otsu"):
+    @check(
+        {
+            "max_val": "int",
+            "ksize": "int",
+            "method": ["choices", ["otsu", "gaussian"]],
+            "eps": "float",
+        }
+    )
+    def optimal_thresh(
+        self,
+        max_val: int = 255,
+        *,
+        ksize: int = 5,
+        method: str = "otsu",
+    ):
         if method == "otsu":
-            blur = cv2.GaussianBlur(self.current_gray, (ksize, ksize), 0.)
-            self.result = cv2.threshold(blur, 0, max_val, cv2.THRESH_BINARY + cv2.THRESH_OTSU)[1]
+            blur = cv2.GaussianBlur(self.current_gray, (ksize, ksize), 0.0)
+            self.result = cv2.threshold(
+                blur, 0, max_val, cv2.THRESH_BINARY + cv2.THRESH_OTSU
+            )[1]
         elif method == "gaussian":
             g1, g2, m1, m2 = self.global_thresh(return_info=True)
             ng1, ng2 = map(len, [g1, g2])
             q, s1 = min(ng1 / ng2, ng2 / ng1), g1.std()
-            threshold = 0.5 * (m1 + m2) + s1 ** 2 / (m2 - m1) * math.log(q / (1. - q))
-            self.result = cv2.threshold(self.current_gray, threshold, max_val, cv2.THRESH_BINARY)[1]
+            threshold = 0.5 * (m1 + m2) + s1 ** 2 / (m2 - m1) * math.log(q / (1.0 - q))
+            self.result = cv2.threshold(
+                self.current_gray, threshold, max_val, cv2.THRESH_BINARY
+            )[1]
         return self
 
     # visualization
 
-    def visualize(self,
-                  saving_path: str = None) -> "Processor":
+    def visualize(self, saving_path: str = None) -> "Processor":
         if saving_path is not None:
             cv2.imwrite(saving_path, self.result)
         else:

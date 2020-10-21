@@ -8,7 +8,7 @@ from ..bases import SingleNormalizer
 class CubeNormalizer(SingleNormalizer):
     @property
     def bounds(self) -> bounds_type:
-        return 0., 1.
+        return 0.0, 1.0
 
     def _init_config(self, **kwargs):
         self._convert_only = kwargs.get("convert_only", True)
@@ -30,7 +30,7 @@ class CubeNormalizer(SingleNormalizer):
             return self._choices[idx]
         if self._convert_only:
             return value
-        value = max(0., min(1., value))
+        value = max(0.0, min(1.0, value))
         value = value * self._diff + self._lower
         if self._is_exponential:
             value = math.pow(self.dist.base, value)

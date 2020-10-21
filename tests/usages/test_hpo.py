@@ -18,28 +18,26 @@ class LinearRegression(GradientDescentMixin):
     def parameter_names(self) -> List[str]:
         return ["w", "b"]
 
-    def loss_function(self,
-                      x_batch: np.ndarray,
-                      y_batch: np.ndarray,
-                      batch_indices: np.ndarray) -> Dict[str, Any]:
+    def loss_function(
+        self,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        batch_indices: np.ndarray,
+    ) -> Dict[str, Any]:
         predictions = self.predict(x_batch)
         diff = predictions - y_batch
-        return {
-            "diff": diff,
-            "loss": np.abs(diff).mean().item()
-        }
+        return {"diff": diff, "loss": np.abs(diff).mean().item()}
 
-    def gradient_function(self,
-                          x_batch: np.ndarray,
-                          y_batch: np.ndarray,
-                          batch_indices: np.ndarray,
-                          loss_dict: Dict[str, Any]) -> Dict[str, np.ndarray]:
+    def gradient_function(
+        self,
+        x_batch: np.ndarray,
+        y_batch: np.ndarray,
+        batch_indices: np.ndarray,
+        loss_dict: Dict[str, Any],
+    ) -> Dict[str, np.ndarray]:
         diff = loss_dict["diff"]
         sign = np.sign(diff)
-        return {
-            "w": (sign * x_batch).mean(0, keepdims=True).T,
-            "b": sign.mean(0)
-        }
+        return {"w": (sign * x_batch).mean(0, keepdims=True).T, "b": sign.mean(0)}
 
     def fit(self, x, y):
         self.setup_optimizer("adam", self._lr, epoch=self._epoch)
@@ -71,11 +69,8 @@ def test():
     estimators = list(map(Estimator, ["mae", "mse"]))
     for hpo_method in ["naive", "bo"]:
         hpo = HPOBase.make(hpo_method, pattern_creator, params)
-        hpo.search(
-            x, y, estimators,
-            num_jobs=1, use_tqdm=True, verbose_level=1
-        )
+        hpo.search(x, y, estimators, num_jobs=1, use_tqdm=True, verbose_level=1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     test()

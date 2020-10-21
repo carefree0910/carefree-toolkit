@@ -10,11 +10,21 @@ with open("README.md") as f:
 
 INSTALL_REQUIRES = [
     "opencv-python",
-    "dill", "future", "psutil", "pillow", "pathos",
-    "cython>=0.29.12", "numpy>=1.16.2", "scipy>=1.2.1",
-    "scikit-learn>=0.20.3", "matplotlib>=3.0.3",
-    "mkdocs", "mkdocs-material", "mkdocs-minify-plugin",
-    "Pygments", "pymdown-extensions"
+    "dill",
+    "future",
+    "psutil",
+    "pillow",
+    "pathos",
+    "cython>=0.29.12",
+    "numpy>=1.16.2",
+    "scipy>=1.2.1",
+    "scikit-learn>=0.20.3",
+    "matplotlib>=3.0.3",
+    "mkdocs",
+    "mkdocs-material",
+    "mkdocs-minify-plugin",
+    "Pygments",
+    "pymdown-extensions",
 ]
 if platform.system() != "Windows":
     INSTALL_REQUIRES.append("SharedArray")
@@ -31,5 +41,5 @@ setup(
     description=DESCRIPTION,
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    keywords="python numpy data-science"
+    keywords="python numpy data-science",
 )

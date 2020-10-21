@@ -12,24 +12,27 @@ from ...ml.param_utils import params_type
 
 
 class BayesianOptimization:
-    def __init__(self,
-                 fn: fn_type,
-                 params: params_type,
-                 *,
-                 gp_params: Dict[str, Any] = None,
-                 acquisition: str = "ucb",
-                 normalization: Union[str, None] = "cube",
-                 normalization_config: Dict[str, Any] = None,
-                 xi: float = 0.01,
-                 kappa: float = 2.,
-                 kappa_decay: float = 1.,
-                 kappa_decay_delay: int = 0):
+    def __init__(
+        self,
+        fn: fn_type,
+        params: params_type,
+        *,
+        gp_params: Dict[str, Any] = None,
+        acquisition: str = "ucb",
+        normalization: Union[str, None] = "cube",
+        normalization_config: Dict[str, Any] = None,
+        xi: float = 0.01,
+        kappa: float = 2.0,
+        kappa_decay: float = 1.0,
+        kappa_decay_delay: int = 0,
+    ):
 
         self._queue = []
         self._space = TargetSpace(
-            fn, params,
+            fn,
+            params,
             normalization=normalization,
-            normalization_config=normalization_config
+            normalization_config=normalization_config,
         )
 
         if gp_params is None:
@@ -39,12 +42,17 @@ class BayesianOptimization:
         gp_params.setdefault("alpha", 1e-6)
         gp_params.setdefault("normalize_y", True)
         gp_params.setdefault("n_restarts_optimizer", 5)
-        self._gp = GaussianProcessRegressor(
-            kernel=Matern(**kernel_params),
-            **gp_params
-        )
+        kernel = Matern(**kernel_params)
+        self._gp = GaussianProcessRegressor(kernel=kernel, **gp_params)
 
-        self._acquisition = Acquisition(self._gp, acquisition, xi, kappa, kappa_decay, kappa_decay_delay)
+        self._acquisition = Acquisition(
+            self._gp,
+            acquisition,
+            xi,
+            kappa,
+            kappa_decay,
+            kappa_decay_delay,
+        )
 
     @property
     def space(self) -> TargetSpace:
@@ -58,25 +66,23 @@ class BayesianOptimization:
     def all_results(self) -> List[Result]:
         return self._space.all_results
 
-    def register(self,
-                 param: flattened_type,
-                 score: float) -> "BayesianOptimization":
+    def register(self, param: flattened_type, score: float) -> "BayesianOptimization":
         self._space.register(param, score)
         return self
 
-    def probe(self,
-              param: flattened_type,
-              *,
-              to_queue: bool = True) -> "BayesianOptimization":
+    def probe(
+        self,
+        param: flattened_type,
+        *,
+        to_queue: bool = True,
+    ) -> "BayesianOptimization":
         if to_queue:
             self._queue.append(param)
         else:
             self._space.probe(param)
         return self
 
-    def suggest(self,
-                num_warmup: int,
-                num_iter: int) -> flattened_type:
+    def suggest(self, num_warmup: int, num_iter: int) -> flattened_type:
         if self._space.is_empty:
             return self._space.sample()
 
@@ -86,18 +92,22 @@ class BayesianOptimization:
 
         suggestion = self._acquisition.search_max(
             self._space.tried_scores.max(),
-            self._space, num_warmup, num_iter
+            self._space,
+            num_warmup,
+            num_iter,
         )
 
         return self._space.array2param(suggestion)
 
-    def maximize(self,
-                 *,
-                 init_points: int = 5,
-                 num_epoch: int = 20,
-                 num_warmup: int = 10000,
-                 num_iter: int = 10,
-                 use_tqdm: bool = True) -> "BayesianOptimization":
+    def maximize(
+        self,
+        *,
+        init_points: int = 5,
+        num_epoch: int = 20,
+        num_warmup: int = 10000,
+        num_iter: int = 10,
+        use_tqdm: bool = True,
+    ) -> "BayesianOptimization":
 
         if not self._queue and self._space.is_empty:
             init_points = max(init_points, 1)
@@ -105,7 +115,10 @@ class BayesianOptimization:
             self._queue.append(self._space.sample())
 
         counter = 0
-        iterator = None if not use_tqdm else tqdm(list(range(len(self._queue) + num_epoch)))
+        if not use_tqdm:
+            iterator = None
+        else:
+            iterator = tqdm(list(range(len(self._queue) + num_epoch)))
         while self._queue or counter < num_epoch:
             if self._queue:
                 x_probe = self._queue.pop(0)

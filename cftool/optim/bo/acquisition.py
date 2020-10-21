@@ -9,13 +9,15 @@ from .target_space import TargetSpace
 
 
 class Acquisition:
-    def __init__(self,
-                 gp: GaussianProcessRegressor,
-                 method: str,
-                 xi: float,
-                 kappa: float,
-                 kappa_decay: float,
-                 kappa_decay_delay: int):
+    def __init__(
+        self,
+        gp: GaussianProcessRegressor,
+        method: str,
+        xi: float,
+        kappa: float,
+        kappa_decay: float,
+        kappa_decay_delay: int,
+    ):
         self.gp = gp
         self.method = method
         self.xi, self.kappa = xi, kappa
@@ -33,12 +35,16 @@ class Acquisition:
             self.kappa *= self.kappa_decay
         return self
 
-    def search_max(self,
-                   best_score: float,
-                   space: TargetSpace,
-                   num_warmup: int,
-                   num_iter: int) -> np.ndarray:
-        _array = lambda n: np.array(list(map(space.param2array, [space.sample() for _ in range(n)])))
+    def search_max(
+        self,
+        best_score: float,
+        space: TargetSpace,
+        num_warmup: int,
+        num_iter: int,
+    ) -> np.ndarray:
+        _array = lambda n: np.array(
+            list(map(space.param2array, [space.sample() for _ in range(n)]))
+        )
         # warm up
         x_tries = _array(num_warmup)
         scores = self.score(x_tries.astype(np.float32), best_score)
@@ -49,7 +55,9 @@ class Acquisition:
             x_try = _array(1).ravel()
             res = minimize(
                 lambda x: -self.score(x.reshape([1, -1]), best_score),
-                x_try, bounds=space.params_gen.all_bounds, method="L-BFGS-B"
+                x_try,
+                bounds=space.params_gen.all_bounds,
+                method="L-BFGS-B",
             )
 
             if not res.success:
@@ -60,32 +68,21 @@ class Acquisition:
                 best_score = -res.fun[0].item()
         return best_x
 
-    def score(self,
-              x: np.ndarray,
-              best_score: float) -> np.ndarray:
+    def score(self, x: np.ndarray, best_score: float) -> np.ndarray:
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             mean, std = self.gp.predict(x, return_std=True)
         return getattr(self, f"_{self.method}")(mean, std, best_score)
 
-    def _ucb(self,
-             mean: np.ndarray,
-             std: np.ndarray,
-             best_score: float) -> np.ndarray:
+    def _ucb(self, mean: np.ndarray, std: np.ndarray, best_score: float) -> np.ndarray:
         return mean + self.kappa * std
 
-    def _ei(self,
-            mean: np.ndarray,
-            std: np.ndarray,
-            best_score: float) -> np.ndarray:
-        a = (mean - best_score - self.xi)
+    def _ei(self, mean: np.ndarray, std: np.ndarray, best_score: float) -> np.ndarray:
+        a = mean - best_score - self.xi
         z = a / std
         return a * norm.cdf(z) + std * norm.pdf(z)
 
-    def _poi(self,
-             mean: np.ndarray,
-             std: np.ndarray,
-             best_score: float) -> np.ndarray:
+    def _poi(self, mean: np.ndarray, std: np.ndarray, best_score: float) -> np.ndarray:
         return norm.cdf((mean - best_score - self.xi) / std)
 
 

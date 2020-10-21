@@ -376,6 +376,9 @@ class Estimator(LoggingMixin):
     def _default_scoring(self, raw_metrics, mean, std) -> float:
         return mean - self.sign * std
 
+    def _std_scoring(self, raw_metrics, mean, std) -> float:
+        return mean + self.sign * std
+
     # API
 
     def get_statistics(

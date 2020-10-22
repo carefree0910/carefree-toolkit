@@ -637,7 +637,8 @@ class LoggingMixin:
         return os.path.join(folder, f"{timestamp()}.log")
 
     def _init_logging(self, verbose_level: Union[int, None] = 2, trigger: bool = True):
-        if LoggingMixin._initialized_:
+        wants_trigger = trigger and not LoggingMixin._triggered_
+        if LoggingMixin._initialized_ and not wants_trigger:
             return self
         LoggingMixin._initialized_ = True
         logger_name = getattr(self, "_logger_name_", "root")

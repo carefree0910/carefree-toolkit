@@ -381,6 +381,16 @@ class Estimator(LoggingMixin):
 
     # API
 
+    def scoring_fn(self, scoring_function: str) -> Callable[[np.ndarray], float]:
+        score_fn = getattr(self, f"_{scoring_function}_scoring")
+
+        def _inner(raw_metrics: np.ndarray) -> float:
+            mean = raw_metrics.mean().item()
+            std = raw_metrics.std().item()
+            return score_fn(raw_metrics, mean, std) * self.sign
+
+        return _inner
+
     def get_statistics(
         self,
         scoring_function: Union[str, scoring_fn_type] = "default",
@@ -389,14 +399,16 @@ class Estimator(LoggingMixin):
         statistics = {}
         best_idx, best_score = -1, -math.inf
         sorted_method_names = sorted(self.raw_metrics)
-        if isinstance(scoring_function, str):
-            scoring_function = getattr(self, f"_{scoring_function}_scoring")
+        if not isinstance(scoring_function, str):
+            scoring_fn = scoring_function
+        else:
+            scoring_fn = self.scoring_fn(scoring_function)
         for i, name in enumerate(sorted_method_names):
             raw_metrics = self.raw_metrics[name]
             mean, std = raw_metrics.mean().item(), raw_metrics.std().item()
             msg = f"|  {name:>20s}  |  {self.type:^8s}  |  {mean:8.6f} ± {std:8.6f}  |"
             msg_list.append(msg)
-            new_score = scoring_function(raw_metrics, mean, std) * self.sign
+            new_score = scoring_fn(raw_metrics)
             self.final_scores[name] = new_score
             if new_score > best_score:
                 best_idx, best_score = i, new_score

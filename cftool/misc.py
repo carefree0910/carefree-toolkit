@@ -765,6 +765,14 @@ class LoggingMixin:
                 f.write("".join(["".join(msg_dict[key]) for key in sorted(msg_dict)]))
 
     @classmethod
+    def reset(cls) -> None:
+        cls._triggered_ = False
+        cls._initialized_ = False
+        cls._logging_path_ = None
+        cls._logger_ = cls._verbose_level_ = None
+        cls._timing_dict_, cls._time_cache_dict_ = {}, {}
+
+    @classmethod
     def start_timer(cls, name):
         if name in cls._time_cache_dict_:
             print(

@@ -436,7 +436,13 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 class StrideTricks:
     @staticmethod
-    def roll(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+    def roll(
+        arr: np.ndarray,
+        window: int,
+        *,
+        axis: int = -1,
+        writable: bool = False,
+    ) -> np.ndarray:
         arr_shape = arr.shape
         num_dim = len(arr_shape)
         if axis < 0:
@@ -457,7 +463,12 @@ class StrideTricks:
         latter_strides = tuple(arr_strides[axis:])
         rolled_strides = previous_strides + target_stride + latter_strides
         # construct
-        return as_strided(arr, shape=rolled_shapes, strides=rolled_strides)
+        return as_strided(
+            arr,
+            shape=rolled_shapes,
+            strides=rolled_strides,
+            writeable=writable,
+        )
 
 
 class SanityChecker:

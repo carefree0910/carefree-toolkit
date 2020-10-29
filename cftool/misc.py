@@ -435,40 +435,54 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 
 class StrideTricks:
-    @staticmethod
-    def roll(
+    def __init__(
+        self,
         arr: np.ndarray,
-        window: int,
         *,
-        axis: int = -1,
-        writable: bool = False,
+        copy: bool = False,
+        writable: Optional[bool] = None,
+    ):
+        self.arr = arr
+        self.shape = arr.shape
+        self.num_dim = len(self.shape)
+        self.strides = arr.strides
+        self.copy = copy
+        if writable is None:
+            writable = copy
+        self.writable = writable
+
+    def _construct(
+        self, 
+        shapes: Tuple[int, ...], 
+        strides: Tuple[int, ...],
     ) -> np.ndarray:
-        arr_shape = arr.shape
-        num_dim = len(arr_shape)
+        arr = self.arr.copy() if self.copy else self.arr
+        return as_strided(
+            arr,
+            shape=shapes,
+            strides=strides,
+            writeable=self.writable,
+        )
+
+    def roll(self, window: int, *, axis: int = -1) -> np.ndarray:
         if axis < 0:
-            axis += num_dim
-        target_dim = arr_shape[axis]
+            axis += self.num_dim
+        target_dim = self.shape[axis]
         rolled_dim = target_dim - window + 1
         if rolled_dim <= 0:
             msg = f"window ({window}) is too large for target dimension ({target_dim})"
             raise ValueError(msg)
         # shapes
-        rolled_shapes = tuple(arr_shape[:axis]) + (rolled_dim, window)
-        if axis < num_dim - 1:
-            rolled_shapes = rolled_shapes + arr_shape[axis + 1 :]
+        rolled_shapes = tuple(self.shape[:axis]) + (rolled_dim, window)
+        if axis < self.num_dim - 1:
+            rolled_shapes = rolled_shapes + self.shape[axis + 1 :]
         # strides
-        arr_strides = arr.strides
-        previous_strides = tuple(arr_strides[:axis])
-        target_stride = (arr_strides[axis],)
-        latter_strides = tuple(arr_strides[axis:])
+        previous_strides = tuple(self.strides[:axis])
+        target_stride = (self.strides[axis],)
+        latter_strides = tuple(self.strides[axis:])
         rolled_strides = previous_strides + target_stride + latter_strides
         # construct
-        return as_strided(
-            arr,
-            shape=rolled_shapes,
-            strides=rolled_strides,
-            writeable=writable,
-        )
+        return self._construct(rolled_shapes, rolled_strides)
 
 
 class SanityChecker:

@@ -484,6 +484,43 @@ class StrideArray:
         # construct
         return self._construct(rolled_shapes, rolled_strides)
 
+    def patch(
+        self,
+        patch_w: int,
+        patch_h: Optional[int] = None,
+        *,
+        h_axis: int = -2,
+    ) -> np.ndarray:
+        if self.num_dim < 2:
+            raise ValueError("`patch` requires input with at least 2d")
+        while h_axis < 0:
+            h_axis += self.num_dim
+        w_axis = h_axis + 1
+        if patch_h is None:
+            patch_h = patch_w
+        h_shape, w_shape = self.shape[h_axis], self.shape[w_axis]
+        if h_shape < patch_h:
+            msg = f"patch_h ({patch_h}) is too large for target dimension ({h_shape})"
+            raise ValueError(msg)
+        if w_shape < patch_w:
+            msg = f"patch_w ({patch_w}) is too large for target dimension ({w_shape})"
+            raise ValueError(msg)
+        # shapes
+        patched_h_dim = h_shape - patch_h + 1
+        patched_w_dim = w_shape - patch_w + 1
+        patched_dim = (patched_h_dim, patched_w_dim)
+        patched_dim = patched_dim + (patch_h, patch_w)
+        patched_shapes = tuple(self.shape[:h_axis]) + patched_dim
+        if w_axis < self.num_dim - 1:
+            patched_shapes = patched_shapes + self.shape[w_axis + 1 :]
+        # strides
+        previous_strides = tuple(self.strides[:h_axis])
+        target_stride = (self.strides[h_axis], self.strides[w_axis]) * 2
+        latter_strides = tuple(self.strides[w_axis + 1 :])
+        patched_strides = previous_strides + target_stride + latter_strides
+        # construct
+        return self._construct(patched_shapes, patched_strides)
+
 
 class SanityChecker:
     @staticmethod

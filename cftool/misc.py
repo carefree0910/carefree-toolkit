@@ -465,7 +465,7 @@ class StrideArray:
         )
 
     def roll(self, window: int, *, axis: int = -1) -> np.ndarray:
-        if axis < 0:
+        while axis < 0:
             axis += self.num_dim
         target_dim = self.shape[axis]
         rolled_dim = target_dim - window + 1

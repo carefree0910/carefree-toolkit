@@ -499,6 +499,8 @@ class StrideArray:
         patch_w: int,
         patch_h: Optional[int] = None,
         *,
+        h_stride: int = 1,
+        w_stride: int = 1,
         h_axis: int = -2,
     ) -> np.ndarray:
         if self.num_dim < 2:
@@ -516,16 +518,18 @@ class StrideArray:
             msg = f"patch_w ({patch_w}) is too large for target dimension ({w_shape})"
             raise ValueError(msg)
         # shapes
-        patched_h_dim = h_shape - patch_h + 1
-        patched_w_dim = w_shape - patch_w + 1
+        patched_h_dim = self._get_output_dim(h_shape, patch_h, h_stride)
+        patched_w_dim = self._get_output_dim(w_shape, patch_w, w_stride)
         patched_dim = (patched_h_dim, patched_w_dim)
         patched_dim = patched_dim + (patch_h, patch_w)
         patched_shapes = tuple(self.shape[:h_axis]) + patched_dim
         if w_axis < self.num_dim - 1:
             patched_shapes = patched_shapes + self.shape[w_axis + 1 :]
         # strides
+        arr_h_stride, arr_w_stride = self.strides[h_axis], self.strides[w_axis]
         previous_strides = tuple(self.strides[:h_axis])
-        target_stride = (self.strides[h_axis], self.strides[w_axis]) * 2
+        target_stride = (arr_h_stride * h_stride, arr_w_stride * w_stride)
+        target_stride = target_stride + (arr_h_stride, arr_w_stride)
         latter_strides = tuple(self.strides[w_axis + 1 :])
         patched_strides = previous_strides + target_stride + latter_strides
         # construct

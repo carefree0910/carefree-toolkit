@@ -267,6 +267,40 @@ class TestMisc(unittest.TestCase):
                 ),
             )
         )
+        self.assertTrue(
+            np.allclose(
+                arr.patch(2, h_stride=2, w_stride=2),
+                np.array(
+                    [
+                        [[[0, 1], [4, 5]], [[2, 3], [6, 7]]],
+                        [[[8, 9], [12, 13]], [[10, 11], [14, 15]]],
+                    ]
+                ),
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                arr.patch(2, h_stride=1, w_stride=2),
+                np.array(
+                    [
+                        [[[0, 1], [4, 5]], [[2, 3], [6, 7]]],
+                        [[[4, 5], [8, 9]], [[6, 7], [10, 11]]],
+                        [[[8, 9], [12, 13]], [[10, 11], [14, 15]]],
+                    ]
+                ),
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                arr.patch(2, h_stride=2, w_stride=1),
+                np.array(
+                    [
+                        [[[0, 1], [4, 5]], [[1, 2], [5, 6]], [[2, 3], [6, 7]]],
+                        [[[8, 9], [12, 13]], [[9, 10], [13, 14]], [[10, 11], [14, 15]]],
+                    ]
+                ),
+            )
+        )
 
 
 if __name__ == "__main__":

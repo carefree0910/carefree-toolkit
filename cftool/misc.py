@@ -21,11 +21,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from typing import *
+from abc import abstractmethod
 from PIL import Image
 from functools import reduce
 from itertools import product
 from collections import Counter
-from abc import abstractmethod
+from numpy.lib.stride_tricks import as_strided
+
 
 dill._dill._reverse_typemap["ClassType"] = type
 
@@ -430,6 +432,32 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 
 # util modules
+
+
+class StrideTricks:
+    @staticmethod
+    def roll(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        arr_shape = arr.shape
+        num_dim = len(arr_shape)
+        if axis < 0:
+            axis += num_dim
+        target_dim = arr_shape[axis]
+        rolled_dim = target_dim - window + 1
+        if rolled_dim <= 0:
+            msg = f"window ({window}) is too large for target dimension ({target_dim})"
+            raise ValueError(msg)
+        # shapes
+        rolled_shapes = tuple(arr_shape[:axis]) + (rolled_dim, window)
+        if axis < num_dim - 1:
+            rolled_shapes = rolled_shapes + arr_shape[axis + 1 :]
+        # strides
+        arr_strides = arr.strides
+        previous_strides = tuple(arr_strides[:axis])
+        target_stride = (arr_strides[axis],)
+        latter_strides = tuple(arr_strides[axis:])
+        rolled_strides = previous_strides + target_stride + latter_strides
+        # construct
+        return as_strided(arr, shape=rolled_shapes, strides=rolled_strides)
 
 
 class SanityChecker:
@@ -2036,6 +2064,7 @@ __all__ = [
     "get_counter_from_arr",
     "allclose",
     "register_core",
+    "StrideTricks",
     "Incrementer",
     "LoggingMixin",
     "PureLoggingMixin",

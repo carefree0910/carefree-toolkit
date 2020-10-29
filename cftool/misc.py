@@ -452,8 +452,8 @@ class StrideArray:
         self.writable = writable
 
     def _construct(
-        self, 
-        shapes: Tuple[int, ...], 
+        self,
+        shapes: Tuple[int, ...],
         strides: Tuple[int, ...],
     ) -> np.ndarray:
         arr = self.arr.copy() if self.copy else self.arr

@@ -451,6 +451,12 @@ class StrideArray:
             writable = copy
         self.writable = writable
 
+    def __str__(self) -> str:
+        return self.arr.__str__()
+
+    def __repr__(self) -> str:
+        return self.arr.__repr__()
+
     def _construct(
         self,
         shapes: Tuple[int, ...],

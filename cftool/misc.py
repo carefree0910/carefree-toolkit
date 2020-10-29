@@ -470,11 +470,15 @@ class StrideArray:
             writeable=self.writable,
         )
 
-    def roll(self, window: int, *, axis: int = -1) -> np.ndarray:
+    @staticmethod
+    def _get_output_dim(in_dim: int, window: int, stride: int) -> int:
+        return (in_dim - window) // stride + 1
+
+    def roll(self, window: int, *, stride: int = 1, axis: int = -1) -> np.ndarray:
         while axis < 0:
             axis += self.num_dim
         target_dim = self.shape[axis]
-        rolled_dim = target_dim - window + 1
+        rolled_dim = self._get_output_dim(target_dim, window, stride)
         if rolled_dim <= 0:
             msg = f"window ({window}) is too large for target dimension ({target_dim})"
             raise ValueError(msg)
@@ -484,7 +488,7 @@ class StrideArray:
             rolled_shapes = rolled_shapes + self.shape[axis + 1 :]
         # strides
         previous_strides = tuple(self.strides[:axis])
-        target_stride = (self.strides[axis],)
+        target_stride = (self.strides[axis] * stride,)
         latter_strides = tuple(self.strides[axis:])
         rolled_strides = previous_strides + target_stride + latter_strides
         # construct

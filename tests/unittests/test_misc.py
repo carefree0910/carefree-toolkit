@@ -220,7 +220,7 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(ValueError):
             foo(1, 1.1)
 
-    def test_stride_tricks(self):
+    def test_stride_array(self):
         arr = StrideArray(np.arange(9).reshape([3, 3]))
         self.assertTrue(
             np.allclose(

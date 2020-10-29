@@ -21,6 +21,7 @@ __all__ = [
     "get_counter_from_arr",
     "allclose",
     "register_core",
+    "StrideArray",
     "Incrementer",
     "LoggingMixin",
     "PureLoggingMixin",

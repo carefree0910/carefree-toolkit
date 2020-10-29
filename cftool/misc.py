@@ -434,7 +434,7 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 # util modules
 
 
-class StrideTricks:
+class StrideArray:
     def __init__(
         self,
         arr: np.ndarray,
@@ -2089,7 +2089,7 @@ __all__ = [
     "get_counter_from_arr",
     "allclose",
     "register_core",
-    "StrideTricks",
+    "StrideArray",
     "Incrementer",
     "LoggingMixin",
     "PureLoggingMixin",

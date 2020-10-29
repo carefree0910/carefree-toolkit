@@ -220,6 +220,21 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(ValueError):
             foo(1, 1.1)
 
+    def test_stride_tricks(self):
+        x = np.arange(9).reshape([3, 3])
+        self.assertTrue(
+            np.allclose(
+                StrideTricks.roll(x, 2),
+                np.array([[[0, 1], [1, 2]], [[3, 4], [4, 5]], [[6, 7], [7, 8]]]),
+            )
+        )
+        self.assertTrue(
+            np.allclose(
+                StrideTricks.roll(x, 2, axis=0),
+                np.array([[[0, 1, 2], [3, 4, 5]], [[3, 4, 5], [6, 7, 8]]]),
+            )
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

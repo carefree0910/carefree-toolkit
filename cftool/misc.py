@@ -536,6 +536,26 @@ class StrideArray:
         return self._construct(patched_shapes, patched_strides)
 
 
+class RunningStat:
+    @staticmethod
+    def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        if window > arr.shape[axis]:
+            raise ValueError("`window` is too large for current array")
+        arr = np.concatenate([np.zeros_like(arr[..., :1]), arr], axis=axis)
+        cumsum = np.cumsum(arr, axis=axis)
+        return cumsum[..., window:] - cumsum[..., :-window]
+
+    @staticmethod
+    def mean(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        return RunningStat.sum(arr, window, axis=axis) / float(window)
+
+    @staticmethod
+    def std(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        mean = RunningStat.mean(arr, window, axis=axis)
+        second_order = RunningStat.sum(arr ** 2, window, axis=axis)
+        return np.sqrt(second_order / float(window) - mean ** 2)
+
+
 class SanityChecker:
     @staticmethod
     def int(n):

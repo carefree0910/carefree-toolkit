@@ -2161,6 +2161,7 @@ __all__ = [
     "allclose",
     "register_core",
     "StrideArray",
+    "RollingStat",
     "Incrementer",
     "LoggingMixin",
     "PureLoggingMixin",

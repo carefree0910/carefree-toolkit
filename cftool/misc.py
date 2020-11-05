@@ -26,6 +26,7 @@ from PIL import Image
 from functools import reduce
 from itertools import product
 from collections import Counter
+
 from numpy.lib.stride_tricks import as_strided
 
 
@@ -534,26 +535,6 @@ class StrideArray:
         patched_strides = previous_strides + target_stride + latter_strides
         # construct
         return self._construct(patched_shapes, patched_strides)
-
-
-class RollingStat:
-    @staticmethod
-    def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
-        if window > arr.shape[axis]:
-            raise ValueError("`window` is too large for current array")
-        arr = np.concatenate([np.zeros_like(arr[..., :1]), arr], axis=axis)
-        cumsum = np.cumsum(arr, axis=axis)
-        return cumsum[..., window:] - cumsum[..., :-window]
-
-    @staticmethod
-    def mean(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
-        return RollingStat.sum(arr, window, axis=axis) / float(window)
-
-    @staticmethod
-    def std(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
-        mean = RollingStat.mean(arr, window, axis=axis)
-        second_order = RollingStat.sum(arr ** 2, window, axis=axis)
-        return np.sqrt(second_order / float(window) - mean ** 2)
 
 
 class SanityChecker:
@@ -2161,7 +2142,6 @@ __all__ = [
     "allclose",
     "register_core",
     "StrideArray",
-    "RollingStat",
     "Incrementer",
     "LoggingMixin",
     "PureLoggingMixin",

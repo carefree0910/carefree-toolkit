@@ -12,5 +12,4 @@ __all__ = [
     "EnsemblePattern",
     "Comparer",
     "register_metric",
-    "DataInspector",
 ]

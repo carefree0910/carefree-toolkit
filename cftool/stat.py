@@ -29,6 +29,18 @@ class RollingStat:
         second_order = RollingStat.sum(arr ** 2, window, axis=axis)
         return np.sqrt(second_order / float(window) - mean ** 2)
 
+    @staticmethod
+    def min(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        if len(arr.shape) == 1 and axis in (0, -1):
+            return rolling_min(arr, window)
+        return naive_rolling_min(arr, window, axis)
+
+    @staticmethod
+    def max(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        if len(arr.shape) == 1 and axis in (0, -1):
+            return rolling_max(arr, window)
+        return naive_rolling_max(arr, window, axis)
+
 
 class DataInspector:
     def __init__(self, data: generic_data_type):

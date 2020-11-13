@@ -870,7 +870,7 @@ class LoggingMixin:
                 f.write("".join(["".join(msg_dict[key]) for key in sorted(msg_dict)]))
 
     @classmethod
-    def reset(cls) -> None:
+    def reset_logging(cls) -> None:
         cls._triggered_ = False
         cls._initialized_ = False
         cls._logging_path_ = None

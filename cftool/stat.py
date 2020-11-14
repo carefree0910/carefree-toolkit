@@ -51,6 +51,7 @@ class RollingStat:
         shapes = [1] * len(arr.shape)
         shapes[axis] = -1
         multipliers = (ratio ** np.arange(dim))[::-1].reshape(shapes)
+        multipliers = np.maximum(multipliers, np.finfo(arr.dtype).tiny)
         return (1.0 - ratio) * np.cumsum(arr * multipliers, axis=axis) / multipliers
 
 

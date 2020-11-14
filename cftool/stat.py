@@ -19,7 +19,9 @@ class RollingStat:
         pad_width[axis][0] = 1
         arr = np.pad(arr, pad_width=pad_width, mode="constant", constant_values=0)
         cumsum = np.cumsum(arr, axis=axis)
-        return cumsum[..., window:] - cumsum[..., :-window]
+        cumsum = np.swapaxes(cumsum, axis, -1)
+        rolling_sum = cumsum[..., window:] - cumsum[..., :-window]
+        return np.swapaxes(rolling_sum, axis, -1)
 
     @staticmethod
     def mean(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:

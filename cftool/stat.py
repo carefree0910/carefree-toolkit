@@ -15,7 +15,9 @@ class RollingStat:
     def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
         if window > arr.shape[axis]:
             raise ValueError("`window` is too large for current array")
-        arr = np.concatenate([np.zeros_like(arr[..., :1]), arr], axis=axis)
+        pad_width = [[0, 0] for _ in range(len(arr.shape))]
+        pad_width[axis][0] = 1
+        arr = np.pad(arr, pad_width=pad_width, mode="constant", constant_values=0)
         cumsum = np.cumsum(arr, axis=axis)
         return cumsum[..., window:] - cumsum[..., :-window]
 

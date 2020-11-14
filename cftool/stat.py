@@ -43,6 +43,14 @@ class RollingStat:
             return rolling_max(arr, window)
         return naive_rolling_max(arr, window, axis)
 
+    @staticmethod
+    def ema(arr: np.ndarray, ratio: float, axis: int = -1) -> np.ndarray:
+        dim = arr.shape[axis]
+        shapes = [1] * len(arr.shape)
+        shapes[axis] = -1
+        multipliers = (ratio ** np.arange(dim))[::-1].reshape(shapes)
+        return (1.0 - ratio) * np.cumsum(arr * multipliers, axis=axis) / multipliers
+
 
 class DataInspector:
     def __init__(self, data: generic_data_type):

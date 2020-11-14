@@ -536,6 +536,24 @@ class StrideArray:
         # construct
         return self._construct(patched_shapes, patched_strides)
 
+    def repeat(self, k: int, axis: int = -1) -> np.ndarray:
+        while axis < 0:
+            axis += self.num_dim
+        target_dim = self.shape[axis]
+        if target_dim != 1:
+            raise ValueError("`repeat` can only be applied on axis with dim == 1")
+        # shapes
+        repeated_shapes = tuple(self.shape[:axis]) + (k,)
+        if axis < self.num_dim - 1:
+            repeated_shapes = repeated_shapes + self.shape[axis + 1 :]
+        # strides
+        previous_strides = tuple(self.strides[:axis])
+        target_stride = (0,)
+        latter_strides = tuple(self.strides[axis + 1 :])
+        repeated_strides = previous_strides + target_stride + latter_strides
+        # construct
+        return self._construct(repeated_shapes, repeated_strides)
+
 
 class SanityChecker:
     @staticmethod

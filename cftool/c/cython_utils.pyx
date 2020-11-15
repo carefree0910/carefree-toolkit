@@ -71,3 +71,22 @@ def rolling_max(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
                 break
 
     return final_results[window - 1:]
+
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def ema(np.ndarray[np.float32_t, ndim=1] flat_data, float ratio):
+    cdef int i
+    cdef unsigned int num_data = len(flat_data)
+    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=flat_data.dtype)
+    cdef float rev_ratio = 1.0 - ratio
+    cdef float current
+
+    for i in range(num_data):
+        if i == 0:
+            current = ratio * flat_data[0]
+        else:
+            current = ratio * flat_data[i] + rev_ratio * current
+        results[i] = current
+
+    return results

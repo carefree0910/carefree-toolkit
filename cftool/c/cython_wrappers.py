@@ -21,4 +21,10 @@ def c_rolling_max(array: np.ndarray, window: int) -> np.ndarray:
     return rolling_max(array, window).astype(dtype)
 
 
-__all__ = ["c_rolling_min", "c_rolling_max"]
+def c_ema(array: np.ndarray, window: int) -> np.ndarray:
+    dtype = array.dtype
+    ratio = 2.0 / (window + 1.0)
+    return ema(array.astype(np.float32), ratio).astype(dtype)
+
+
+__all__ = ["c_rolling_min", "c_rolling_max", "c_ema"]

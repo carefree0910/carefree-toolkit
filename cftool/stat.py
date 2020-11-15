@@ -2,13 +2,16 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
+from functools import partial
+
+from .c import ema
 from .c import rolling_min
 from .c import rolling_max
+from .c import naive_ema
 from .c import naive_rolling_min
 from .c import naive_rolling_max
 from .ml import generic_data_type
 from .misc import show_or_save
-from .misc import StrideArray
 
 
 class RollingStat:
@@ -48,17 +51,11 @@ class RollingStat:
 
     @staticmethod
     def ema(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
-        shape = list(arr.shape)
-        while axis < 0:
-            axis += len(shape)
-        rolled = StrideArray(arr).roll(window, axis=axis)
-        rolled_axis = axis + 1
-        shape.insert(rolled_axis, window)
-        new_shape = [1] * len(shape)
-        new_shape[rolled_axis] = -1
-        ratio = 2.0 / (window + 1.0)
-        multipliers = ((1.0 - ratio) ** np.arange(window))[::-1].reshape(new_shape)
-        return ratio * np.nansum(rolled * multipliers, rolled_axis)
+        if len(arr.shape) == 1 and axis in (0, -1):
+            return ema(arr, window)
+        if ema is naive_ema:
+            return naive_ema(arr, window, axis)
+        return np.apply_along_axis(partial(ema, window=window), axis, arr)
 
 
 class DataInspector:

@@ -8,6 +8,7 @@ from .c import naive_rolling_min
 from .c import naive_rolling_max
 from .ml import generic_data_type
 from .misc import show_or_save
+from .misc import StrideArray
 
 
 class RollingStat:
@@ -46,13 +47,18 @@ class RollingStat:
         return naive_rolling_max(arr, window, axis)
 
     @staticmethod
-    def ema(arr: np.ndarray, ratio: float, axis: int = -1) -> np.ndarray:
-        dim = arr.shape[axis]
-        shapes = [1] * len(arr.shape)
-        shapes[axis] = -1
-        multipliers = (ratio ** np.arange(dim))[::-1].reshape(shapes)
-        multipliers = np.maximum(multipliers, np.finfo(arr.dtype).tiny)
-        return (1.0 - ratio) * np.cumsum(arr * multipliers, axis=axis) / multipliers
+    def ema(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        shape = list(arr.shape)
+        while axis < 0:
+            axis += len(shape)
+        rolled = StrideArray(arr).roll(window, axis=axis)
+        rolled_axis = axis + 1
+        shape.insert(rolled_axis, window)
+        new_shape = [1] * len(shape)
+        new_shape[rolled_axis] = -1
+        ratio = 2.0 / (window + 1.0)
+        multipliers = ((1.0 - ratio) ** np.arange(window))[::-1].reshape(new_shape)
+        return ratio * (rolled * multipliers).sum(rolled_axis)
 
 
 class DataInspector:

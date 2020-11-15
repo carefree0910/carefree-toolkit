@@ -19,7 +19,7 @@ class RollingStat:
         pad_width = [[0, 0] for _ in range(len(arr.shape))]
         pad_width[axis][0] = 1
         arr = np.pad(arr, pad_width=pad_width, mode="constant", constant_values=0)
-        cumsum = np.cumsum(arr, axis=axis)
+        cumsum = np.nancumsum(arr, axis=axis)
         cumsum = np.swapaxes(cumsum, axis, -1)
         rolling_sum = cumsum[..., window:] - cumsum[..., :-window]
         return np.swapaxes(rolling_sum, axis, -1)
@@ -58,7 +58,7 @@ class RollingStat:
         new_shape[rolled_axis] = -1
         ratio = 2.0 / (window + 1.0)
         multipliers = ((1.0 - ratio) ** np.arange(window))[::-1].reshape(new_shape)
-        return ratio * (rolled * multipliers).sum(rolled_axis)
+        return ratio * np.nansum(rolled * multipliers, rolled_axis)
 
 
 class DataInspector:

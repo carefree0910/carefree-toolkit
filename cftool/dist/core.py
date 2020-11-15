@@ -70,6 +70,7 @@ class Parallel(PureLoggingMixin):
         task_names: List[str] = None,
         tqdm_config: Dict[str, Any] = None,
         resource_config: Dict[str, Any] = None,
+        warn_num_jobs: bool = True,
     ):
         self._rs = None
         self._use_tqdm, self._use_cuda = use_tqdm, use_cuda
@@ -86,6 +87,7 @@ class Parallel(PureLoggingMixin):
         self._logging_folder, self._task_names = logging_folder, task_names
         self._refresh_patience = resource_config.setdefault("refresh_patience", 10)
         self._init_logger(self.meta_log_name)
+        self._warn_num_jobs = warn_num_jobs
 
     def __call__(self, f: Callable, *args_list) -> "Parallel":
         # if f returns a dict with 'terminate' key, Parallel can be terminated at
@@ -95,7 +97,7 @@ class Parallel(PureLoggingMixin):
         if self._task_names is None:
             self._task_names = [None] * n_tasks
         if not LINUX or n_jobs <= 1:
-            if LINUX:
+            if LINUX and self._warn_num_jobs:
                 print(
                     f"{LoggingMixin.warning_prefix}Detected Linux system but "
                     f"n_jobs={n_jobs}, functions will be dramatically reduced.\n"

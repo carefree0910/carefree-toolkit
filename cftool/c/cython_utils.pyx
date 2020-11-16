@@ -2,6 +2,7 @@ cimport cython
 cimport numpy as np
 import numpy as np
 
+from libc.math cimport isnan
 from cython.parallel import prange
 
 
@@ -80,13 +81,17 @@ def ema(np.ndarray[np.float32_t, ndim=1] flat_data, float ratio):
     cdef unsigned int num_data = len(flat_data)
     cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=flat_data.dtype)
     cdef float rev_ratio = 1.0 - ratio
-    cdef float current
+    cdef float current, running
 
     for i in range(num_data):
-        if i == 0:
-            current = ratio * flat_data[0]
+        current = flat_data[i]
+        if isnan(current):
+            results[i] = current
         else:
-            current = ratio * flat_data[i] + rev_ratio * current
-        results[i] = current
+            if i == 0:
+                running = ratio * current
+            else:
+                running = ratio * current + rev_ratio * running
+            results[i] = running
 
     return results

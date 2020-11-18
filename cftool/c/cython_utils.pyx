@@ -18,14 +18,7 @@ def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean
 
     cdef float nan = np.nan
     cdef float sum_cache, valid_sum_cache
-    cdef np.ndarray[np.float32_t, ndim=1] flat_valid = np.empty(num_data, dtype=np.float32)
     cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=np.float32)
-
-    for i in range(num_data):
-        if isnan(flat_data[i]):
-            flat_valid[i] = 0.0
-        else:
-            flat_valid[i] = 1.0
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -34,7 +27,7 @@ def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean
         for i in range(window):
             if not isnan(flat_data[cursor + i]):
                 sum_cache = sum_cache + flat_data[cursor + i]
-            valid_sum_cache = valid_sum_cache + flat_valid[cursor + i]
+                valid_sum_cache = valid_sum_cache + 1.0
 
         if valid_sum_cache == 0.0:
             results[cursor + window - 1] = nan
@@ -45,11 +38,12 @@ def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean
                 results[cursor + window - 1] = sum_cache / valid_sum_cache
         for i in range(window - 1):
             if cursor + window + i < num_data:
-                valid_sum_cache = valid_sum_cache + flat_valid[cursor + window + i] - flat_valid[cursor + i]
                 if not isnan(flat_data[cursor + window + i]):
                     sum_cache = sum_cache + flat_data[cursor + window + i]
+                    valid_sum_cache = valid_sum_cache + 1.0
                 if not isnan(flat_data[cursor + i]):
                     sum_cache = sum_cache - flat_data[cursor + i]
+                    valid_sum_cache = valid_sum_cache - 1.0
                 if valid_sum_cache == 0.0:
                     results[cursor + window + i] = nan
                 else:

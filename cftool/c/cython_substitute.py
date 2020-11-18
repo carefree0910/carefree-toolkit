@@ -26,12 +26,14 @@ def naive_rolling_sum(
 
     arr_rolled, nan_rolled = map(_rolling_sum, [arr, nan_mask])
     all_nan_mask = nan_rolled == window
+    dtype = arr_rolled.dtype
+    arr_rolled = arr_rolled.astype(np.float64)
     if not mean:
         arr_rolled[all_nan_mask] = np.nan
     else:
         nan_rolled[all_nan_mask] = np.nan
-        arr_rolled /= (window - nan_rolled)
-    return np.swapaxes(arr_rolled, axis, -1)
+        arr_rolled /= window - nan_rolled
+    return np.swapaxes(arr_rolled.astype(dtype), axis, -1)
 
 
 def naive_rolling_min(array: np.ndarray, window: int, axis: int = -1) -> np.ndarray:

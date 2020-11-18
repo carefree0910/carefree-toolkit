@@ -10,8 +10,8 @@ from .c import rolling_max
 from .c import naive_ema
 from .c import naive_rolling_min
 from .c import naive_rolling_max
-from .ml import generic_data_type
 from .misc import show_or_save
+from .ml.utils import generic_data_type
 
 
 class RollingStat:

@@ -7,9 +7,11 @@ from functools import partial
 from .c import ema
 from .c import rolling_min
 from .c import rolling_max
+from .c import rolling_sum
 from .c import naive_ema
 from .c import naive_rolling_min
 from .c import naive_rolling_max
+from .c import naive_rolling_sum
 from .misc import show_or_save
 from .ml.utils import generic_data_type
 
@@ -23,27 +25,12 @@ class RollingStat:
         mean: bool,
         axis: int = -1,
     ) -> np.ndarray:
-        if window > arr.shape[axis]:
-            raise ValueError("`window` is too large for current array")
-        pad_width = [[0, 0] for _ in range(len(arr.shape))]
-        pad_width[axis][0] = 1
-        pad = partial(np.pad, mode="constant", pad_width=pad_width)
-        nan_mask = np.isnan(arr).astype(np.float32)
-        nan_mask = np.swapaxes(pad(nan_mask, constant_values=1.0), axis, -1)
-        arr = np.swapaxes(pad(arr, constant_values=0.0), axis, -1)
-
-        def _rolling_sum(arr_: np.ndarray) -> np.ndarray:
-            cumsum = np.nancumsum(arr_, axis=-1)
-            return cumsum[..., window:] - cumsum[..., :-window]
-
-        arr_rolled, nan_rolled = map(_rolling_sum, [arr, nan_mask])
-        all_nan_mask = nan_rolled == window
-        if not mean:
-            arr_rolled[all_nan_mask] = np.nan
-        else:
-            nan_rolled[all_nan_mask] = np.nan
-            arr_rolled /= (window - nan_rolled)
-        return np.swapaxes(arr_rolled, axis, -1)
+        if len(arr.shape) == 1 and axis in (0, -1):
+            return rolling_sum(arr, window, mean)
+        if rolling_sum is naive_rolling_sum:
+            return naive_rolling_sum(arr, window, mean, axis)
+        rolling_sum_ = partial(rolling_sum, window=window, mean=mean)
+        return np.apply_along_axis(rolling_sum_, axis, arr)
 
     @staticmethod
     def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:

@@ -8,6 +8,61 @@ from cython.parallel import prange
 
 # api
 
+
+@cython.wraparound(False)
+@cython.boundscheck(False)
+def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean):
+    cdef int i, section_idx, cursor
+    cdef unsigned int num_data = len(flat_data)
+    cdef unsigned int num_sections = num_data // window
+
+    cdef float nan = np.nan
+    cdef float sum_cache, valid_sum_cache
+    cdef np.ndarray[np.float32_t, ndim=1] flat_valid = np.empty(num_data, dtype=np.float32)
+    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=np.float32)
+
+    for i in range(num_data):
+        if isnan(flat_data[i]):
+            flat_valid[i] = 0.0
+        else:
+            flat_valid[i] = 1.0
+
+    for section_idx in prange(num_sections, nogil=True):
+        cursor = window * section_idx
+
+        sum_cache = valid_sum_cache = 0.0
+        for i in range(window):
+            if not isnan(flat_data[cursor + i]):
+                sum_cache = sum_cache + flat_data[cursor + i]
+            valid_sum_cache = valid_sum_cache + flat_valid[cursor + i]
+
+        if valid_sum_cache == 0.0:
+            results[cursor + window - 1] = nan
+        else:
+            if mean == 0:
+                results[cursor + window - 1] = sum_cache
+            else:
+                results[cursor + window - 1] = sum_cache / valid_sum_cache
+        for i in range(window - 1):
+            if cursor + window + i < num_data:
+                valid_sum_cache = valid_sum_cache + flat_valid[cursor + window + i] - flat_valid[cursor + i]
+                if not isnan(flat_data[cursor + window + i]):
+                    sum_cache = sum_cache + flat_data[cursor + window + i]
+                if not isnan(flat_data[cursor + i]):
+                    sum_cache = sum_cache - flat_data[cursor + i]
+                if valid_sum_cache == 0.0:
+                    results[cursor + window + i] = nan
+                else:
+                    if mean == 0:
+                        results[cursor + window + i] = sum_cache
+                    else:
+                        results[cursor + window + i] = sum_cache / valid_sum_cache
+            else:
+                break
+
+    return results[window - 1:]
+
+
 @cython.wraparound(False)
 @cython.boundscheck(False)
 def rolling_min(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
@@ -16,8 +71,8 @@ def rolling_min(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
     cdef unsigned int num_sections = num_data // window
 
     cdef float cache_min, final_min
-    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=flat_data.dtype)
-    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=flat_data.dtype)
+    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=np.float32)
+    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=np.float32)
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -49,8 +104,8 @@ def rolling_max(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
     cdef unsigned int num_sections = num_data // window
 
     cdef float cache_max, final_max
-    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=flat_data.dtype)
-    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=flat_data.dtype)
+    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=np.float32)
+    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=np.float32)
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -79,7 +134,7 @@ def rolling_max(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
 def ema(np.ndarray[np.float32_t, ndim=1] flat_data, float ratio):
     cdef int i
     cdef unsigned int num_data = len(flat_data)
-    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=flat_data.dtype)
+    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=np.float32)
     cdef float rev_ratio = 1.0 - ratio
     cdef float current, running
 

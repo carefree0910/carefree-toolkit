@@ -3,8 +3,12 @@ try:
 except ImportError:
     raise
 
-
 import numpy as np
+
+
+def c_rolling_sum(array: np.ndarray, window: int, mean: bool) -> np.ndarray:
+    dtype = array.dtype
+    return rolling_sum(array.astype(np.float32), window, int(mean)).astype(dtype)
 
 
 def c_rolling_min(array: np.ndarray, window: int) -> np.ndarray:
@@ -27,4 +31,9 @@ def c_ema(array: np.ndarray, window: int) -> np.ndarray:
     return ema(array.astype(np.float32), ratio).astype(dtype)
 
 
-__all__ = ["c_rolling_min", "c_rolling_max", "c_ema"]
+__all__ = [
+    "c_rolling_sum",
+    "c_rolling_min",
+    "c_rolling_max",
+    "c_ema",
+]

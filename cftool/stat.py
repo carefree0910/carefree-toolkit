@@ -16,20 +16,42 @@ from .ml.utils import generic_data_type
 
 class RollingStat:
     @staticmethod
-    def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+    def _sum(
+        arr: np.ndarray,
+        window: int,
+        *,
+        mean: bool,
+        axis: int = -1,
+    ) -> np.ndarray:
         if window > arr.shape[axis]:
             raise ValueError("`window` is too large for current array")
         pad_width = [[0, 0] for _ in range(len(arr.shape))]
         pad_width[axis][0] = 1
-        arr = np.pad(arr, pad_width=pad_width, mode="constant", constant_values=0)
-        cumsum = np.nancumsum(arr, axis=axis)
-        cumsum = np.swapaxes(cumsum, axis, -1)
-        rolling_sum = cumsum[..., window:] - cumsum[..., :-window]
-        return np.swapaxes(rolling_sum, axis, -1)
+        pad = partial(np.pad, mode="constant", pad_width=pad_width)
+        nan_mask = np.isnan(arr).astype(np.float32)
+        nan_mask = np.swapaxes(pad(nan_mask, constant_values=1.0), axis, -1)
+        arr = np.swapaxes(pad(arr, constant_values=0.0), axis, -1)
+
+        def _rolling_sum(arr_: np.ndarray) -> np.ndarray:
+            cumsum = np.nancumsum(arr_, axis=-1)
+            return cumsum[..., window:] - cumsum[..., :-window]
+
+        arr_rolled, nan_rolled = map(_rolling_sum, [arr, nan_mask])
+        all_nan_mask = nan_rolled == window
+        if not mean:
+            arr_rolled[all_nan_mask] = np.nan
+        else:
+            nan_rolled[all_nan_mask] = np.nan
+            arr_rolled /= (window - nan_rolled)
+        return np.swapaxes(arr_rolled, axis, -1)
+
+    @staticmethod
+    def sum(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
+        return RollingStat._sum(arr, window, mean=False, axis=axis)
 
     @staticmethod
     def mean(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:
-        return RollingStat.sum(arr, window, axis=axis) / float(window)
+        return RollingStat._sum(arr, window, mean=True, axis=axis)
 
     @staticmethod
     def std(arr: np.ndarray, window: int, *, axis: int = -1) -> np.ndarray:

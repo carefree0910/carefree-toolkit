@@ -785,8 +785,6 @@ class LoggingMixin:
         self._release_handlers(logger)
         logger.addHandler(console)
         logger.addHandler(file_handler)
-        for handler in logging.getLogger().handlers:
-            handler.setLevel(logging.CRITICAL)
         self.log_block_msg(sys.version, title="system version", verbose_level=None)
         return self
 

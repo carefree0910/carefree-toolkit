@@ -11,14 +11,14 @@ from cython.parallel import prange
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean):
+def rolling_sum(np.ndarray[np.float64_t, ndim=1] flat_data, int window, int mean):
     cdef int i, section_idx, cursor
     cdef unsigned int num_data = len(flat_data)
     cdef unsigned int num_sections = num_data // window
 
-    cdef float nan = np.nan
-    cdef float sum_cache, valid_sum_cache
-    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=np.float32)
+    cdef double nan = np.nan
+    cdef double sum_cache, valid_sum_cache
+    cdef np.ndarray[np.float64_t, ndim=1] results = np.empty(num_data, dtype=np.float64)
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -59,14 +59,14 @@ def rolling_sum(np.ndarray[np.float32_t, ndim=1] flat_data, int window, int mean
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def rolling_min(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
+def rolling_min(np.ndarray[np.float64_t, ndim=1] flat_data, int window):
     cdef int i, section_idx, cursor
     cdef unsigned int num_data = len(flat_data)
     cdef unsigned int num_sections = num_data // window
 
-    cdef float cache_min, final_min
-    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=np.float32)
-    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=np.float32)
+    cdef double cache_min, final_min
+    cdef np.ndarray[np.float64_t, ndim=1] final_results = np.empty(num_data, dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim=1] caches = np.empty(num_data, dtype=np.float64)
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -92,14 +92,14 @@ def rolling_min(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def rolling_max(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
+def rolling_max(np.ndarray[np.float64_t, ndim=1] flat_data, int window):
     cdef int i, section_idx, cursor
     cdef unsigned int num_data = len(flat_data)
     cdef unsigned int num_sections = num_data // window
 
-    cdef float cache_max, final_max
-    cdef np.ndarray[np.float32_t, ndim=1] final_results = np.empty(num_data, dtype=np.float32)
-    cdef np.ndarray[np.float32_t, ndim=1] caches = np.empty(num_data, dtype=np.float32)
+    cdef double cache_max, final_max
+    cdef np.ndarray[np.float64_t, ndim=1] final_results = np.empty(num_data, dtype=np.float64)
+    cdef np.ndarray[np.float64_t, ndim=1] caches = np.empty(num_data, dtype=np.float64)
 
     for section_idx in prange(num_sections, nogil=True):
         cursor = window * section_idx
@@ -125,12 +125,12 @@ def rolling_max(np.ndarray[np.float32_t, ndim=1] flat_data, int window):
 
 @cython.wraparound(False)
 @cython.boundscheck(False)
-def ema(np.ndarray[np.float32_t, ndim=1] flat_data, float ratio):
+def ema(np.ndarray[np.float64_t, ndim=1] flat_data, float ratio):
     cdef int i
     cdef unsigned int num_data = len(flat_data)
-    cdef np.ndarray[np.float32_t, ndim=1] results = np.empty(num_data, dtype=np.float32)
-    cdef float rev_ratio = 1.0 - ratio
-    cdef float current, running
+    cdef np.ndarray[np.float64_t, ndim=1] results = np.empty(num_data, dtype=np.float64)
+    cdef double rev_ratio = 1.0 - ratio
+    cdef double current, running
 
     for i in range(num_data):
         current = flat_data[i]

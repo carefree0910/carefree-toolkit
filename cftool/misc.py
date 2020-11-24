@@ -1071,6 +1071,21 @@ class SavingMixin(LoggingMixin):
     """
     Mixin class to provide logging & saving method for base class.
 
+    Warnings
+    ----------
+    We require base class to define every property appeared in __init__ (args, kwargs)
+    if we want to utilize `SavingMixin.load_with`
+
+    ```python
+    class Foo:
+        def __init__(self, a, *, b):
+            # these are required
+            self.a = a
+            self.b = b
+            # others could be customized
+            ...
+    ```
+
     Methods
     ----------
     save(self, folder)
@@ -1127,6 +1142,21 @@ class SavingMixin(LoggingMixin):
                 with self._data_tuple_context(is_saving=False):
                     Saving.load_instance(self, folder, log_method=self.log_msg)
         return self
+
+    @staticmethod
+    def load_with(cls: Type, folder: str, *, compress: bool = True) -> Any:
+        # load every thing into a dummy instance
+        dummy = type(cls.__name__, (SavingMixin,), {})()
+        dummy.load(folder, compress=compress)
+        # inject everything into the target instance
+        spec = inspect.getfullargspec(cls.__init__)
+        args = spec.args[1:]
+        kwargs_keys = spec.kwonlyargs
+        arg_values = tuple(getattr(dummy, arg) for arg in args)
+        kwargs = {key: getattr(dummy, key) for key in kwargs_keys}
+        instance = cls(*arg_values, **kwargs)
+        update_dict(dummy.__dict__, instance.__dict__)
+        return instance
 
 
 class Saving(LoggingMixin):

@@ -207,8 +207,8 @@ class Metrics(LoggingMixin):
 
     def quantile(self, y, pred):
         q, error = self.config["q"], y - pred
-        if isinstance(q, list):
-            q = np.array(q, np.float32).reshape([-1, 1])
+        if not isinstance(q, float):
+            q = np.asarray(q, np.float32).reshape([1, -1])
         return np.maximum(q * error, (q - 1) * error).mean(0).sum()
 
     def cdf_loss(self, y, pred, yq=None):

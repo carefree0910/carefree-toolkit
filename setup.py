@@ -10,6 +10,7 @@ with open("README.md") as f:
     LONG_DESCRIPTION = f.read()
 
 INSTALL_REQUIRES = [
+    "tqdm",
     "opencv-python",
     "dill",
     "future",

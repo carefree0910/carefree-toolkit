@@ -1041,7 +1041,10 @@ class PureLoggingMixin:
             logger.log(
                 msg_level,
                 msg,
-                extra={"func_prefix": LoggingMixin._get_func_prefix(frame)},
+                extra={
+                    "custom_prefix": "",
+                    "func_prefix": LoggingMixin._get_func_prefix(frame),
+                },
             )
         return logger
 
@@ -1057,7 +1060,11 @@ class PureLoggingMixin:
             clear_stuffs_after_exc=False,
         ):
             logger.exception(
-                msg, extra={"func_prefix": LoggingMixin._get_func_prefix(frame)}
+                msg,
+                extra={
+                    "custom_prefix": LoggingMixin.error_prefix,
+                    "func_prefix": LoggingMixin._get_func_prefix(frame),
+                }
             )
 
     def del_logger(self, name):

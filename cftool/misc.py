@@ -673,6 +673,10 @@ class _Formatter(logging.Formatter):
             s = "%s.%03d" % (t, record.msecs)
         return s
 
+    def formatMessage(self, record: logging.LogRecord) -> str:
+        record.__dict__.setdefault("func_prefix", "Unknown")
+        return super().formatMessage(record)
+
 
 class LoggingMixin:
     """

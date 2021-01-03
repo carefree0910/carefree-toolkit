@@ -1235,15 +1235,17 @@ class Saving(LoggingMixin):
         return True
 
     @staticmethod
-    def save_dict(d: dict, name: str, folder: str):
+    def save_dict(d: dict, name: str, folder: str) -> str:
         if Saving._check_dict(d):
             kwargs = {}
             suffix, method, mode = ".json", json.dump, "w"
         else:
             kwargs = {"recurse": True}
             suffix, method, mode = Saving.dill_suffix, dill.dump, "wb"
-        with open(os.path.join(folder, f"{name}{suffix}"), mode) as f:
+        file = os.path.join(folder, f"{name}{suffix}")
+        with open(file, mode) as f:
             method(d, f, **kwargs)
+        return os.path.abspath(file)
 
     @staticmethod
     def load_dict(name: str, folder: str = None):

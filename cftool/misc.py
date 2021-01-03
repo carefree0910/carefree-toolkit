@@ -779,7 +779,7 @@ class LoggingMixin:
         if self._logging_path_ is None:
             self._logging_path_ = config["_logging_path_"] = self.logging_path
         os.makedirs(os.path.dirname(self.logging_path), exist_ok=True)
-        file_handler = logging.FileHandler(self.logging_path)
+        file_handler = logging.FileHandler(self.logging_path, encoding="utf-8")
         file_handler.setFormatter(self._formatter_)
         file_handler.setLevel(logging.DEBUG)
         console = logging.StreamHandler()

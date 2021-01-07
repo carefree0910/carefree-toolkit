@@ -3,6 +3,7 @@ import logging
 import subprocess
 
 from typing import *
+from collections import defaultdict
 
 from .misc import PureLoggingMixin
 
@@ -119,7 +120,10 @@ class GPUManager:
             raise ValueError("No more CUDAs are available")
         chosen_gpu = int(
             next(
-                filter(self._gpu_filter, self._sort_by_memory(self._query_gpu(), True))
+                filter(
+                    self._gpu_filter,
+                    self._sort_by_memory(self._query_gpu(), True),
+                )
             )["index"]
         )
         if not self._reuse and self._available_cuda is not None:
@@ -133,7 +137,10 @@ class GPUManager:
         }
 
     def get_pid_usages(self) -> Dict[int, int]:
-        return dict(self._query_pid())
+        usages = defaultdict(int)
+        for key, usage in self._query_pid():
+            usages[key] += usage
+        return usages
 
 
 class ResourceManager:

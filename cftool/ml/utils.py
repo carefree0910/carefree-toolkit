@@ -191,7 +191,7 @@ class Metrics(LoggingMixin):
         if requires_prob:
             cls.requires_prob_metrics.add(name)
 
-    def metric(self, y, pred):
+    def metric(self, y, pred, **kwargs: Any):
         if self.type is None:
             msg = "`score` method was called but type is not specified in Metrics"
             raise ValueError(msg)
@@ -200,8 +200,8 @@ class Metrics(LoggingMixin):
             return float("nan")
         custom_metric_info = self.custom_metrics.get(self.type)
         if custom_metric_info is not None:
-            return custom_metric_info["f"](self, y, pred)
-        return getattr(self, self.type)(y, pred)
+            return custom_metric_info["f"](self, y, pred, **kwargs)
+        return getattr(self, self.type)(y, pred, **kwargs)
 
     # config-dependent metrics
 

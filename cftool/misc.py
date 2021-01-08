@@ -894,6 +894,8 @@ class LoggingMixin:
         cls._triggered_ = False
         cls._initialized_ = False
         cls._logging_path_ = None
+        if cls._logger_ is not None:
+            cls._release_handlers(cls._logger_)
         cls._logger_ = cls._verbose_level_ = None
         cls._timing_dict_, cls._time_cache_dict_ = {}, {}
 

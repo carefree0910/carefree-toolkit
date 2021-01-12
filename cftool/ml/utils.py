@@ -327,7 +327,7 @@ class Estimator(LoggingMixin):
     >>> x, y = map(np.atleast_2d, [[1., 2., 3.], [0., 2., 1.]])
     >>> identical = lambda x_: x_
     >>> minus_one = lambda x_: x_ - 1
-    >>> # ~~~  [ info ] Results
+    >>> # >  [ info ] Results
     >>> # ==========================================================
     >>> # |             identical  |    mae     |  1.000000  |
     >>> # |             minus_one  |    mae     |  0.666667  |  <-
@@ -720,12 +720,12 @@ class Comparer(LoggingMixin):
     >>>     "minus_one": ModelPattern(predict_method=minus_one)
     >>> }
     >>> estimators = [Estimator("mse"), Estimator("mae")]
-    >>> # ~~~  [ info ] Results
+    >>> # >  [ info ] Results
     >>> # ==========================================================
     >>> # |             identical  |    mse     |  1.666667  |
     >>> # |             minus_one  |    mse     |  0.666667  |  <-
     >>> # ----------------------------------------------------------
-    >>> # ~~~  [ info ] Results
+    >>> # >  [ info ] Results
     >>> # ==========================================================
     >>> # |             identical  |    mae     |  1.000000  |
     >>> # |             minus_one  |    mae     |  0.666667  |  <-

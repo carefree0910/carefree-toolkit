@@ -374,7 +374,7 @@ def register_core(
         registered = global_dict.get(name)
         if registered is not None:
             print(
-                f"~~~ [warning] '{name}' has already registered "
+                f"{LoggingMixin.warning_prefix}'{name}' has already registered "
                 f"in the given global dict ({global_dict})"
             )
             return cls
@@ -719,9 +719,9 @@ class LoggingMixin:
     )
     _timing_dict_, _time_cache_dict_ = {}, {}
 
-    info_prefix = "~~~  [ info ] "
-    warning_prefix = "~~~ [warning] "
-    error_prefix = "~~~ [ error ] "
+    info_prefix = ">  [ info ] "
+    warning_prefix = "> [warning] "
+    error_prefix = "> [ error ] "
 
     @property
     def logging_path(self):
@@ -1735,7 +1735,7 @@ class timeit(context_error_handler):
     --------
     >>> with timeit("something"):
     >>>     # do something here
-    >>> # will print "~~~  [ info ] timing for    something     : x.xxxx"
+    >>> # will print ">  [ info ] timing for    something     : x.xxxx"
 
     """
 
@@ -1926,7 +1926,7 @@ class lock_manager(context_error_handler, LoggingMixin):
                 if os.path.isfile(stuff):
                     self.log_msg(
                         f"clearing cached file: {stuff}",
-                        "~~~~~~ ",
+                        ">> ",
                         5,
                         logging.ERROR,
                         frame,
@@ -1935,7 +1935,7 @@ class lock_manager(context_error_handler, LoggingMixin):
                 elif os.path.isdir(stuff):
                     self.log_msg(
                         f"clearing cached directory: {stuff}",
-                        "~~~~~~ ",
+                        ">> ",
                         5,
                         logging.ERROR,
                         frame,
@@ -1953,7 +1953,7 @@ class lock_manager(context_error_handler, LoggingMixin):
 
     @property
     def cache_stuffs_str(self):
-        return "\n".join([f"~~~~~~ {stuff}" for stuff in self._stuffs])
+        return "\n".join([f">> {stuff}" for stuff in self._stuffs])
 
     @property
     def exception_suffix(self):

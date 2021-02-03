@@ -16,6 +16,7 @@ from multiprocessing.managers import SyncManager
 
 from ..misc import *
 from ..manage import *
+from ..misc import grouped
 
 LINUX = platform.system() == "Linux"
 dill._dill._reverse_typemap["ClassType"] = type
@@ -74,7 +75,7 @@ class Parallel(PureLoggingMixin):
     ):
         self._rs = None
         self._use_tqdm, self._use_cuda = use_tqdm, use_cuda
-        self._n_jobs, self._sleep = num_jobs, sleep
+        self._num_jobs, self._sleep = num_jobs, sleep
         if tqdm_config is None:
             tqdm_config = {}
         if resource_config is None:
@@ -89,11 +90,11 @@ class Parallel(PureLoggingMixin):
         self._init_logger(self.meta_log_name)
         self._warn_num_jobs = warn_num_jobs
 
-    def __call__(self, f: Callable, *args_list) -> "Parallel":
+    def __call__(self, f: Callable, *args_list: Any) -> "Parallel":
         # if f returns a dict with 'terminate' key, Parallel can be terminated at
         # early stage by setting 'terminate' key to True
         n_tasks = len(args_list[0])
-        n_jobs = min(self._n_jobs, n_tasks)
+        n_jobs = min(self._num_jobs, n_tasks)
         if self._task_names is None:
             self._task_names = [None] * n_tasks
         if not LINUX or n_jobs <= 1:
@@ -248,6 +249,22 @@ class Parallel(PureLoggingMixin):
             )
         return self
 
+    def grouped(self, f: Callable, *args_list: Any) -> "Parallel":
+        grouped_args_list = [grouped_into(args, self._num_jobs) for args in args_list]
+
+        def _grouped_f(i: int, *args_list_: Tuple[Any]) -> List[Any]:
+            results: List[Any] = []
+            for args in tqdm(
+                zip(*args_list_),
+                total=len(args_list_[0]),
+                position=i + 1,
+                leave=False,
+            ):
+                results.append(f(*args))
+            return results
+
+        return self(_grouped_f, list(range(self._num_jobs)), *grouped_args_list)
+
     @property
     def meta(self) -> Dict[str, Any]:
         return self._rs["__meta__"]
@@ -352,7 +369,7 @@ class Parallel(PureLoggingMixin):
 
     def _add_new_processes(self) -> bool:
         n_working = len(self._working_processes)
-        n_new_jobs = self._n_jobs - n_working
+        n_new_jobs = self._num_jobs - n_working
         n_res = len(self._all_task_indices) - self._cursor
         if n_res > 0:
             n_new_jobs = min(n_new_jobs, n_res)

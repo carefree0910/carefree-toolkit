@@ -134,13 +134,33 @@ def truncate_string_to_length(string: str, length: int) -> str:
     return f"{head}{'.' * (length - 2 * half_length)}{tail}"
 
 
-def grouped(iterable: Iterable, n: int, *, keep_tail=False) -> List[tuple]:
+def grouped(iterable: Iterable, n: int, *, keep_tail: bool = False) -> List[tuple]:
     """ Group an iterable every `n` elements. """
 
     if not keep_tail:
         return list(zip(*[iter(iterable)] * n))
     with batch_manager(iterable, batch_size=n, max_batch_size=n) as manager:
         return [tuple(batch) for batch in manager]
+
+
+def grouped_into(iterable: Iterable, n: int) -> List[tuple]:
+    """ Group an iterable into `n` groups. """
+
+    elements = list(iterable)
+    num_elements = len(elements)
+    num_elem_per_group = int(math.ceil(num_elements / n))
+    results: List[tuple] = []
+    split_idx = num_elements + n - n * num_elem_per_group
+    start = 0
+    for i in range(split_idx):
+        end = start + num_elem_per_group
+        results.append(tuple(elements[start:end]))
+        start = end
+    for i in range(split_idx, n):
+        end = start + num_elem_per_group - 1
+        results.append(tuple(elements[start:end]))
+        start = end
+    return results
 
 
 def is_numeric(s: Any) -> bool:
@@ -2192,6 +2212,7 @@ __all__ = [
     "fix_float_to_length",
     "truncate_string_to_length",
     "grouped",
+    "grouped_into",
     "is_numeric",
     "get_one_hot",
     "show_or_save",

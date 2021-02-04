@@ -299,7 +299,7 @@ generic_data_type = Union[np.ndarray, Any]
 estimate_fn_type = Callable[[generic_data_type], np.ndarray]
 scoring_fn_type = Callable[[List[float], float, float], float]
 collate_fn_type = Callable[[List[np.ndarray], bool], np.ndarray]
-predict_method_type = Union[estimate_fn_type, None]
+predict_method_type = Optional[estimate_fn_type]
 
 
 class Statistics(NamedTuple):
@@ -342,7 +342,7 @@ class Estimator(LoggingMixin):
         metric_type: str,
         *,
         verbose_level: int = 2,
-        metric_config: Dict[str, Any] = None,
+        metric_config: Optional[Dict[str, Any]] = None,
     ):
         self._reset()
         self._verbose_level = verbose_level
@@ -549,8 +549,8 @@ class ModelPattern(PatternBase, LoggingMixin):
     def __init__(
         self,
         *,
-        init_method: Callable[[], object] = None,
-        train_method: Callable[[object], None] = None,
+        init_method: Optional[Callable[[], object]] = None,
+        train_method: Optional[Callable[[object], None]] = None,
         predict_method: Union[str, predict_method_type] = "predict",
         predict_prob_method: Union[str, predict_method_type] = "predict_prob",
         verbose_level: int = 2,
@@ -687,7 +687,7 @@ class EnsemblePattern(PatternBase):
 
 pattern_type = Union[ModelPattern, EnsemblePattern]
 patterns_type = Union[pattern_type, List[pattern_type]]
-choices_type = Union[None, List[Union[int, Set[int], None]]]
+choices_type = Optional[List[Optional[Union[int, Set[int]]]]]
 
 
 class Comparer(LoggingMixin):
@@ -767,7 +767,7 @@ class Comparer(LoggingMixin):
     def best_methods(self) -> Dict[str, str]:
         return {k: v.best_method for k, v in self.estimators.items()}
 
-    def log_statistics(self, verbose_level: int = 1, **kwargs) -> str:
+    def log_statistics(self, verbose_level: Optional[int] = 1, **kwargs) -> str:
         sorted_metrics = sorted(self.estimator_statistics)
         body = {}
         same_choices: choices_type = None
@@ -1123,7 +1123,7 @@ class Visualizer:
         classes: List[Union[str, Any]],
         categories: List[Union[str, Any]],
         *,
-        save_names: List[str] = None,
+        save_names: Optional[List[str]] = None,
         num_sample: int = 1000,
         expand_floor: int = 5,
         overwrite: bool = True,
@@ -1162,13 +1162,13 @@ class Visualizer:
     def visualize1d(
         method: Callable,
         x: np.ndarray,
-        y: np.ndarray = None,
+        y: Optional[np.ndarray] = None,
         *,
-        title: str = None,
+        title: Optional[str] = None,
         num_samples: int = 100,
         expand_ratio: float = 0.25,
         return_canvas: bool = False,
-    ) -> Union[None, np.ndarray]:
+    ) -> Optional[np.ndarray]:
         if x.shape[1] != 1:
             raise ValueError("visualize1d only supports 1-dimensional features")
         plt.figure()
@@ -1185,16 +1185,16 @@ class Visualizer:
     def visualize2d(
         method,
         x: np.ndarray,
-        y: np.ndarray = None,
+        y: Optional[np.ndarray] = None,
         *,
-        title: str = None,
+        title: Optional[str] = None,
         dense: int = 200,
         padding: float = 0.1,
         return_canvas: bool = False,
         draw_background: bool = True,
-        extra_scatters: np.ndarray = None,
-        emphasize_indices: np.ndarray = None,
-    ) -> Union[None, np.ndarray]:
+        extra_scatters: Optional[np.ndarray] = None,
+        emphasize_indices: Optional[np.ndarray] = None,
+    ) -> Optional[np.ndarray]:
         axis = x.T
         if axis.shape[0] != 2:
             raise ValueError("visualize2d only supports 2-dimensional features")
@@ -1280,10 +1280,10 @@ class Tracker:
 
     def __init__(
         self,
-        project_name: str = None,
-        task_name: str = None,
+        project_name: Optional[str] = None,
+        task_name: Optional[str] = None,
         *,
-        base_folder: str = None,
+        base_folder: Optional[str] = None,
         overwrite: bool = False,
     ):
         if base_folder is None:
@@ -1399,9 +1399,9 @@ class Tracker:
 
     def visualize_scalars(
         self,
-        types: List[str] = None,
+        types: Optional[List[str]] = None,
         *,
-        export_folder: str = None,
+        export_folder: Optional[str] = None,
         merge: bool = True,
     ) -> None:
         if export_folder is not None:
@@ -1464,13 +1464,13 @@ class Tracker:
     @classmethod
     def compare(
         cls,
-        project_name: str = None,
-        task_names: List[str] = None,
+        project_name: Optional[str] = None,
+        task_names: Optional[List[str]] = None,
         *,
-        base_folder: str = None,
+        base_folder: Optional[str] = None,
         visualize: bool = True,
-        types: List[str] = None,
-        export_folder: str = None,
+        types: Optional[List[str]] = None,
+        export_folder: Optional[str] = None,
         merge: bool = False,
     ) -> List["Tracker"]:
         if base_folder is None:

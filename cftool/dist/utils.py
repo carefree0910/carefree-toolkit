@@ -3,6 +3,7 @@ import os
 import numpy as np
 
 from typing import List
+from typing import Optional
 
 from ..misc import LoggingMixin
 
@@ -16,10 +17,10 @@ class SharedArray:
     def __init__(
         self,
         name: str,
-        shape: List[int] = None,
+        shape: Optional[List[int]] = None,
         dtype: np.dtype = np.float32,
         *,
-        base_folder: str = None,
+        base_folder: Optional[str] = None,
         overwrite: bool = False,
         verbose: bool = False,
     ):

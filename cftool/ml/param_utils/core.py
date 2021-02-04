@@ -1,7 +1,11 @@
 import math
 import numpy as np
 
-from typing import Dict, List, Union, Iterator
+from typing import Dict
+from typing import List
+from typing import Union
+from typing import Iterator
+from typing import Optional
 
 from .types import *
 from .data_types import *
@@ -44,8 +48,8 @@ class ParamsGenerator:
         self,
         params: params_type,
         *,
-        normalize_method: Union[str, None] = None,
-        normalize_config: Dict[str, Any] = None,
+        normalize_method: Optional[str] = None,
+        normalize_config: Optional[Dict[str, Any]] = None,
     ):
         self._data_types = params
 

@@ -154,7 +154,7 @@ class ResourceManager:
     def __init__(
         self,
         config: Dict[str, Any],
-        get_task_name: Callable[[int], Union[str, None]],
+        get_task_name: Callable[[int], Optional[str]],
         refresh_patience: int,
     ):
         self._resources, self._info_dict, self._overwritten_task_info = [], {}, {}
@@ -517,11 +517,7 @@ class ResourceManager:
                 f"memory usage (pid : {pid})",
             )
 
-    def handle_finish(
-        self,
-        task_idx: int,
-        process: psutil.Process,
-    ) -> Union[str, None]:
+    def handle_finish(self, task_idx: int, process: psutil.Process) -> Optional[str]:
         if process is None:
             return
         pid = process.pid

@@ -66,9 +66,9 @@ class Processor:
     def __init__(
         self,
         *,
-        rgb: np.ndarray = None,
-        bgr: np.ndarray = None,
-        img_path: str = None,
+        rgb: Optional[np.ndarray] = None,
+        bgr: Optional[np.ndarray] = None,
+        img_path: Optional[str] = None,
     ):
         if rgb is not None or bgr is not None:
             img_array = bgr if bgr is not None else rgb[..., ::-1]

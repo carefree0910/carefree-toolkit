@@ -11,7 +11,7 @@ def draw_contours(
     h: int,
     contours: List[np.ndarray],
     *,
-    saving_path: str = None,
+    saving_path: Optional[str] = None,
     color: Tuple[int, int, int] = (0, 255, 0)
 ) -> Image.Image:
     canvas = np.zeros([h, w, 3]).astype(np.uint8)
@@ -33,9 +33,9 @@ class Reader:
     def is_valid(self):
         return self.img_array is not None
 
-    def to_gray(self, *, reverse: bool = False) -> Union[np.ndarray, None]:
+    def to_gray(self, *, reverse: bool = False) -> Optional[np.ndarray]:
         if not self.is_valid:
-            return
+            return None
         if len(self.img_array.shape) == 2:
             gray = self.img_array
         elif self.img_array.shape[-1] == 4:

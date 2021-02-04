@@ -5,7 +5,7 @@ from typing import *
 from ...misc import *
 from ...ml.param_utils import *
 
-fn_type = Union[Callable[[nested_type], float], None]
+fn_type = Optional[Callable[[nested_type], float]]
 
 
 class Result(NamedTuple):
@@ -19,8 +19,8 @@ class TargetSpace:
         fn: fn_type,
         params: params_type,
         *,
-        normalization: Union[str, None],
-        normalization_config: Dict[str, Any]
+        normalization: Optional[str],
+        normalization_config: Optional[Dict[str, Any]],
     ):
         self.fn = fn
         self.params_gen = ParamsGenerator(

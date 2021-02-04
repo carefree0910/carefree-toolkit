@@ -197,7 +197,11 @@ def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
     return one_hot
 
 
-def show_or_save(export_path: str, fig: plt.figure = None, **kwargs) -> None:
+def show_or_save(
+    export_path: str,
+    fig: Optional[plt.figure] = None,
+    **kwargs: Any,
+) -> None:
     """
     Utility function to deal with figure.
 
@@ -385,8 +389,8 @@ def register_core(
     name: str,
     global_dict: Dict[str, type],
     *,
-    before_register: callable = None,
-    after_register: callable = None,
+    before_register: Optional[Callable] = None,
+    after_register: Optional[Callable] = None,
 ):
     def _register(cls):
         if before_register is not None:
@@ -783,7 +787,7 @@ class LoggingMixin:
     def generate_logging_path(folder: str) -> str:
         return os.path.join(folder, f"{timestamp()}.log")
 
-    def _init_logging(self, verbose_level: Union[int, None] = 2, trigger: bool = True):
+    def _init_logging(self, verbose_level: Optional[int] = 2, trigger: bool = True):
         wants_trigger = trigger and not LoggingMixin._triggered_
         if LoggingMixin._initialized_ and not wants_trigger:
             return self
@@ -816,7 +820,7 @@ class LoggingMixin:
         self,
         body: str,
         prefix: str = "",
-        verbose_level: Union[int, None] = 1,
+        verbose_level: Optional[int] = 1,
         msg_level: int = logging.INFO,
         frame=None,
     ):
@@ -849,7 +853,7 @@ class LoggingMixin:
         body: str,
         prefix: str = "",
         title: str = "",
-        verbose_level: Union[int, None] = 1,
+        verbose_level: Optional[int] = 1,
         msg_level: int = logging.INFO,
         frame=None,
     ):
@@ -1090,7 +1094,7 @@ class PureLoggingMixin:
                 extra={
                     "custom_prefix": LoggingMixin.error_prefix,
                     "func_prefix": LoggingMixin._get_func_prefix(frame),
-                }
+                },
             )
 
     def del_logger(self, name):
@@ -1463,7 +1467,7 @@ class Saving(LoggingMixin):
         is_compress: bool,
         *,
         remove_extracted: bool = True,
-        logging_mixin: LoggingMixin = None,
+        logging_mixin: Optional[LoggingMixin] = None,
     ):
         class _manager(context_error_handler):
             def __enter__(self):
@@ -2015,7 +2019,7 @@ class batch_manager(context_error_handler):
         self,
         *inputs,
         n_elem: int = 1e6,
-        batch_size: int = None,
+        batch_size: Optional[int] = None,
         max_batch_size: int = 1024,
     ):
         if not inputs:
@@ -2171,9 +2175,9 @@ class data_tuple_saving_controller(context_error_handler):
 
     def _get_attr(
         self,
-        attr: str = None,
-        data_tuple: NamedTuple = None,
-    ) -> Union[None, List[str], Dict[str, Dict[int, str]]]:
+        attr: Optional[str] = None,
+        data_tuple: Optional[NamedTuple] = None,
+    ) -> Optional[Union[List[str], Dict[str, Dict[int, str]]]]:
         prefix = self.__prefix__
         if self._is_saving:
             if data_tuple is None:

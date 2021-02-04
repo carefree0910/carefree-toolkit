@@ -65,12 +65,12 @@ class Parallel(PureLoggingMixin):
         sleep: float = 1.0,
         use_tqdm: bool = True,
         use_cuda: bool = False,
-        name: str = None,
-        meta_name: str = None,
-        logging_folder: str = None,
-        task_names: List[str] = None,
-        tqdm_config: Dict[str, Any] = None,
-        resource_config: Dict[str, Any] = None,
+        name: Optional[str] = None,
+        meta_name: Optional[str] = None,
+        logging_folder: Optional[str] = None,
+        task_names: Optional[List[str]] = None,
+        tqdm_config: Optional[Dict[str, Any]] = None,
+        resource_config: Optional[Dict[str, Any]] = None,
         warn_num_jobs: bool = True,
     ):
         self._rs = None
@@ -410,7 +410,7 @@ class Parallel(PureLoggingMixin):
             suffix = f" ({' ; '.join(f'{k}: {v}' for k, v in kwargs.items())})"
         self._log_meta_msg(f"`_set_terminate` method hit{suffix}", logging.ERROR)
 
-    def _get_task_name(self, task_idx: int) -> Union[str, None]:
+    def _get_task_name(self, task_idx: int) -> Optional[str]:
         if task_idx is None:
             return
         if self._task_names[task_idx] is None:
@@ -490,7 +490,7 @@ class Parallel(PureLoggingMixin):
         self,
         task_idx: int,
         start: bool = True,
-    ) -> Union[Tuple[Process, Dict[str, Any]], Process, None]:
+    ) -> Optional[Union[Tuple[Process, Dict[str, Any]], Process]]:
         rs = self._resource_manager.get_process(
             task_idx,
             lambda: self.__sleep(skip_check_finished=False),
@@ -518,7 +518,7 @@ class Parallel(PureLoggingMixin):
     def _record_process(
         self,
         task_idx: int,
-        process: Union[Process, None],
+        process: Optional[Process],
         rs: Dict[str, Any],
     ) -> None:
         if process is None:

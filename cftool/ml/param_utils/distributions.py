@@ -13,10 +13,10 @@ from .types import *
 class DistributionBase(metaclass=ABCMeta):
     def __init__(
         self,
-        lower: number_type = None,
-        upper: number_type = None,
+        lower: Optional[number_type] = None,
+        upper: Optional[number_type] = None,
         *,
-        values: List[Any] = None,
+        values: Optional[List[Any]] = None,
         **kwargs,
     ):
         number_types = (int, float)
@@ -88,10 +88,10 @@ class Uniform(DistributionBase):
 class Exponential(Uniform):
     def __init__(
         self,
-        lower: number_type = None,
-        upper: number_type = None,
+        lower: Optional[number_type] = None,
+        upper: Optional[number_type] = None,
         *,
-        values: List[Any] = None,
+        values: Optional[List[Any]] = None,
         **kwargs,
     ):
         super().__init__(lower, upper, values=values, **kwargs)

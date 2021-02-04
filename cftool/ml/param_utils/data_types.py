@@ -10,7 +10,7 @@ from ...misc import prod, Grid
 
 
 class DataType(metaclass=ABCMeta):
-    def __init__(self, distribution: DistributionBase = None, **kwargs):
+    def __init__(self, distribution: Optional[DistributionBase] = None, **kwargs: Any):
         self.dist, self.config = distribution, kwargs
 
     @property
@@ -42,10 +42,10 @@ class DataType(metaclass=ABCMeta):
         return self._transform(dist_upper)
 
     @property
-    def values(self) -> Union[List[generic_number_type], None]:
+    def values(self) -> Optional[List[generic_number_type]]:
         dist_values = self.dist.values
         if dist_values is None:
-            return
+            return None
         return list(map(self._transform, dist_values))
 
     @property

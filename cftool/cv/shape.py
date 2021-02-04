@@ -64,7 +64,7 @@ class ShapeObject(LoggingMixin):
     def __init__(
         self,
         gray: np.ndarray,
-        contour: np.ndarray = None,
+        contour: Optional[np.ndarray] = None,
         *,
         force_hull: bool = False,
     ):
@@ -132,7 +132,7 @@ class ShapeObject(LoggingMixin):
         return self._mask_area
 
     @property
-    def contour(self) -> Union[np.ndarray, None]:
+    def contour(self) -> Optional[np.ndarray]:
         if self._contour is None:
             self._contour = self.get_contour(self.gray, self._force_hull)
         return self._contour
@@ -466,9 +466,9 @@ class ShapeObject(LoggingMixin):
         match_center: bool,
         *,
         tight: bool = False,
-        scale_ceiling: int = None,
+        scale_ceiling: Optional[int] = None,
         area_definition: str = "contour",
-    ) -> Union[None, Tuple["ShapeObject", Dict[str, float]]]:
+    ) -> Optional[Tuple["ShapeObject", Dict[str, float]]]:
         """
         将 self.contour 缩放，使得缩放后与 template.contour 的面积相同
         :param template：
@@ -514,8 +514,8 @@ class ShapeObject(LoggingMixin):
         match_center: bool = True,
         theta_floor: int = 0,
         theta_ceiling: int = 360,
-        scale_ceiling: int = None,
-    ) -> Union[None, Tuple["ShapeObject", Dict[str, float]]]:
+        scale_ceiling: Optional[int] = None,
+    ) -> Optional[Tuple["ShapeObject", Dict[str, float]]]:
 
         # 可以选择不同的distance function来定义匹配效果的好坏
         distance_function = {"iou": self.iou_distance}
@@ -607,7 +607,7 @@ class ShapeObject(LoggingMixin):
         center,
         scale,
         *,
-        bbox: BBox = None,
+        bbox: Optional[BBox] = None,
         align_bottom: bool = False,
     ):
         """

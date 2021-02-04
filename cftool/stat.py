@@ -2,6 +2,8 @@ import numpy as np
 import scipy.stats as stats
 import matplotlib.pyplot as plt
 
+from typing import Any
+from typing import Optional
 from functools import partial
 
 from .c import ema
@@ -173,7 +175,10 @@ class DataInspector:
         return self.q3 + 1.5 * self.iqr
 
     def draw_histogram(
-        self, bin_size: int = 10, export_path: str = None, **kwargs
+        self,
+        bin_size: int = 10,
+        export_path: Optional[str] = None,
+        **kwargs: Any,
     ) -> None:
         bins = np.arange(
             self._sorted_data[0] - self.iqr,
@@ -184,11 +189,11 @@ class DataInspector:
         plt.title(f"Histogram (bin_size: {bin_size})")
         show_or_save(export_path, **kwargs)
 
-    def qq_plot(self, export_path: str = None, **kwargs) -> None:
+    def qq_plot(self, export_path: Optional[str] = None, **kwargs) -> None:
         stats.probplot(self._data, dist="norm", plot=plt)
         show_or_save(export_path, **kwargs)
 
-    def box_plot(self, export_path: str = None, **kwargs) -> None:
+    def box_plot(self, export_path: Optional[str] = None, **kwargs) -> None:
         plt.figure()
         plt.boxplot(self._data, vert=False, showmeans=True)
         show_or_save(export_path, **kwargs)

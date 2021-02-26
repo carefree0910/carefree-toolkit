@@ -18,7 +18,7 @@ INSTALL_REQUIRES = [
     "pillow",
     "pathos",
     "cython>=0.29.12",
-    "numpy>=1.16.2",
+    "numpy>=1.20.0",
     "scipy>=1.2.1",
     "scikit-learn>=0.20.3",
     "matplotlib>=3.0.3",

@@ -3,7 +3,7 @@ import platform
 from Cython.Build import cythonize
 from setuptools import setup, find_packages, Extension
 
-VERSION = "0.2.7"
+VERSION = "0.2.7.2"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:
@@ -18,7 +18,7 @@ INSTALL_REQUIRES = [
     "pillow",
     "pathos",
     "cython>=0.29.12",
-    "numpy>=1.20.0",
+    "numpy>=1.19.2",
     "scipy>=1.2.1",
     "scikit-learn>=0.20.3",
     "matplotlib>=3.0.3",

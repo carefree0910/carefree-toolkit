@@ -24,6 +24,7 @@ from typing import *
 from abc import abstractmethod
 from PIL import Image
 from functools import reduce
+from functools import partial
 from itertools import product
 from collections import Counter
 
@@ -1426,11 +1427,11 @@ class Saving(LoggingMixin):
         for array_file in os.listdir(array_folder):
             attr_name, attr_ext = os.path.splitext(array_file)
             if attr_ext == ".npy":
-                load_method = np.load
+                load_method = partial(np.load, allow_pickle=True)
             elif attr_ext == ".lst":
 
                 def load_method(path):
-                    return np.load(path).tolist()
+                    return np.load(path, allow_pickle=True).tolist()
 
             else:
                 raise ValueError(f"unrecognized file type '{array_file}' occurred")

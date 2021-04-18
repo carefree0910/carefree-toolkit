@@ -252,15 +252,16 @@ class Parallel(PureLoggingMixin):
     def grouped(self, f: Callable, *args_list: Any) -> "Parallel":
         grouped_args_list = [grouped_into(args, self._num_jobs) for args in args_list]
 
-        def _grouped_f(i: int, *args_list_: Tuple[Any]) -> List[Any]:
+        def _grouped_f(i: int, *args_list_: Tuple[Any], cuda: Any = None) -> List[Any]:
             results: List[Any] = []
+            kwargs = {} if not self._use_cuda else {"cuda": cuda}
             for args in tqdm(
                 zip(*args_list_),
                 total=len(args_list_[0]),
                 position=i + 1,
                 leave=False,
             ):
-                results.append(f(*args))
+                results.append(f(*args, **kwargs))
             return results
 
         return self(_grouped_f, list(range(self._num_jobs)), *grouped_args_list)
@@ -433,7 +434,7 @@ class Parallel(PureLoggingMixin):
             if self.terminated:
                 return
             try:
-                log_method("task started")
+                log_method("task started", logging.DEBUG)
                 kwargs = {}
                 f_wants_cuda = f_wants_log_method = False
                 f_signature = inspect.signature(self._func)
@@ -441,13 +442,12 @@ class Parallel(PureLoggingMixin):
                     if param.kind is inspect.Parameter.VAR_KEYWORD:
                         f_wants_cuda = f_wants_log_method = True
                         break
-                    if param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                        if name == "cuda":
-                            f_wants_cuda = True
-                            continue
-                        if name == "log_method":
-                            f_wants_log_method = True
-                            continue
+                    if name == "cuda":
+                        f_wants_cuda = True
+                        continue
+                    if name == "log_method":
+                        f_wants_log_method = True
+                        continue
                 if not f_wants_cuda:
                     if self._use_cuda:
                         log_method(
@@ -466,7 +466,7 @@ class Parallel(PureLoggingMixin):
                 self._rs[task_name] = rs = self._func(*args, **kwargs)
                 terminate = isinstance(rs, dict) and rs.get("terminate", False)
                 if not terminate:
-                    log_method("task finished")
+                    log_method("task finished", logging.DEBUG)
             except KeyboardInterrupt:
                 log_method("key board interrupted", logging.ERROR)
                 return

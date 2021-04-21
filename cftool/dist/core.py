@@ -250,7 +250,8 @@ class Parallel(PureLoggingMixin):
         return self
 
     def grouped(self, f: Callable, *args_list: Any) -> "Parallel":
-        grouped_args_list = [grouped_into(args, self._num_jobs) for args in args_list]
+        num_jobs = min(len(args_list[0]), self._num_jobs)
+        grouped_args_list = [grouped_into(args, num_jobs) for args in args_list]
 
         def _grouped_f(i: int, *args_list_: Tuple[Any], cuda: Any = None) -> List[Any]:
             results: List[Any] = []
@@ -264,7 +265,7 @@ class Parallel(PureLoggingMixin):
                 results.append(f(*args, **kwargs))
             return results
 
-        return self(_grouped_f, list(range(self._num_jobs)), *grouped_args_list)
+        return self(_grouped_f, list(range(num_jobs)), *grouped_args_list)
 
     @property
     def meta(self) -> Dict[str, Any]:

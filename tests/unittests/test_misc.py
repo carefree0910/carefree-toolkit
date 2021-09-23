@@ -69,6 +69,12 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(fix_float_to_length(1234567, 8), "1234567.")
         self.assertEqual(fix_float_to_length(12345678, 8), "12345678")
         self.assertEqual(fix_float_to_length(123456789, 8), "123456789")
+        self.assertEqual(fix_float_to_length(1.0e-13, 14), "0.000000000000")
+        self.assertEqual(fix_float_to_length(1.0e-12, 14), "0.000000000001")
+        self.assertEqual(fix_float_to_length(1.0e-11, 14), "0.000000000010")
+        self.assertEqual(fix_float_to_length(-1.0e-12, 14), "-0.00000000000")
+        self.assertEqual(fix_float_to_length(-1.0e-11, 14), "-0.00000000001")
+        self.assertEqual(fix_float_to_length(-1.0e-10, 14), "-0.00000000010")
         self.assertEqual("+" + fix_float_to_length(math.nan, 8) + "+", "+  nan   +")
 
     def test_truncate_string_to_length(self):

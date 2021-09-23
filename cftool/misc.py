@@ -8,6 +8,7 @@ import time
 import errno
 import random
 import shutil
+import decimal
 import inspect
 import logging
 import hashlib
@@ -117,7 +118,10 @@ def update_dict(src_dict: dict, tgt_dict: dict) -> dict:
 def fix_float_to_length(num: float, length: int) -> str:
     """ Change a float number to string format with fixed length. """
 
-    str_num = f"{num:f}"
+    ctx = decimal.Context()
+    ctx.prec = 2 * length
+    d = ctx.create_decimal(repr(num))
+    str_num = format(d, "f").lower()
     if str_num == "nan":
         return f"{str_num:^{length}s}"
     length = max(length, str_num.find("."))

@@ -3,7 +3,7 @@ import platform
 from Cython.Build import cythonize
 from setuptools import setup, find_packages, Extension
 
-VERSION = "0.2.7.2"
+VERSION = "0.2.8"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:

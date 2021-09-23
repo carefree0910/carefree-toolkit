@@ -124,7 +124,15 @@ def fix_float_to_length(num: float, length: int) -> str:
     str_num = format(d, "f").lower()
     if str_num == "nan":
         return f"{str_num:^{length}s}"
-    length = max(length, str_num.find("."))
+    idx = str_num.find(".")
+    if idx == -1:
+        diff = length - len(str_num)
+        if diff <= 0:
+            return str_num
+        if diff == 1:
+            return f"{str_num}."
+        return f"{str_num}.{'0' * (diff - 1)}"
+    length = max(length, idx)
     return str_num[:length].ljust(length, "0")
 
 

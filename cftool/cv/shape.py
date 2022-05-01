@@ -177,7 +177,7 @@ class ShapeObject(LoggingMixin):
         :return:
         """
         moved = self.move_img(self.gray, dx, dy)
-        return ShapeObject(moved, (self.contour + [dx, dy]).astype(np.int))
+        return ShapeObject(moved, (self.contour + [dx, dy]).astype(np.int64))
 
     def to_tight(self, *, padding_ratio: float = 0.0) -> "ShapeObject":
         ltx, lty = self.bbox_simplified.left_top
@@ -259,7 +259,7 @@ class ShapeObject(LoggingMixin):
         cnt_scaled = cnt_norm * [w_scale, h_scale]
         if canvas_changed:
             cx, cy = cx * w_scale, cy * h_scale
-        return (cnt_scaled + [cx, cy]).astype(np.int)
+        return (cnt_scaled + [cx, cy]).astype(np.int64)
 
     @staticmethod
     def _fetch_match_shape_scores(src, tgt):

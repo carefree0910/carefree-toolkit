@@ -11,7 +11,7 @@ with open("README.md") as f:
 
 INSTALL_REQUIRES = [
     "tqdm",
-    "opencv-python",
+    "opencv-python-headless",
     "dill",
     "future",
     "psutil",

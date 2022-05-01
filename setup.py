@@ -17,10 +17,10 @@ INSTALL_REQUIRES = [
     "psutil",
     "pillow",
     "pathos",
-    "cython>=0.29.12",
+    "cython>=0.29.28",
     "numpy>=1.22.3",
-    "scipy>=1.2.1",
-    "scikit-learn>=0.20.3",
+    "scipy>=1.8.0",
+    "scikit-learn>=1.0.2",
     "matplotlib>=3.0.3",
 ]
 if platform.system() != "Windows":

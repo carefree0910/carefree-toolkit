@@ -63,9 +63,9 @@ class Acquisition:
             if not res.success:
                 continue
 
-            if -res.fun[0] > best_score:
+            if -res.fun > best_score:
                 best_x = res.x
-                best_score = -res.fun[0].item()
+                best_score = -res.fun
         return best_x
 
     def score(self, x: np.ndarray, best_score: float) -> np.ndarray:

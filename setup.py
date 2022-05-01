@@ -21,7 +21,7 @@ INSTALL_REQUIRES = [
     "numpy>=1.22.3",
     "scipy>=1.8.0",
     "scikit-learn>=1.0.2",
-    "matplotlib>=3.0.3",
+    "matplotlib>=3.5.1",
 ]
 if platform.system() != "Windows":
     INSTALL_REQUIRES.append("SharedArray")

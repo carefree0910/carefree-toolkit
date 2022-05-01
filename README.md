@@ -5,7 +5,7 @@
 
 ## Installation
 
-`carefree-toolkit` requires Python 3.6 or higher.
+`carefree-toolkit` requires Python 3.8 or higher.
 
 ```bash
 pip install carefree-toolkit

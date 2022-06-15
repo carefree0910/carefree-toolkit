@@ -9,11 +9,11 @@ from .misc import PureLoggingMixin
 
 
 class PCManager:
-    """ Util class which can check PC status (unit: MB). """
+    """Util class which can check PC status (unit: MB)."""
 
     @staticmethod
     def get_available_ram() -> float:
-        return psutil.virtual_memory().available / 1024 ** 2
+        return psutil.virtual_memory().available / 1024**2
 
     @staticmethod
     def get_pid_ram_usage(pid: int) -> float:
@@ -21,7 +21,7 @@ class PCManager:
             process = psutil.Process(pid)
         except psutil.NoSuchProcess:
             return 0.0
-        return process.memory_info().rss / 1024 ** 2
+        return process.memory_info().rss / 1024**2
 
 
 class GPUManager:

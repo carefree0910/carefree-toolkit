@@ -1,4 +1,3 @@
-import io
 import os
 import sys
 import dill
@@ -19,11 +18,9 @@ import threading
 import unicodedata
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from typing import *
 from abc import abstractmethod
-from PIL import Image
 from functools import reduce
 from functools import partial
 from itertools import product
@@ -62,20 +59,20 @@ def timestamp(simplify: bool = False, ensure_different: bool = False) -> str:
 
 
 def prod(iterable: Iterable) -> float:
-    """ Return cumulative production of an iterable. """
+    """Return cumulative production of an iterable."""
 
     return float(reduce(operator.mul, iterable, 1))
 
 
 def hash_code(code: str) -> str:
-    """ Return hash code for a string. """
+    """Return hash code for a string."""
 
     code = code.encode()
     return hashlib.md5(code).hexdigest()[:8]
 
 
 def prefix_dict(d: Dict[str, Any], prefix: str):
-    """ Prefix every key in dict `d` with `prefix`. """
+    """Prefix every key in dict `d` with `prefix`."""
 
     return {f"{prefix}_{k}": v for k, v in d.items()}
 
@@ -116,7 +113,7 @@ def update_dict(src_dict: dict, tgt_dict: dict) -> dict:
 
 
 def fix_float_to_length(num: float, length: int) -> str:
-    """ Change a float number to string format with fixed length. """
+    """Change a float number to string format with fixed length."""
 
     ctx = decimal.Context()
     ctx.prec = 2 * length
@@ -137,7 +134,7 @@ def fix_float_to_length(num: float, length: int) -> str:
 
 
 def truncate_string_to_length(string: str, length: int) -> str:
-    """ Truncate a string to make sure its length not exceeding a given length. """
+    """Truncate a string to make sure its length not exceeding a given length."""
 
     if len(string) <= length:
         return string
@@ -148,7 +145,7 @@ def truncate_string_to_length(string: str, length: int) -> str:
 
 
 def grouped(iterable: Iterable, n: int, *, keep_tail: bool = False) -> List[tuple]:
-    """ Group an iterable every `n` elements. """
+    """Group an iterable every `n` elements."""
 
     if not keep_tail:
         return list(zip(*[iter(iterable)] * n))
@@ -157,7 +154,7 @@ def grouped(iterable: Iterable, n: int, *, keep_tail: bool = False) -> List[tupl
 
 
 def grouped_into(iterable: Iterable, n: int) -> List[tuple]:
-    """ Group an iterable into `n` groups. """
+    """Group an iterable into `n` groups."""
 
     elements = list(iterable)
     num_elements = len(elements)
@@ -177,7 +174,7 @@ def grouped_into(iterable: Iterable, n: int) -> List[tuple]:
 
 
 def is_numeric(s: Any) -> bool:
-    """ Check whether `s` is a number. """
+    """Check whether `s` is a number."""
 
     try:
         s = float(s)
@@ -208,59 +205,6 @@ def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
     one_hot = np.zeros([len(feature), dim], np.int64)
     one_hot[range(len(one_hot)), np.asarray(feature, np.int64).ravel()] = 1
     return one_hot
-
-
-def show_or_save(
-    export_path: str,
-    fig: Optional[plt.figure] = None,
-    **kwargs: Any,
-) -> None:
-    """
-    Utility function to deal with figure.
-
-    Parameters
-    ----------
-    export_path : {None, str}
-    * If None, the figure will be shown.
-    * If str, it represents the path where the figure should be saved to.
-    fig : {None, plt.Figure}
-    * If None, default figure contained in plt will be executed.
-    * If plt.figure, it will be executed
-
-    """
-
-    if export_path is None:
-        fig.show(**kwargs) if fig is not None else plt.show(**kwargs)
-    else:
-        if fig is not None:
-            fig.savefig(export_path)
-        else:
-            plt.savefig(export_path, **kwargs)
-    plt.close()
-
-
-def show_or_return(return_canvas: bool) -> Union[None, np.ndarray]:
-    """
-    Utility function to deal with current plt.
-
-    Parameters
-    ----------
-    return_canvas : bool, whether return canvas or not.
-
-    """
-
-    if not return_canvas:
-        plt.show()
-        return
-
-    buffer_ = io.BytesIO()
-    plt.savefig(buffer_, format="png")
-    plt.close()
-    buffer_.seek(0)
-    image = Image.open(buffer_)
-    canvas = np.asarray(image)[..., :3]
-    buffer_.close()
-    return canvas
 
 
 def get_indices_from_another(base: np.ndarray, segment: np.ndarray) -> np.ndarray:
@@ -667,7 +611,7 @@ class Incrementer:
         return math.sqrt(
             max(
                 0.0,
-                self._running_square_sum / self._n_record - self.mean ** 2,
+                self._running_square_sum / self._n_record - self.mean**2,
             )
         )
 
@@ -679,11 +623,11 @@ class Incrementer:
         if self._n_record is None:
             self._n_record = 1
             self._running_sum = new_value
-            self._running_square_sum = new_value ** 2
+            self._running_square_sum = new_value**2
         else:
             self._n_record += 1
             self._running_sum += new_value
-            self._running_square_sum += new_value ** 2
+            self._running_square_sum += new_value**2
         if self._window_size is not None:
             if self._previous is None:
                 self._previous = [new_value]
@@ -693,11 +637,11 @@ class Incrementer:
                 self._n_record -= 1
                 previous = self._previous.pop(0)
                 self._running_sum -= previous
-                self._running_square_sum -= previous ** 2
+                self._running_square_sum -= previous**2
 
 
 class _Formatter(logging.Formatter):
-    """ Formatter for logging, which supports millisecond. """
+    """Formatter for logging, which supports millisecond."""
 
     converter = datetime.datetime.fromtimestamp
 
@@ -1745,7 +1689,7 @@ class Sampler:
 
 
 class context_error_handler:
-    """ Util class which provides exception handling when using context manager. """
+    """Util class which provides exception handling when using context manager."""
 
     @property
     def exception_suffix(self):
@@ -2232,8 +2176,6 @@ __all__ = [
     "grouped_into",
     "is_numeric",
     "get_one_hot",
-    "show_or_save",
-    "show_or_return",
     "get_indices_from_another",
     "UniqueIndices",
     "get_unique_indices",

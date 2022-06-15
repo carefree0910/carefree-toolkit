@@ -90,7 +90,7 @@ class TestMisc(unittest.TestCase):
             grouped(lst, 3, keep_tail=True),
             [(1, 2, 3), (4, 5, 6), (7, 8)],
         )
-        unit = 10 ** 5
+        unit = 10**5
         lst = list(range(3 * unit + 1))
         gt = [
             tuple(range(unit)),

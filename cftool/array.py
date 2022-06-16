@@ -23,9 +23,10 @@ try:
     import torch
     import torch.nn.functional as F
 except:
+
     class _(NamedTuple):
         Tensor: Any
-    
+
     torch = _(None)
     F = None
 

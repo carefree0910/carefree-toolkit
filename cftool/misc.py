@@ -381,6 +381,7 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 T = TypeVar("T", bound="WithRegister", covariant=True)
 
+
 class WithRegister(Generic[T]):
     d: Dict[str, Type[T]]
     __identifier__: str
@@ -732,8 +733,7 @@ class LoggingMixin:
     def merge_logs_by_time(*log_files, tgt_file):
         tgt_folder = os.path.dirname(tgt_file)
         date_str_len = (
-            len(datetime.today().strftime(LoggingMixin._date_format_string_))
-            + 4
+            len(datetime.today().strftime(LoggingMixin._date_format_string_)) + 4
         )
         with lock_manager(tgt_folder, [tgt_file], clear_stuffs_after_exc=False):
             msg_dict, msg_block, last_searched = {}, [], None

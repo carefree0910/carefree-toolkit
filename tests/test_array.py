@@ -135,7 +135,7 @@ class TestArray(unittest.TestCase):
         _check(np.int16, np.int64)
         _check(np.int32, np.int64)
         _check(np.int64, np.int64)
-    
+
     def test_corr(self) -> None:
         pred = np.random.randn(100, 5)
         target = np.random.randn(100, 5)

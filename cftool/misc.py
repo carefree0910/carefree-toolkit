@@ -12,7 +12,6 @@ import inspect
 import logging
 import hashlib
 import zipfile
-import datetime
 import operator
 import threading
 import unicodedata
@@ -21,18 +20,137 @@ import numpy as np
 
 from typing import *
 from abc import abstractmethod
+from tqdm import tqdm
+from argparse import Namespace
+from datetime import datetime
+from datetime import timedelta
 from functools import reduce
 from functools import partial
 from itertools import product
-from collections import Counter
+from collections import OrderedDict
 
-from numpy.lib.stride_tricks import as_strided
+from .types import configs_type
+from .types import general_config_type
+from .constants import TIME_FORMAT
 
 
 dill._dill._reverse_typemap["ClassType"] = type
 
 
 # util functions
+
+
+def walk(
+    root: str,
+    hierarchy_callback: Callable[[List[str], str], None],
+    filter_extensions: Optional[Set[str]] = None,
+) -> None:
+    walked = list(os.walk(root))
+    for folder, _, files in tqdm(walked, desc="folders", position=0, mininterval=1):
+        for file in tqdm(files, desc="files", position=1, leave=False, mininterval=1):
+            if filter_extensions is not None:
+                if not any(file.endswith(ext) for ext in filter_extensions):
+                    continue
+            hierarchy = folder.split(os.path.sep) + [file]
+            hierarchy_callback(hierarchy, os.path.join(folder, file))
+
+
+def parse_config(config: general_config_type) -> Dict[str, Any]:
+    if config is None:
+        return {}
+    if isinstance(config, str):
+        with open(config, "r") as f:
+            return json.load(f)
+    return shallow_copy_dict(config)
+
+
+def check_requires(fn: Any, name: str, strict: bool = True) -> bool:
+    if isinstance(fn, type):
+        fn = fn.__init__  # type: ignore
+    signature = inspect.signature(fn)
+    for k, param in signature.parameters.items():
+        if not strict and param.kind is inspect.Parameter.VAR_KEYWORD:
+            return True
+        if k == name:
+            if param.kind is inspect.Parameter.KEYWORD_ONLY:
+                return True
+            if param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
+                return True
+    return False
+
+
+def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -> str:
+    current_time = datetime.now()
+    if os.path.isdir(workplace):
+        for stuff in os.listdir(workplace):
+            if not os.path.isdir(os.path.join(workplace, stuff)):
+                continue
+            try:
+                stuff_time = datetime.strptime(stuff, TIME_FORMAT)
+                stuff_delta = current_time - stuff_time
+                if stuff_delta > timeout:
+                    print(
+                        f"{WARNING_PREFIX}{stuff} will be removed "
+                        f"(already {stuff_delta} ago)"
+                    )
+                    shutil.rmtree(os.path.join(workplace, stuff))
+            except:
+                pass
+    workplace = os.path.join(workplace, current_time.strftime(TIME_FORMAT))
+    os.makedirs(workplace)
+    return workplace
+
+
+def get_latest_workplace(root: str) -> Optional[str]:
+    all_workplaces = []
+    for stuff in os.listdir(root):
+        if not os.path.isdir(os.path.join(root, stuff)):
+            continue
+        try:
+            datetime.strptime(stuff, TIME_FORMAT)
+            all_workplaces.append(stuff)
+        except:
+            pass
+    if not all_workplaces:
+        return None
+    return os.path.join(root, sorted(all_workplaces)[-1])
+
+
+def sort_dict_by_value(d: Dict[Any, Any], *, reverse: bool = False) -> OrderedDict:
+    sorted_items = sorted([(v, k) for k, v in d.items()], reverse=reverse)
+    return OrderedDict({item[1]: item[0] for item in sorted_items})
+
+
+def parse_args(args: Any) -> Namespace:
+    return Namespace(**{k: None if not v else v for k, v in args.__dict__.items()})
+
+
+def get_arguments(*, pop_class_attributes: bool = True) -> Dict[str, Any]:
+    frame = inspect.currentframe().f_back  # type: ignore
+    if frame is None:
+        raise ValueError("`get_arguments` should be called inside a frame")
+    arguments = inspect.getargvalues(frame)[-1]
+    if pop_class_attributes:
+        arguments.pop("self", None)
+        arguments.pop("__class__", None)
+    return arguments
+
+
+def _rmtree(folder: str, patience: float = 10.0) -> None:
+    if not os.path.isdir(folder):
+        return None
+    t = time.time()
+    while True:
+        try:
+            if time.time() - t >= patience:
+                prefix = LoggingMixin.warning_prefix
+                print(f"\n{prefix}failed to rmtree: {folder}")
+                break
+            shutil.rmtree(folder)
+            break
+        except:
+            print("", end=".", flush=True)
+            time.sleep(1)
 
 
 def timestamp(simplify: bool = False, ensure_different: bool = False) -> str:
@@ -50,7 +168,7 @@ def timestamp(simplify: bool = False, ensure_different: bool = False) -> str:
 
     """
 
-    now = datetime.datetime.now()
+    now = datetime.now()
     if simplify:
         return now.strftime("%Y-%m-%d")
     if ensure_different:
@@ -187,161 +305,6 @@ def is_numeric(s: Any) -> bool:
             return False
 
 
-def get_one_hot(feature: Union[list, np.ndarray], dim: int) -> np.ndarray:
-    """
-    Get one-hot representation.
-
-    Parameters
-    ----------
-    feature : array-like, source data of one-hot representation.
-    dim : int, dimension of the one-hot representation.
-
-    Returns
-    -------
-    one_hot : np.ndarray, one-hot representation of `feature`
-
-    """
-
-    one_hot = np.zeros([len(feature), dim], np.int64)
-    one_hot[range(len(one_hot)), np.asarray(feature, np.int64).ravel()] = 1
-    return one_hot
-
-
-def get_indices_from_another(base: np.ndarray, segment: np.ndarray) -> np.ndarray:
-    """
-    Get `segment` elements' indices in `base`.
-
-    Warnings
-    ----------
-    All elements in segment should appear in base to ensure validity.
-
-    Parameters
-    ----------
-    base : np.ndarray, base array.
-    segment : np.ndarray, segment array.
-
-    Returns
-    -------
-    indices : np.ndarray, positions where elements in `segment` appear in `base`
-
-    Examples
-    -------
-    >>> import numpy as np
-    >>> base, segment = np.arange(100), np.random.permutation(100)[:10]
-    >>> assert np.allclose(get_indices_from_another(base, segment), segment)
-
-    """
-    base_sorted_args = np.argsort(base)
-    positions = np.searchsorted(base[base_sorted_args], segment)
-    return base_sorted_args[positions]
-
-
-class UniqueIndices(NamedTuple):
-    """
-    unique           : np.ndarray, unique values of the given array (`arr`).
-    unique_cnt       : np.ndarray, counts of each unique value.
-    sorting_indices  : np.ndarray, indices which can (stably) sort the given
-                                   array by its value.
-    split_arr        : np.ndarray, array which can split the `sorting_indices`
-                                   to make sure that. Each portion of the split
-                                   indices belong & only belong to one of the
-                                   unique values.
-    """
-
-    unique: np.ndarray
-    unique_cnt: np.ndarray
-    sorting_indices: np.ndarray
-    split_arr: np.ndarray
-
-    @property
-    def split_indices(self):
-        return np.split(self.sorting_indices, self.split_arr)
-
-
-def get_unique_indices(arr: np.ndarray) -> UniqueIndices:
-    """
-    Get indices for unique values of an array.
-
-    Parameters
-    ----------
-    arr : np.ndarray, target array which we wish to find indices of each unique value.
-
-    Returns
-    -------
-    UniqueIndices
-
-    Examples
-    -------
-    >>> import numpy as np
-    >>> arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
-    >>> # UniqueIndices(
-    >>> #   unique          = array([0, 1, 2, 3, 4], dtype=int64),
-    >>> #   unique_cnt      = array([1, 3, 2, 1, 1], dtype=int64),
-    >>> #   sorting_indices = array([6, 0, 5, 7, 1, 3, 2, 4], dtype=int64),
-    >>> #   split_arr       = array([1, 4, 6, 7], dtype=int64))
-    >>> #   split_indices   = [array([6], dtype=int64), array([0, 5, 7], dtype=int64),
-    >>> #                      array([1, 3], dtype=int64), array([2], dtype=int64),
-    >>> #                      array([4], dtype=int64)]
-    >>> print(get_unique_indices(arr))
-
-    """
-    unique, unique_inv, unique_cnt = np.unique(
-        arr,
-        return_inverse=True,
-        return_counts=True,
-    )
-    sorting_indices, split_arr = (
-        np.argsort(unique_inv, kind="mergesort"),
-        np.cumsum(unique_cnt)[:-1],
-    )
-    return UniqueIndices(unique, unique_cnt, sorting_indices, split_arr)
-
-
-def get_counter_from_arr(arr: np.ndarray) -> Counter:
-    """
-    Get `Counter` of an array.
-
-    Parameters
-    ----------
-    arr : np.ndarray, target array which we wish to get `Counter` from.
-
-    Returns
-    -------
-    Counter
-
-    Examples
-    -------
-    >>> import numpy as np
-    >>> arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
-    >>> # Counter({1: 3, 2: 2, 0: 1, 3: 1, 4: 1})
-    >>> print(get_counter_from_arr(arr))
-
-    """
-    if isinstance(arr, np.ndarray):
-        arr = dict(zip(*np.unique(arr, return_counts=True)))
-    return Counter(arr)
-
-
-def allclose(*arrays: np.ndarray, **kwargs) -> bool:
-    """
-    Perform `np.allclose` to `arrays` one by one.
-
-    Parameters
-    ----------
-    arrays : np.ndarray, target arrays.
-    **kwargs : keyword arguments which will be passed into `np.allclose`.
-
-    Returns
-    -------
-    allclose : bool
-
-    """
-    for i, arr in enumerate(arrays[:-1]):
-        if not np.allclose(arr, arrays[i + 1], **kwargs):
-            return False
-    return True
-
-
 def register_core(
     name: str,
     global_dict: Dict[str, type],
@@ -416,124 +379,52 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 # util modules
 
 
-class StrideArray:
-    def __init__(
-        self,
-        arr: np.ndarray,
-        *,
-        copy: bool = False,
-        writable: Optional[bool] = None,
-    ):
-        self.arr = arr
-        self.shape = arr.shape
-        self.num_dim = len(self.shape)
-        self.strides = arr.strides
-        self.copy = copy
-        if writable is None:
-            writable = copy
-        self.writable = writable
+T = TypeVar("T", bound="WithRegister", covariant=True)
 
-    def __str__(self) -> str:
-        return self.arr.__str__()
+class WithRegister(Generic[T]):
+    d: Dict[str, Type[T]]
+    __identifier__: str
 
-    def __repr__(self) -> str:
-        return self.arr.__repr__()
+    @classmethod
+    def get(cls, name: str) -> Type[T]:
+        return cls.d[name]
 
-    def _construct(
-        self,
-        shapes: Tuple[int, ...],
-        strides: Tuple[int, ...],
-    ) -> np.ndarray:
-        arr = self.arr.copy() if self.copy else self.arr
-        return as_strided(
-            arr,
-            shape=shapes,
-            strides=strides,
-            writeable=self.writable,
-        )
+    @classmethod
+    def has(cls, name: str) -> bool:
+        return name in cls.d
 
-    @staticmethod
-    def _get_output_dim(in_dim: int, window: int, stride: int) -> int:
-        return (in_dim - window) // stride + 1
+    @classmethod
+    def make(cls, name: str, config: Dict[str, Any]) -> T:
+        return cls.get(name)(**config)  # type: ignore
 
-    def roll(self, window: int, *, stride: int = 1, axis: int = -1) -> np.ndarray:
-        while axis < 0:
-            axis += self.num_dim
-        target_dim = self.shape[axis]
-        rolled_dim = self._get_output_dim(target_dim, window, stride)
-        if rolled_dim <= 0:
-            msg = f"window ({window}) is too large for target dimension ({target_dim})"
-            raise ValueError(msg)
-        # shapes
-        rolled_shapes = tuple(self.shape[:axis]) + (rolled_dim, window)
-        if axis < self.num_dim - 1:
-            rolled_shapes = rolled_shapes + self.shape[axis + 1 :]
-        # strides
-        previous_strides = tuple(self.strides[:axis])
-        target_stride = (self.strides[axis] * stride,)
-        latter_strides = tuple(self.strides[axis:])
-        rolled_strides = previous_strides + target_stride + latter_strides
-        # construct
-        return self._construct(rolled_shapes, rolled_strides)
+    @classmethod
+    def make_multiple(
+        cls,
+        names: Union[str, List[str]],
+        configs: configs_type = None,
+    ) -> List[T]:
+        if configs is None:
+            configs = {}
+        if isinstance(names, str):
+            assert isinstance(configs, dict)
+            return cls.make(names, configs)  # type: ignore
+        if not isinstance(configs, list):
+            configs = [configs.get(name, {}) for name in names]
+        return [
+            cls.make(name, shallow_copy_dict(config))
+            for name, config in zip(names, configs)
+        ]
 
-    def patch(
-        self,
-        patch_w: int,
-        patch_h: Optional[int] = None,
-        *,
-        h_stride: int = 1,
-        w_stride: int = 1,
-        h_axis: int = -2,
-    ) -> np.ndarray:
-        if self.num_dim < 2:
-            raise ValueError("`patch` requires input with at least 2d")
-        while h_axis < 0:
-            h_axis += self.num_dim
-        w_axis = h_axis + 1
-        if patch_h is None:
-            patch_h = patch_w
-        h_shape, w_shape = self.shape[h_axis], self.shape[w_axis]
-        if h_shape < patch_h:
-            msg = f"patch_h ({patch_h}) is too large for target dimension ({h_shape})"
-            raise ValueError(msg)
-        if w_shape < patch_w:
-            msg = f"patch_w ({patch_w}) is too large for target dimension ({w_shape})"
-            raise ValueError(msg)
-        # shapes
-        patched_h_dim = self._get_output_dim(h_shape, patch_h, h_stride)
-        patched_w_dim = self._get_output_dim(w_shape, patch_w, w_stride)
-        patched_dim = (patched_h_dim, patched_w_dim)
-        patched_dim = patched_dim + (patch_h, patch_w)
-        patched_shapes = tuple(self.shape[:h_axis]) + patched_dim
-        if w_axis < self.num_dim - 1:
-            patched_shapes = patched_shapes + self.shape[w_axis + 1 :]
-        # strides
-        arr_h_stride, arr_w_stride = self.strides[h_axis], self.strides[w_axis]
-        previous_strides = tuple(self.strides[:h_axis])
-        target_stride = (arr_h_stride * h_stride, arr_w_stride * w_stride)
-        target_stride = target_stride + (arr_h_stride, arr_w_stride)
-        latter_strides = tuple(self.strides[w_axis + 1 :])
-        patched_strides = previous_strides + target_stride + latter_strides
-        # construct
-        return self._construct(patched_shapes, patched_strides)
+    @classmethod
+    def register(cls, name: str) -> Callable[[Type[T]], Type[T]]:
+        def before(cls_: Type[T]) -> None:
+            cls_.__identifier__ = name
 
-    def repeat(self, k: int, axis: int = -1) -> np.ndarray:
-        while axis < 0:
-            axis += self.num_dim
-        target_dim = self.shape[axis]
-        if target_dim != 1:
-            raise ValueError("`repeat` can only be applied on axis with dim == 1")
-        # shapes
-        repeated_shapes = tuple(self.shape[:axis]) + (k,)
-        if axis < self.num_dim - 1:
-            repeated_shapes = repeated_shapes + self.shape[axis + 1 :]
-        # strides
-        previous_strides = tuple(self.strides[:axis])
-        target_stride = (0,)
-        latter_strides = tuple(self.strides[axis + 1 :])
-        repeated_strides = previous_strides + target_stride + latter_strides
-        # construct
-        return self._construct(repeated_shapes, repeated_strides)
+        return register_core(name, cls.d, before_register=before)
+
+    @classmethod
+    def check_subclass(cls, name: str) -> bool:
+        return issubclass(cls.d[name], cls)
 
 
 class SanityChecker:
@@ -643,7 +534,7 @@ class Incrementer:
 class _Formatter(logging.Formatter):
     """Formatter for logging, which supports millisecond."""
 
-    converter = datetime.datetime.fromtimestamp
+    converter = datetime.fromtimestamp
 
     def formatTime(self, record, datefmt=None):
         ct = self.converter(record.created)
@@ -841,7 +732,7 @@ class LoggingMixin:
     def merge_logs_by_time(*log_files, tgt_file):
         tgt_folder = os.path.dirname(tgt_file)
         date_str_len = (
-            len(datetime.datetime.today().strftime(LoggingMixin._date_format_string_))
+            len(datetime.today().strftime(LoggingMixin._date_format_string_))
             + 4
         )
         with lock_manager(tgt_folder, [tgt_file], clear_stuffs_after_exc=False):
@@ -851,7 +742,7 @@ class LoggingMixin:
                     for line in f:
                         date_str = line[:date_str_len]
                         if date_str[:2] == "[ " and date_str[-2:] == " ]":
-                            searched_time = datetime.datetime.strptime(
+                            searched_time = datetime.strptime(
                                 date_str[2:-2],
                                 LoggingMixin._date_format_string_,
                             )
@@ -1685,6 +1576,18 @@ class Sampler:
         return self._reshape(n, sampled_indices)
 
 
+class DownloadProgressBar(tqdm):
+    def update_to(
+        self,
+        b: int = 1,
+        bsize: int = 1,
+        tsize: Optional[int] = None,
+    ) -> None:
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
+
+
 # contexts
 
 
@@ -2161,48 +2064,3 @@ class data_tuple_saving_controller(context_error_handler):
         )
         assert loaded_attr_list == preset_attr_list, assert_msg
         return attr_pool_map
-
-
-__all__ = [
-    "timestamp",
-    "prod",
-    "hash_code",
-    "prefix_dict",
-    "shallow_copy_dict",
-    "update_dict",
-    "fix_float_to_length",
-    "truncate_string_to_length",
-    "grouped",
-    "grouped_into",
-    "is_numeric",
-    "get_one_hot",
-    "get_indices_from_another",
-    "UniqueIndices",
-    "get_unique_indices",
-    "get_counter_from_arr",
-    "allclose",
-    "register_core",
-    "StrideArray",
-    "Incrementer",
-    "LoggingMixin",
-    "PureLoggingMixin",
-    "SavingMixin",
-    "Saving",
-    "Grid",
-    "Sampler",
-    "context_error_handler",
-    "timeit",
-    "lock_manager",
-    "batch_manager",
-    "timing_context",
-    "data_tuple_saving_controller",
-    "nested_type",
-    "all_nested_type",
-    "union_nested_type",
-    "flattened_type",
-    "all_flattened_type",
-    "union_flattened_type",
-    "Nested",
-    "check",
-    "SanityChecker",
-]

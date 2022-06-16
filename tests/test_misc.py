@@ -6,6 +6,7 @@ import numpy as np
 
 from cftool.misc import *
 
+
 test_dict = {}
 
 
@@ -112,43 +113,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(is_numeric("Ⅱ"), True)
         self.assertEqual(is_numeric("nan"), True)
 
-    def test_get_one_hot(self):
-        indices = [1, 4, 2, 3]
-        self.assertEqual(
-            [[0, 1, 0, 0, 0], [0, 0, 0, 0, 1], [0, 0, 1, 0, 0], [0, 0, 0, 1, 0]],
-            get_one_hot(indices, 5).tolist(),
-        )
-
-    def test_get_indices_from_another(self):
-        base, segment = np.arange(100), np.random.permutation(100)[:10]
-        self.assertTrue(np.allclose(get_indices_from_another(base, segment), segment))
-
-    def test_get_unique_indices(self):
-        arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
-        rs = get_unique_indices(arr)
-        self.assertTrue(np.allclose(rs.unique, np.array([0, 1, 2, 3, 4])))
-        self.assertTrue(np.allclose(rs.unique_cnt, np.array([1, 3, 2, 1, 1])))
-        gt = np.array([6, 0, 5, 7, 1, 3, 2, 4])
-        self.assertTrue(np.allclose(rs.sorting_indices, gt))
-        self.assertTrue(np.allclose(rs.split_arr, np.array([1, 4, 6, 7])))
-        gt_indices_list = list(map(np.array, [[6], [0, 5, 7], [1, 3], [2], [4]]))
-        for rs_indices, gt_indices in zip(rs.split_indices, gt_indices_list):
-            self.assertTrue(np.allclose(rs_indices, gt_indices))
-
-    def test_counter_from_arr(self):
-        arr = np.array([1, 2, 3, 2, 4, 1, 0, 1])
-        counter = get_counter_from_arr(arr)
-        self.assertTrue(counter[0], 1)
-        self.assertTrue(counter[1], 3)
-        self.assertTrue(counter[2], 2)
-        self.assertTrue(counter[3], 1)
-        self.assertTrue(counter[4], 1)
-
-    def test_allclose(self):
-        arr = np.random.random(1000)
-        self.assertTrue(allclose(*(arr for _ in range(10))))
-        self.assertFalse(allclose(*[arr for _ in range(9)] + [arr + 1e-6]))
-
     def test_register_core(self):
         global test_dict
 
@@ -226,87 +190,20 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(ValueError):
             foo(1, 1.1)
 
-    def test_stride_array(self):
-        arr = StrideArray(np.arange(9).reshape([3, 3]))
-        self.assertTrue(
-            np.allclose(
-                arr.roll(2),
-                np.array([[[0, 1], [1, 2]], [[3, 4], [4, 5]], [[6, 7], [7, 8]]]),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.roll(2, axis=0),
-                np.array([[[0, 1, 2], [3, 4, 5]], [[3, 4, 5], [6, 7, 8]]]),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.patch(2),
-                np.array(
-                    [
-                        [[[0, 1], [3, 4]], [[1, 2], [4, 5]]],
-                        [[[3, 4], [6, 7]], [[4, 5], [7, 8]]],
-                    ]
-                ),
-            )
-        )
-        arr = StrideArray(np.arange(16).reshape([4, 4]))
-        self.assertTrue(
-            np.allclose(
-                arr.roll(2, stride=2),
-                np.array(
-                    [
-                        [[0, 1], [2, 3]],
-                        [[4, 5], [6, 7]],
-                        [[8, 9], [10, 11]],
-                        [[12, 13], [14, 15]],
-                    ]
-                ),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.roll(2, stride=2, axis=0),
-                np.array(
-                    [[[0, 1, 2, 3], [4, 5, 6, 7]], [[8, 9, 10, 11], [12, 13, 14, 15]]]
-                ),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.patch(2, h_stride=2, w_stride=2),
-                np.array(
-                    [
-                        [[[0, 1], [4, 5]], [[2, 3], [6, 7]]],
-                        [[[8, 9], [12, 13]], [[10, 11], [14, 15]]],
-                    ]
-                ),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.patch(2, h_stride=1, w_stride=2),
-                np.array(
-                    [
-                        [[[0, 1], [4, 5]], [[2, 3], [6, 7]]],
-                        [[[4, 5], [8, 9]], [[6, 7], [10, 11]]],
-                        [[[8, 9], [12, 13]], [[10, 11], [14, 15]]],
-                    ]
-                ),
-            )
-        )
-        self.assertTrue(
-            np.allclose(
-                arr.patch(2, h_stride=2, w_stride=1),
-                np.array(
-                    [
-                        [[[0, 1], [4, 5]], [[1, 2], [5, 6]], [[2, 3], [6, 7]]],
-                        [[[8, 9], [12, 13]], [[9, 10], [13, 14]], [[10, 11], [14, 15]]],
-                    ]
-                ),
-            )
-        )
+    def test_sort_dict_by_value(self) -> None:
+        d = {"a": 2.0, "b": 1.0, "c": 3.0}
+        self.assertSequenceEqual(list(sort_dict_by_value(d)), ["b", "a", "c"])
+
+    def test_get_arguments(self) -> None:
+        def _1(a: int = 1, b: int = 2, c: int = 3) -> Dict[str, Any]:
+            return get_arguments()
+
+        class _2:
+            def __init__(self, a: int = 1, b: int = 2, c: int = 3):
+                self.kw = get_arguments()
+
+        self.assertDictEqual(_1(), dict(a=1, b=2, c=3))
+        self.assertDictEqual(_2().kw, dict(a=1, b=2, c=3))
 
 
 if __name__ == "__main__":

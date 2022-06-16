@@ -354,7 +354,7 @@ Get one-hot representation.
 
 ```python
 import numpy as np
-from cftool.misc import get_one_hot
+from cftool.array import get_one_hot
 
 feature = np.array([0, 1, 0])
 # [[1 0], [0 1], [1 0]]
@@ -385,7 +385,7 @@ Get **`segment`** elements' indices in **`base`**. This function will return pos
 
 ```python
 import numpy as np
-from cftool.misc import get_indices_from_another
+from cftool.array import get_indices_from_another
 
 base, segment = np.array([1, 2, 3, 5, 7, 8, 9]), np.array([1, 3, 5, 7, 9])
 # [0 2 3 4 6]
@@ -414,7 +414,7 @@ def get_unique_indices(arr) -> UniqueIndices
 
 ```python
 import numpy as np
-from cftool.misc import get_unique_indices
+from cftool.array import get_unique_indices
 
 arr = np.array([1, 2, 3, 2, 4, 1, 0, 1], np.int64)
 unique_indices = get_unique_indices(arr)

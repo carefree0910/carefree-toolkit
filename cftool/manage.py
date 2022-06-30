@@ -2,7 +2,13 @@ import psutil
 import logging
 import subprocess
 
-from typing import *
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Tuple
+from typing import Union
+from typing import Callable
+from typing import Optional
 from collections import defaultdict
 
 from .misc import PureLoggingMixin

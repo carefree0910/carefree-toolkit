@@ -18,9 +18,20 @@ import unicodedata
 
 import numpy as np
 
-from typing import *
 from abc import abstractmethod
 from tqdm import tqdm
+from typing import Any
+from typing import Set
+from typing import Dict
+from typing import List
+from typing import Type
+from typing import Union
+from typing import Generic
+from typing import TypeVar
+from typing import Callable
+from typing import Iterable
+from typing import Optional
+from typing import NamedTuple
 from argparse import Namespace
 from datetime import datetime
 from datetime import timedelta

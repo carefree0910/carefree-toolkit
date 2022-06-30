@@ -1,7 +1,15 @@
 import unittest
+
 import numpy as np
 
-from cftool.array import *
+from cftool.array import corr
+from cftool.array import allclose
+from cftool.array import get_one_hot
+from cftool.array import to_standard
+from cftool.array import get_unique_indices
+from cftool.array import get_counter_from_arr
+from cftool.array import get_indices_from_another
+from cftool.array import StrideArray
 
 
 class TestArray(unittest.TestCase):

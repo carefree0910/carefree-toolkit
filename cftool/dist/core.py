@@ -301,7 +301,7 @@ class Parallel(PureLoggingMixin):
                     )
                 )
                 self._log_meta_msg(
-                    "waiting for slots (working tasks : {task_names})",
+                    f"waiting for slots (working tasks : {task_names})",
                     msg_level=logging.DEBUG,
                 )
                 finished_slots = []

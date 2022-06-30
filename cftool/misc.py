@@ -90,7 +90,7 @@ def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -
                 stuff_delta = current_time - stuff_time
                 if stuff_delta > timeout:
                     print(
-                        f"{WARNING_PREFIX}{stuff} will be removed "
+                        f"{LoggingMixin.warning_prefix}{stuff} will be removed "
                         f"(already {stuff_delta} ago)"
                     )
                     shutil.rmtree(os.path.join(workplace, stuff))

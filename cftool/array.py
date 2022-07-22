@@ -149,7 +149,7 @@ def corr(
             "`get_diagonal` is set to True but the correlation matrix "
             "is not a squared matrix, which is an invalid condition"
         )
-    return mat.diag()
+    return np.diag(mat) if is_numpy else mat.diag()
 
 
 def interpolant(arr: arr_type) -> arr_type:

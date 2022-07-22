@@ -320,6 +320,7 @@ def register_core(
     name: str,
     global_dict: Dict[str, type],
     *,
+    allow_duplicate: bool = False,
     before_register: Optional[Callable] = None,
     after_register: Optional[Callable] = None,
 ):
@@ -327,7 +328,7 @@ def register_core(
         if before_register is not None:
             before_register(cls)
         registered = global_dict.get(name)
-        if registered is not None:
+        if registered is not None and not allow_duplicate:
             print(
                 f"{LoggingMixin.warning_prefix}'{name}' has already registered "
                 f"in the given global dict ({global_dict})"
@@ -428,11 +429,21 @@ class WithRegister(Generic[T]):
         ]
 
     @classmethod
-    def register(cls, name: str) -> Callable[[Type[T]], Type[T]]:
+    def register(
+        cls,
+        name: str,
+        *,
+        allow_duplicate: bool = False,
+    ) -> Callable[[Type[T]], Type[T]]:
         def before(cls_: Type[T]) -> None:
             cls_.__identifier__ = name
 
-        return register_core(name, cls.d, before_register=before)
+        return register_core(
+            name,
+            cls.d,
+            allow_duplicate=allow_duplicate,
+            before_register=before,
+        )
 
     @classmethod
     def check_subclass(cls, name: str) -> bool:

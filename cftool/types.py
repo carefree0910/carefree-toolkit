@@ -15,6 +15,7 @@ try:
 except:
 
     class _torch(NamedTuple):
+        device: Any
         Tensor: Any
         from_numpy: Callable
 
@@ -25,7 +26,7 @@ except:
     class _torchvision(NamedTuple):
         utils: _torchvision_utils
 
-    torch = _torch(None, lambda: None)
+    torch = _torch(None, None, lambda: None)
     torchvision = _torchvision_utils(lambda: None, lambda: None)
     F = None
 

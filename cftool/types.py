@@ -16,7 +16,7 @@ except:
 
     class _torch(NamedTuple):
         Tensor: Any
-        from_numpy: Callable[[np.ndarray], torch.Tensor]
+        from_numpy: Callable
 
     class _torchvision_utils(NamedTuple):
         make_grid: Callable

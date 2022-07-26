@@ -1,4 +1,5 @@
 import os
+import math
 
 import numpy as np
 
@@ -14,6 +15,7 @@ from numpy.lib.stride_tricks import as_strided
 from .misc import hash_code
 from .misc import LoggingMixin
 from .types import torch
+from .types import torchvision
 from .types import F
 from .types import tensor_dict_type
 
@@ -69,6 +71,29 @@ def to_standard(arr: np.ndarray) -> np.ndarray:
     elif is_float(arr):
         arr = arr.astype(np.float32)
     return arr
+
+
+def to_torch(arr: np.ndarray) -> torch.Tensor:
+    return torch.from_numpy(to_standard(arr))
+
+
+def to_numpy(tensor: torch.Tensor) -> np.ndarray:
+    return tensor.detach().cpu().numpy()
+
+
+def to_device(
+    batch: tensor_dict_type,
+    device: torch.device,
+    **kwargs: Any,
+) -> tensor_dict_type:
+    return {
+        k: v.to(device, **kwargs)
+        if isinstance(v, torch.Tensor)
+        else [vv.to(device, **kwargs) if isinstance(vv, torch.Tensor) else vv for vv in v]
+        if isinstance(v, list)
+        else v
+        for k, v in batch.items()
+    }
 
 
 def iou(logits: arr_type, labels: arr_type) -> arr_type:
@@ -591,3 +616,36 @@ class SharedArrayWrapper:
         np.save(self.path, arr)
         np.save(self.flag_path, np.array([is_finished]))
         self._give_permission()
+
+
+def get_label_predictions(logits: np.ndarray, threshold: float) -> np.ndarray:
+    # binary classification
+    if logits.shape[-1] == 2:
+        logits = logits[..., [1]] - logits[..., [0]]
+    if logits.shape[-1] == 1:
+        logit_threshold = math.log(threshold / (1.0 - threshold))
+        return (logits > logit_threshold).astype(int)
+    return logits.argmax(1)[..., None]
+
+
+def get_full_logits(logits: np.ndarray) -> np.ndarray:
+    # binary classification
+    if logits.shape[-1] == 1:
+        logits = np.concatenate([-logits, logits], axis=-1)
+    return logits
+
+
+def make_grid(arr: arr_type, n_row: Optional[int] = None) -> torch.Tensor:
+    if isinstance(arr, np.ndarray):
+        arr = to_torch(arr)
+    if n_row is None:
+        n_row = math.ceil(math.sqrt(len(arr)))
+    return torchvision.utils.make_grid(arr, n_row)
+
+
+def save_images(arr: arr_type, path: str, n_row: Optional[int] = None) -> None:
+    if isinstance(arr, np.ndarray):
+        arr = to_torch(arr)
+    if n_row is None:
+        n_row = math.ceil(math.sqrt(len(arr)))
+    torchvision.utils.save_image(arr, path, normalize=True, nrow=n_row)

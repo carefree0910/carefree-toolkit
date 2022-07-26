@@ -89,6 +89,32 @@ def check_requires(fn: Any, name: str, strict: bool = True) -> bool:
     return False
 
 
+def filter_kw(
+    fn: Callable,
+    kwargs: Dict[str, Any],
+    *,
+    strict: bool = False,
+) -> Dict[str, Any]:
+    kw = {}
+    for k, v in kwargs.items():
+        if check_requires(fn, k, strict):
+            kw[k] = v
+    return kw
+
+
+def get_num_positional_args(fn: Callable) -> Union[int, float]:
+    signature = inspect.signature(fn)
+    counter = 0
+    for param in signature.parameters.values():
+        if param.kind is inspect.Parameter.VAR_POSITIONAL:
+            return math.inf
+        if param.kind is inspect.Parameter.POSITIONAL_ONLY:
+            counter += 1
+        elif param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
+            counter += 1
+    return counter
+
+
 def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -> str:
     current_time = datetime.now()
     if os.path.isdir(workplace):

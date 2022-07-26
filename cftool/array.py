@@ -13,22 +13,14 @@ from numpy.lib.stride_tricks import as_strided
 
 from .misc import hash_code
 from .misc import LoggingMixin
+from .types import torch
+from .types import F
+from .types import tensor_dict_type
 
 try:
     import SharedArray as sa
 except:
     sa = None
-
-try:
-    import torch
-    import torch.nn.functional as F
-except:
-
-    class _(NamedTuple):
-        Tensor: Any
-
-    torch = _(None)
-    F = None
 
 
 arr_type = Union[np.ndarray, torch.Tensor]

@@ -199,6 +199,10 @@ def hash_code(code: str) -> str:
     return hashlib.md5(code).hexdigest()[:8]
 
 
+def random_hash() -> str:
+    return hash_code(str(random.random()))
+
+
 def prefix_dict(d: Dict[str, Any], prefix: str):
     """Prefix every key in dict `d` with `prefix`."""
 

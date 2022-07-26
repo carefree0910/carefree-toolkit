@@ -83,10 +83,9 @@ def check_requires(fn: Any, name: str, strict: bool = True) -> bool:
         if not strict and param.kind is inspect.Parameter.VAR_KEYWORD:
             return True
         if k == name:
-            if param.kind is inspect.Parameter.KEYWORD_ONLY:
-                return True
-            if param.kind is inspect.Parameter.POSITIONAL_OR_KEYWORD:
-                return True
+            if param.kind is inspect.Parameter.VAR_POSITIONAL:
+                return False
+            return True
     return False
 
 

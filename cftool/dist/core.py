@@ -22,6 +22,7 @@ from multiprocessing.managers import SyncManager
 
 from ..misc import timestamp
 from ..misc import grouped_into
+from ..misc import print_warning
 from ..misc import LoggingMixin
 from ..misc import PureLoggingMixin
 from ..manage import PCManager
@@ -110,8 +111,8 @@ class Parallel(PureLoggingMixin):
             self._task_names = [None] * n_tasks
         if not LINUX or n_jobs <= 1:
             if LINUX and self._warn_num_jobs:
-                print(
-                    f"{LoggingMixin.warning_prefix}Detected Linux system but "
+                print_warning(
+                    "Detected Linux system but "
                     f"n_jobs={n_jobs}, functions will be dramatically reduced.\n"
                     "* It is recommended to set n_jobs to a larger value"
                 )

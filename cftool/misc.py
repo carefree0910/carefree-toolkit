@@ -125,10 +125,8 @@ def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -
                 stuff_time = datetime.strptime(stuff, TIME_FORMAT)
                 stuff_delta = current_time - stuff_time
                 if stuff_delta > timeout:
-                    print(
-                        f"{LoggingMixin.warning_prefix}{stuff} will be removed "
-                        f"(already {stuff_delta} ago)"
-                    )
+                    msg = f"{stuff} will be removed (already {stuff_delta} ago)"
+                    print_warning(msg)
                     shutil.rmtree(os.path.join(workplace, stuff))
             except:
                 pass
@@ -179,8 +177,8 @@ def _rmtree(folder: str, patience: float = 10.0) -> None:
     while True:
         try:
             if time.time() - t >= patience:
-                prefix = LoggingMixin.warning_prefix
-                print(f"\n{prefix}failed to rmtree: {folder}")
+                print()
+                print_warning(f"failed to rmtree: {folder}")
                 break
             shutil.rmtree(folder)
             break
@@ -358,8 +356,8 @@ def register_core(
             before_register(cls)
         registered = global_dict.get(name)
         if registered is not None and not allow_duplicate:
-            print(
-                f"{LoggingMixin.warning_prefix}'{name}' has already registered "
+            print_warning(
+                f"'{name}' has already registered "
                 f"in the given global dict ({global_dict})"
             )
             return cls
@@ -398,8 +396,7 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
                         f"'{k}' ({v}, {type(v)}) does not satisfy "
                         f"Constraints({constraint_list})"
                     )
-                msg = f"{LoggingMixin.warning_prefix}'{k}' is cast from {v} -> {new_v}"
-                print(msg)
+                print_warning(f"'{k}' is cast from {v} -> {new_v}")
             return new_v
 
         def inner(*args, **kwargs):
@@ -829,8 +826,8 @@ class LoggingMixin:
     @classmethod
     def start_timer(cls, name):
         if name in cls._time_cache_dict_:
-            print(
-                f"{cls.warning_prefix}'{name}' was already in time cache dict, "
+            print_warning(
+                f"'{name}' was already in time cache dict, "
                 "this may cause by calling `start_timer` repeatedly"
             )
             return
@@ -840,8 +837,8 @@ class LoggingMixin:
     def end_timer(cls, name):
         start_time = cls._time_cache_dict_.pop(name, None)
         if start_time is None:
-            print(
-                f"{cls.warning_prefix}'{name}' was not found in time cache dict, "
+            print_warning(
+                f"'{name}' was not found in time cache dict, "
                 "this may cause by not calling `start_timer` method"
             )
             return

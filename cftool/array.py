@@ -13,7 +13,7 @@ from collections import Counter
 from numpy.lib.stride_tricks import as_strided
 
 from .misc import hash_code
-from .misc import LoggingMixin
+from .misc import print_warning
 from .types import torch
 from .types import torchvision
 from .types import F
@@ -544,9 +544,9 @@ class SharedArrayWrapper:
         self.flag_path = os.path.join(self.folder, f"flag_of_{file}")
         self.address, self.flag_address = map(_to_address, [self.path, self.flag_path])
         if to_memory and sa is None:
-            print(
-                f"{LoggingMixin.warning_prefix}`to_memory` is set to True "
-                f"but `SharedArray` lib is not available, therefore "
+            print_warning(
+                "`to_memory` is set to True "
+                "but `SharedArray` lib is not available, therefore "
                 "`to_memory` will be set to False"
             )
             to_memory = False

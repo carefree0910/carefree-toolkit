@@ -5,7 +5,7 @@ import numpy as np
 from typing import List
 from typing import Optional
 
-from ..misc import LoggingMixin
+from ..misc import print_warning
 
 try:
     import SharedArray as sa
@@ -44,8 +44,8 @@ class SharedArray:
             self.base_folder = base_folder
             if os.path.isfile(self.np_path) and not overwrite:
                 if verbose:
-                    print(
-                        f"{LoggingMixin.warning_prefix}POSIX is not available "
+                    print_warning(
+                        "POSIX is not available "
                         "so read-only array is returned. "
                         "Call `to_mutable` to make it mutable."
                     )
@@ -86,9 +86,8 @@ class SharedArray:
     def save(self) -> "SharedArray":
         if sa is not None:
             if self._verbose:
-                print(
-                    f"{LoggingMixin.warning_prefix}`save` method will take not effect "
-                    "when POSIX is available"
+                print_warning(
+                    "`save` method will take not effect when POSIX is available"
                 )
             return self
         np.save(self.np_path, self.array)

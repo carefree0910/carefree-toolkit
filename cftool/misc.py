@@ -1007,6 +1007,18 @@ class PureLoggingMixin:
         del logger
 
 
+def print_info(msg: str) -> None:
+    print(f"{LoggingMixin.info_prefix}{msg}")
+
+
+def print_warning(msg: str) -> None:
+    print(f"{LoggingMixin.warning_prefix}{msg}")
+
+
+def print_error(msg: str) -> None:
+    print(f"{LoggingMixin.error_prefix}{msg}")
+
+
 class SavingMixin(LoggingMixin):
     """
     Mixin class to provide logging & saving method for base class.

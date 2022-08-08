@@ -460,8 +460,8 @@ class WithRegister(Generic[T]):
         name: str,
         *,
         allow_duplicate: bool = False,
-    ) -> Callable[[Type[T]], Type[T]]:
-        def before(cls_: Type[T]) -> None:
+    ) -> Callable:
+        def before(cls_: Type) -> None:
             cls_.__identifier__ = name
 
         return register_core(
@@ -472,7 +472,7 @@ class WithRegister(Generic[T]):
         )
 
     @classmethod
-    def remove(cls, name: str) -> Callable[[Type[T]], Type[T]]:
+    def remove(cls, name: str) -> Callable:
         return cls.d.pop(name)
 
     @classmethod

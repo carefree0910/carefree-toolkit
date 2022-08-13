@@ -102,6 +102,10 @@ def filter_kw(
     return kw
 
 
+def safe_execute(fn: Any, kw: Dict[str, Any], *, strict: bool = False) -> Any:
+    return fn(**filter_kw(fn, kw, strict=strict))
+
+
 def get_num_positional_args(fn: Callable) -> Union[int, float]:
     signature = inspect.signature(fn)
     counter = 0

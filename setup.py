@@ -1,10 +1,8 @@
-import platform
-
 from setuptools import setup
 from setuptools import find_packages
 
 
-VERSION = "0.2.17"
+VERSION = "0.2.18"
 
 DESCRIPTION = "Some commonly used functions and modules"
 with open("README.md") as f:
@@ -18,8 +16,6 @@ INSTALL_REQUIRES = [
     "pathos",
     "numpy>=1.22.3",
 ]
-if platform.system() != "Windows":
-    INSTALL_REQUIRES.append("SharedArray")
 
 setup(
     name="carefree-toolkit",

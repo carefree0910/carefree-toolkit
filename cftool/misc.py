@@ -422,15 +422,15 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 # util modules
 
 
-T = TypeVar("T", bound="WithRegister", covariant=True)
+TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
 
 
-class WithRegister(Generic[T]):
-    d: Dict[str, Type[T]]
+class WithRegister(Generic[TRegister]):
+    d: Dict[str, Type[TRegister]]
     __identifier__: str
 
     @classmethod
-    def get(cls, name: str) -> Type[T]:
+    def get(cls, name: str) -> Type[TRegister]:
         return cls.d[name]
 
     @classmethod
@@ -438,7 +438,7 @@ class WithRegister(Generic[T]):
         return name in cls.d
 
     @classmethod
-    def make(cls, name: str, config: Dict[str, Any]) -> T:
+    def make(cls, name: str, config: Dict[str, Any]) -> TRegister:
         return cls.get(name)(**config)  # type: ignore
 
     @classmethod
@@ -446,7 +446,7 @@ class WithRegister(Generic[T]):
         cls,
         names: Union[str, List[str]],
         configs: configs_type = None,
-    ) -> List[T]:
+    ) -> List[TRegister]:
         if configs is None:
             configs = {}
         if isinstance(names, str):

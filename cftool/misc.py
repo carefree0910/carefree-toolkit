@@ -40,6 +40,8 @@ from functools import reduce
 from functools import partial
 from itertools import product
 from collections import OrderedDict
+from dataclasses import asdict
+from dataclasses import dataclass
 
 from .types import configs_type
 from .types import general_config_type
@@ -423,6 +425,7 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 
 TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
+TDataClass = TypeVar("TDataClass", bound="DataClassBase")
 
 
 class WithRegister(Generic[TRegister]):
@@ -483,6 +486,15 @@ class WithRegister(Generic[TRegister]):
     @classmethod
     def check_subclass(cls, name: str) -> bool:
         return issubclass(cls.d[name], cls)
+
+
+@dataclass
+class DataClassBase(ABC):
+    def asdict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def copy(self: TDataClass) -> TDataClass:
+        return type(self)(**shallow_copy_dict(asdict(self)))
 
 
 class SanityChecker:

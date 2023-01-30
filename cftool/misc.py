@@ -227,7 +227,7 @@ def hash_code(code: str) -> str:
     """Return hash code for a string."""
 
     code = code.encode()
-    return hashlib.md5(code).hexdigest()[:8]
+    return hashlib.md5(code).hexdigest()
 
 
 def random_hash() -> str:

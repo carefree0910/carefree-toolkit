@@ -3,14 +3,17 @@ import math
 import numpy as np
 
 from typing import Any
+from typing import List
 from typing import Tuple
 from typing import Union
 from typing import Callable
 from typing import Optional
 from typing import NamedTuple
 from collections import Counter
+from multiprocessing.shared_memory import SharedMemory
 from numpy.lib.stride_tricks import as_strided
 
+from .misc import random_hash
 from .types import torch
 from .types import torchvision
 from .types import F
@@ -508,6 +511,29 @@ class StrideArray:
         repeated_strides = previous_strides + target_stride + latter_strides
         # construct
         return self._construct(repeated_shapes, repeated_strides)
+
+
+class SharedArray:
+    def __init__(
+        self,
+        dtype: Union[type, np.dtype],
+        shape: Union[List[int], Tuple[int, ...]],
+        data: Optional[np.ndarray] = None,
+    ):
+        name = random_hash()
+        d_size = np.dtype(dtype).itemsize * np.prod(shape)
+        self._shm = SharedMemory(create=True, size=d_size, name=name)
+        self.value = np.ndarray(shape=shape, dtype=dtype, buffer=self._shm.buf)
+        if data is not None:
+            self.value[:] = data[:]
+
+    def destroy(self) -> None:
+        self._shm.close()
+        self._shm.unlink()
+
+    @classmethod
+    def from_data(cls, data: np.ndarray) -> "SharedArray":
+        return cls(data.dtype, data.shape, data)
 
 
 def get_label_predictions(logits: np.ndarray, threshold: float) -> np.ndarray:

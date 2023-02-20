@@ -143,6 +143,8 @@ def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -
 
 
 def get_latest_workplace(root: str) -> Optional[str]:
+    if not os.path.isdir(root):
+        return None
     all_workplaces = []
     for stuff in os.listdir(root):
         if not os.path.isdir(os.path.join(root, stuff)):

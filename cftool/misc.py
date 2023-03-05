@@ -549,6 +549,87 @@ class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
         pass
 
 
+class Serializer:
+    info_file: str = "info.json"
+    npd_folder: str = "npd"
+
+    @classmethod
+    def save_info(
+        cls,
+        folder: str,
+        *,
+        info: Optional[Dict[str, Any]] = None,
+        serializable: Optional[ISerializable] = None,
+    ) -> None:
+        os.makedirs(folder, exist_ok=True)
+        if info is None and serializable is None:
+            raise ValueError("either `info` or `serializable` should be provided")
+        if info is None:
+            info = serializable.to_info()
+        with open(os.path.join(folder, cls.info_file), "w") as f:
+            json.dump(info, f)
+
+    @classmethod
+    def load_info(cls, folder: str) -> Dict[str, Any]:
+        os.makedirs(folder, exist_ok=True)
+        info_path = os.path.join(folder, cls.info_file)
+        if not os.path.isfile(info_path):
+            raise ValueError(f"'{info_path}' does not exist")
+        with open(info_path, "r") as f:
+            info = json.load(f)
+        return info
+
+    @classmethod
+    def save_npd(
+        cls,
+        folder: str,
+        *,
+        npd: Optional[np_dict_type] = None,
+        serializable: Optional[ISerializableArrays] = None,
+    ) -> None:
+        os.makedirs(folder, exist_ok=True)
+        if npd is None and serializable is None:
+            raise ValueError("either `npd` or `serializable` should be provided")
+        if npd is None:
+            npd = serializable.to_npd()
+        npd_folder = os.path.join(folder, cls.npd_folder)
+        os.makedirs(npd_folder, exist_ok=True)
+        for k, v in npd.items():
+            np.save(os.path.join(npd_folder, f"{k}.npy"), v)
+
+    @classmethod
+    def load_npd(cls, folder: str) -> np_dict_type:
+        os.makedirs(folder, exist_ok=True)
+        npd_folder = os.path.join(folder, cls.npd_folder)
+        if not os.path.isdir(npd_folder):
+            raise ValueError(f"'{npd_folder}' does not exist")
+        npd = {}
+        for file in os.listdir(npd_folder):
+            key = os.path.splitext(file)[0]
+            npd[key] = np.load(os.path.join(npd_folder, file))
+        return npd
+
+    @classmethod
+    def save(cls, folder: str, serializable: ISerializableArrays) -> None:
+        info = serializable.to_info()
+        npd = serializable.to_npd()
+        cls.save_info(folder, info=info)
+        cls.save_npd(folder, npd=npd)
+        with open(os.path.join(folder, "id.txt"), "w") as f:
+            f.write(serializable.__identifier__)
+
+    @classmethod
+    def load(cls, folder: str) -> ISerializableArrays:
+        id_path = os.path.join(folder, "id.txt")
+        if not os.path.isfile(id_path):
+            raise ValueError(f"cannot find '{id_path}'")
+        with open(id_path, "r") as f:
+            s_type = f.read().strip()
+        serializable: ISerializableArrays = ISerializableArrays.make(s_type, {})
+        serializable.from_info(cls.load_info(folder))
+        serializable.from_npd(cls.load_npd(folder))
+
+
 class SanityChecker:
     @staticmethod
     def int(n):

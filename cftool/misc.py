@@ -45,6 +45,7 @@ from dataclasses import asdict
 from dataclasses import dataclass
 
 from .types import configs_type
+from .types import np_dict_type
 from .types import general_config_type
 from .constants import TIME_FORMAT
 
@@ -429,6 +430,7 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
 TSerializable = TypeVar("TSerializable", bound="ISerializable", covariant=True)
+TSArrays = TypeVar("TSArrays", bound="ISerializableArrays", covariant=True)
 TDataClass = TypeVar("TDataClass", bound="DataClassBase")
 
 
@@ -535,6 +537,16 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
     @classmethod
     def from_json(cls: Type[TSerializable], json_string: str) -> TSerializable:
         return cls.from_pack(json.loads(json_string))
+
+
+class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
+    @abstractmethod
+    def to_npd(self) -> np_dict_type:
+        pass
+
+    @abstractmethod
+    def from_npd(self, npd: np_dict_type) -> None:
+        pass
 
 
 class SanityChecker:

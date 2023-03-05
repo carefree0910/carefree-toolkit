@@ -510,6 +510,8 @@ class JsonPack(DataClassBase):
 
 
 class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
+    # abstract
+
     @abstractmethod
     def to_info(self) -> Dict[str, Any]:
         pass
@@ -517,6 +519,8 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
     @abstractmethod
     def from_info(self, info: Dict[str, Any]) -> None:
         pass
+
+    # api
 
     def load_callback(self) -> None:
         pass

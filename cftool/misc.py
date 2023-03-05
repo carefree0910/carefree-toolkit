@@ -20,6 +20,7 @@ import numpy as np
 
 from abc import abstractmethod
 from abc import ABC
+from abc import ABCMeta
 from tqdm import tqdm
 from typing import Any
 from typing import Set
@@ -427,7 +428,17 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 
 TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
+TSerializable = TypeVar("TSerializable", bound="ISerializable", covariant=True)
 TDataClass = TypeVar("TDataClass", bound="DataClassBase")
+
+
+@dataclass
+class DataClassBase(ABC):
+    def asdict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    def copy(self: TDataClass) -> TDataClass:
+        return type(self)(**shallow_copy_dict(asdict(self)))
 
 
 class WithRegister(Generic[TRegister]):
@@ -435,7 +446,7 @@ class WithRegister(Generic[TRegister]):
     __identifier__: str
 
     @classmethod
-    def get(cls, name: str) -> Type[TRegister]:
+    def get(cls: Type[TRegister], name: str) -> Type[TRegister]:
         return cls.d[name]
 
     @classmethod
@@ -443,12 +454,12 @@ class WithRegister(Generic[TRegister]):
         return name in cls.d
 
     @classmethod
-    def make(cls, name: str, config: Dict[str, Any]) -> TRegister:
+    def make(cls: Type[TRegister], name: str, config: Dict[str, Any]) -> TRegister:
         return cls.get(name)(**config)  # type: ignore
 
     @classmethod
     def make_multiple(
-        cls,
+        cls: Type[TRegister],
         names: Union[str, List[str]],
         configs: configs_type = None,
     ) -> List[TRegister]:
@@ -491,12 +502,39 @@ class WithRegister(Generic[TRegister]):
 
 
 @dataclass
-class DataClassBase(ABC):
-    def asdict(self) -> Dict[str, Any]:
-        return asdict(self)
+class JsonPack(DataClassBase):
+    type: str
+    info: Dict[str, Any]
 
-    def copy(self: TDataClass) -> TDataClass:
-        return type(self)(**shallow_copy_dict(asdict(self)))
+
+class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
+    @abstractmethod
+    def to_info(self) -> Dict[str, Any]:
+        pass
+
+    @abstractmethod
+    def from_info(self, info: Dict[str, Any]) -> None:
+        pass
+
+    def load_callback(self) -> None:
+        pass
+
+    def to_pack(self) -> JsonPack:
+        return JsonPack(self.__identifier__, self.to_info())
+
+    @classmethod
+    def from_pack(cls: Type[TSerializable], pack: Dict[str, Any]) -> TSerializable:
+        obj: ISerializable = cls.make(pack["type"], {})
+        obj.from_info(pack["info"])
+        obj.load_callback()
+        return obj
+
+    def to_json(self) -> str:
+        return json.dumps(self.to_pack().asdict())
+
+    @classmethod
+    def from_json(cls: Type[TSerializable], json_string: str) -> TSerializable:
+        return cls.from_pack(json.loads(json_string))
 
 
 class SanityChecker:

@@ -467,6 +467,10 @@ class DataClassBase(ABC):
     def copy(self: TDataClass) -> TDataClass:
         return type(self)(**shallow_copy_dict(asdict(self)))
 
+    def update_with(self: TDataClass, other: TDataClass) -> TDataClass:
+        d = update_dict(other.asdict(), self.asdict())
+        return self.__class__(**d)
+
 
 class WithRegister(Generic[TRegister]):
     d: Dict[str, Type[TRegister]]

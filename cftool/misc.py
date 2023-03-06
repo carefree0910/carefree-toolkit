@@ -713,6 +713,7 @@ class Serializer:
         base: Type[TSerializable],
         *,
         swap_id: Optional[str] = None,
+        swap_info: Optional[Dict[str, Any]] = None,
     ) -> TSerializable:
         if swap_id is not None:
             s_type = swap_id
@@ -723,7 +724,7 @@ class Serializer:
             with open(id_path, "r") as f:
                 s_type = f.read().strip()
         serializable: TSerializable = base.make(s_type, {})
-        serializable.from_info(cls.load_info(folder))
+        serializable.from_info(swap_info or cls.load_info(folder))
         if isinstance(serializable, ISerializableArrays):
             serializable.from_npd(cls.load_npd(folder))
         return serializable

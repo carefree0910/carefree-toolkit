@@ -94,6 +94,22 @@ def check_requires(fn: Any, name: str, strict: bool = True) -> bool:
     return False
 
 
+def get_requirements(fn: Any) -> List[str]:
+    if isinstance(fn, type):
+        fn = fn.__init__  # type: ignore
+    requirements = []
+    signature = inspect.signature(fn)
+    for k, param in signature.parameters.items():
+        if param.kind is inspect.Parameter.VAR_KEYWORD:
+            continue
+        if param.kind is inspect.Parameter.VAR_POSITIONAL:
+            continue
+        if param.default is not inspect.Parameter.empty:
+            continue
+        requirements.append(k)
+    return requirements
+
+
 def filter_kw(
     fn: Callable,
     kwargs: Dict[str, Any],

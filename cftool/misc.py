@@ -456,7 +456,10 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
 TSerializable = TypeVar("TSerializable", bound="ISerializable", covariant=True)
 TSArrays = TypeVar("TSArrays", bound="ISerializableArrays", covariant=True)
+TSDataClass = TypeVar("TSDataClass", bound="ISerializableDataClass", covariant=True)
 TDataClass = TypeVar("TDataClass", bound="DataClassBase")
+
+serializable_dataclasses: Dict[str, Type["ISerializableDataClass"]] = {}
 
 
 @dataclass
@@ -580,6 +583,58 @@ class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
     @abstractmethod
     def from_npd(self, npd: np_dict_type) -> None:
         pass
+
+
+@dataclass
+class ISerializableDataClass(
+    ISerializable,
+    DataClassBase,
+    Generic[TSDataClass],
+    metaclass=ABCMeta,
+):
+    def to_info(self) -> Dict[str, Any]:
+        return self.asdict()
+
+    def from_info(self, info: Dict[str, Any]) -> None:
+        for k, v in info.items():
+            setattr(self, k, v)
+
+    @classmethod
+    def get(cls: Type[TRegister], name: str) -> Type[TRegister]:
+        return serializable_dataclasses[name]
+
+    @classmethod
+    def has(cls, name: str) -> bool:
+        return name in serializable_dataclasses
+
+    @classmethod
+    def make(cls: Type[TRegister], name: str, config: Dict[str, Any]) -> TRegister:
+        return cls.get(name)(**config)  # type: ignore
+
+    @classmethod
+    def register(
+        cls,
+        name: str,
+        *,
+        allow_duplicate: bool = False,
+    ) -> Callable:
+        def before(cls_: Type) -> None:
+            cls_.__identifier__ = name
+
+        return register_core(
+            name,
+            serializable_dataclasses,
+            allow_duplicate=allow_duplicate,
+            before_register=before,
+        )
+
+    @classmethod
+    def remove(cls, name: str) -> Callable:
+        return serializable_dataclasses.pop(name)
+
+    @classmethod
+    def check_subclass(cls, name: str) -> bool:
+        return issubclass(serializable_dataclasses[name], cls)
 
 
 class Serializer:

@@ -149,11 +149,11 @@ def get_num_positional_args(fn: Callable) -> Union[int, float]:
     return counter
 
 
-def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -> str:
+def prepare_workspace_from(workspace: str, timeout: timedelta = timedelta(30)) -> str:
     current_time = datetime.now()
-    if os.path.isdir(workplace):
-        for stuff in os.listdir(workplace):
-            if not os.path.isdir(os.path.join(workplace, stuff)):
+    if os.path.isdir(workspace):
+        for stuff in os.listdir(workspace):
+            if not os.path.isdir(os.path.join(workspace, stuff)):
                 continue
             try:
                 stuff_time = datetime.strptime(stuff, TIME_FORMAT)
@@ -161,29 +161,29 @@ def prepare_workplace_from(workplace: str, timeout: timedelta = timedelta(30)) -
                 if stuff_delta > timeout:
                     msg = f"{stuff} will be removed (already {stuff_delta} ago)"
                     print_warning(msg)
-                    shutil.rmtree(os.path.join(workplace, stuff))
+                    shutil.rmtree(os.path.join(workspace, stuff))
             except:
                 pass
-    workplace = os.path.join(workplace, current_time.strftime(TIME_FORMAT))
-    os.makedirs(workplace)
-    return workplace
+    workspace = os.path.join(workspace, current_time.strftime(TIME_FORMAT))
+    os.makedirs(workspace)
+    return workspace
 
 
-def get_latest_workplace(root: str) -> Optional[str]:
+def get_latest_workspace(root: str) -> Optional[str]:
     if not os.path.isdir(root):
         return None
-    all_workplaces = []
+    all_workspaces = []
     for stuff in os.listdir(root):
         if not os.path.isdir(os.path.join(root, stuff)):
             continue
         try:
             datetime.strptime(stuff, TIME_FORMAT)
-            all_workplaces.append(stuff)
+            all_workspaces.append(stuff)
         except:
             pass
-    if not all_workplaces:
+    if not all_workspaces:
         return None
-    return os.path.join(root, sorted(all_workplaces)[-1])
+    return os.path.join(root, sorted(all_workspaces)[-1])
 
 
 def sort_dict_by_value(d: Dict[Any, Any], *, reverse: bool = False) -> OrderedDict:
@@ -1991,12 +1991,12 @@ class lock_manager(context_error_handler, LoggingMixin):
     Examples
     --------
     >>> import dill
-    >>> workplace = "_cache"
+    >>> workspace = "_cache"
     >>> target_write_files_full_path = [
-    >>>     os.path.join(workplace, "file1.pkl"),
-    >>>     os.path.join(workplace, "file2.pkl")
+    >>>     os.path.join(workspace, "file1.pkl"),
+    >>>     os.path.join(workspace, "file2.pkl")
     >>> ]
-    >>> with lock_manager(workplace, target_write_files_full_path):
+    >>> with lock_manager(workspace, target_write_files_full_path):
     >>>     for write_file_full_path in target_write_files_full_path:
     >>>         with open(write_file_full_path, "wb") as wf:
     >>>             dill.dump(..., wf)
@@ -2008,7 +2008,7 @@ class lock_manager(context_error_handler, LoggingMixin):
 
     def __init__(
         self,
-        workplace,
+        workspace,
         stuffs,
         verbose_level=None,
         set_lock=True,
@@ -2016,10 +2016,10 @@ class lock_manager(context_error_handler, LoggingMixin):
         name=None,
         wait=1000,
     ):
-        self._workplace = workplace
+        self._workspace = workspace
         self._verbose_level = verbose_level
         self._name, self._wait = name, wait
-        os.makedirs(workplace, exist_ok=True)
+        os.makedirs(workspace, exist_ok=True)
         self._stuffs, self._set_lock = stuffs, set_lock
         self._clear_stuffs = clear_stuffs_after_exc
         self._is_locked = False
@@ -2066,7 +2066,7 @@ class lock_manager(context_error_handler, LoggingMixin):
                         f.write(
                             f"name      : {self._name}\n"
                             f"timestamp : {timestamp()}\n"
-                            f"workplace : {self._workplace}\n"
+                            f"workspace : {self._workspace}\n"
                             f"stuffs    :\n{self.cache_stuffs_str}"
                         )
                     self.__refresher = _lock_file_refresher(self.lock_file)
@@ -2164,7 +2164,7 @@ class lock_manager(context_error_handler, LoggingMixin):
 
     @property
     def lock_file(self):
-        return os.path.join(self._workplace, self.__lock__)
+        return os.path.join(self._workspace, self.__lock__)
 
     @property
     def logging_suffix(self):

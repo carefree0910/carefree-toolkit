@@ -579,6 +579,7 @@ class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
 
 
 class Serializer:
+    id_file: str = "id.txt"
     info_file: str = "info.json"
     npd_folder: str = "npd"
 
@@ -639,24 +640,34 @@ class Serializer:
         return npd
 
     @classmethod
-    def save(cls, folder: str, serializable: ISerializableArrays) -> None:
-        info = serializable.to_info()
-        npd = serializable.to_npd()
-        cls.save_info(folder, info=info)
-        cls.save_npd(folder, npd=npd)
-        with open(os.path.join(folder, "id.txt"), "w") as f:
+    def save(cls, folder: str, serializable: ISerializable) -> None:
+        cls.save_info(folder, serializable=serializable)
+        if isinstance(serializable, ISerializableArrays):
+            cls.save_npd(folder, serializable=serializable)
+        with open(os.path.join(folder, cls.id_file), "w") as f:
             f.write(serializable.__identifier__)
 
     @classmethod
-    def load(cls, folder: str) -> ISerializableArrays:
-        id_path = os.path.join(folder, "id.txt")
-        if not os.path.isfile(id_path):
-            raise ValueError(f"cannot find '{id_path}'")
-        with open(id_path, "r") as f:
-            s_type = f.read().strip()
-        serializable: ISerializableArrays = ISerializableArrays.make(s_type, {})
+    def load(
+        cls,
+        folder: str,
+        base: Type[TSerializable],
+        *,
+        swap_id: Optional[str] = None,
+    ) -> TSerializable:
+        if swap_id is not None:
+            s_type = swap_id
+        else:
+            id_path = os.path.join(folder, cls.id_file)
+            if not os.path.isfile(id_path):
+                raise ValueError(f"cannot find '{id_path}'")
+            with open(id_path, "r") as f:
+                s_type = f.read().strip()
+        serializable: TSerializable = base.make(s_type, {})
         serializable.from_info(cls.load_info(folder))
-        serializable.from_npd(cls.load_npd(folder))
+        if isinstance(serializable, ISerializableArrays):
+            serializable.from_npd(cls.load_npd(folder))
+        return serializable
 
 
 class IWithRequirements:

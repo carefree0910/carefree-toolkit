@@ -650,6 +650,14 @@ class Serializer:
         serializable.from_npd(cls.load_npd(folder))
 
 
+class IWithRequirements:
+    @classmethod
+    def requirements(cls) -> List[str]:
+        requirements = get_requirements(cls)
+        requirements.remove("self")
+        return requirements
+
+
 class SanityChecker:
     @staticmethod
     def int(n):

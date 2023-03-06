@@ -33,6 +33,7 @@ from typing import TypeVar
 from typing import Callable
 from typing import Iterable
 from typing import Optional
+from typing import Protocol
 from typing import NamedTuple
 from argparse import Namespace
 from datetime import datetime
@@ -54,6 +55,14 @@ dill._dill._reverse_typemap["ClassType"] = type
 
 
 # util functions
+
+
+TFnResponse = TypeVar("TFnResponse")
+
+
+class Fn(Protocol):
+    def __call__(self, *args: Any, **kwargs: Any) -> TFnResponse:
+        pass
 
 
 def walk(
@@ -123,7 +132,7 @@ def filter_kw(
     return kw
 
 
-def safe_execute(fn: Any, kw: Dict[str, Any], *, strict: bool = False) -> Any:
+def safe_execute(fn: Fn, kw: Dict[str, Any], *, strict: bool = False) -> TFnResponse:
     return fn(**filter_kw(fn, kw, strict=strict))
 
 

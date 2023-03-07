@@ -660,7 +660,6 @@ class Serializer:
 
     @classmethod
     def load_info(cls, folder: str) -> Dict[str, Any]:
-        os.makedirs(folder, exist_ok=True)
         info_path = os.path.join(folder, cls.info_file)
         if not os.path.isfile(info_path):
             raise ValueError(f"'{info_path}' does not exist")

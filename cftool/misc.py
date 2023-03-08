@@ -558,10 +558,12 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
     def from_info(self, info: Dict[str, Any]) -> None:
         pass
 
-    # api
+    # optional callbacks
 
-    def load_callback(self) -> None:
+    def after_load(self) -> None:
         pass
+
+    # api
 
     def to_pack(self) -> JsonPack:
         return JsonPack(self.__identifier__, self.to_info())
@@ -570,7 +572,7 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
     def from_pack(cls: Type[TSerializable], pack: Dict[str, Any]) -> TSerializable:
         obj: ISerializable = cls.make(pack["type"], {})
         obj.from_info(pack["info"])
-        obj.load_callback()
+        obj.after_load()
         return obj
 
     def to_json(self) -> str:
@@ -666,8 +668,19 @@ class Serializer:
 
     @classmethod
     def load_info(cls, folder: str) -> Dict[str, Any]:
+        return cls.try_load_info(folder, strict=True)
+
+    @classmethod
+    def try_load_info(
+        cls,
+        folder: str,
+        *,
+        strict: bool = False,
+    ) -> Optional[Dict[str, Any]]:
         info_path = os.path.join(folder, cls.info_file)
         if not os.path.isfile(info_path):
+            if not strict:
+                return
             raise ValueError(f"'{info_path}' does not exist")
         with open(info_path, "r") as f:
             info = json.load(f)
@@ -720,6 +733,20 @@ class Serializer:
         swap_id: Optional[str] = None,
         swap_info: Optional[Dict[str, Any]] = None,
     ) -> TSerializable:
+        serializable = cls.load_empty(folder, base, swap_id=swap_id)
+        serializable.from_info(swap_info or cls.load_info(folder))
+        if isinstance(serializable, ISerializableArrays):
+            serializable.from_npd(cls.load_npd(folder))
+        return serializable
+
+    @classmethod
+    def load_empty(
+        cls,
+        folder: str,
+        base: Type[TSerializable],
+        *,
+        swap_id: Optional[str] = None,
+    ) -> TSerializable:
         if swap_id is not None:
             s_type = swap_id
         else:
@@ -728,11 +755,7 @@ class Serializer:
                 raise ValueError(f"cannot find '{id_path}'")
             with open(id_path, "r") as f:
                 s_type = f.read().strip()
-        serializable: TSerializable = base.make(s_type, {})
-        serializable.from_info(swap_info or cls.load_info(folder))
-        if isinstance(serializable, ISerializableArrays):
-            serializable.from_npd(cls.load_npd(folder))
-        return serializable
+        return base.make(s_type, {})
 
 
 class IWithRequirements:

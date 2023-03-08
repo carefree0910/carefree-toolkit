@@ -494,24 +494,35 @@ class WithRegister(Generic[TRegister]):
         return name in cls.d
 
     @classmethod
-    def make(cls: Type[TRegister], name: str, config: Dict[str, Any]) -> TRegister:
-        return cls.get(name)(**config)  # type: ignore
+    def make(
+        cls: Type[TRegister],
+        name: str,
+        config: Dict[str, Any],
+        *,
+        ensure_safe: bool = False,
+    ) -> TRegister:
+        base = cls.get(name)
+        if not ensure_safe:
+            return base(**config)  # type: ignore
+        return safe_execute(base, config)
 
     @classmethod
     def make_multiple(
         cls: Type[TRegister],
         names: Union[str, List[str]],
         configs: configs_type = None,
+        *,
+        ensure_safe: bool = False,
     ) -> List[TRegister]:
         if configs is None:
             configs = {}
         if isinstance(names, str):
             assert isinstance(configs, dict)
-            return cls.make(names, configs)  # type: ignore
+            return cls.make(names, configs, ensure_safe=ensure_safe)  # type: ignore
         if not isinstance(configs, list):
             configs = [configs.get(name, {}) for name in names]
         return [
-            cls.make(name, shallow_copy_dict(config))
+            cls.make(name, shallow_copy_dict(config), ensure_safe=ensure_safe)
             for name, config in zip(names, configs)
         ]
 

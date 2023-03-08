@@ -149,7 +149,12 @@ def get_num_positional_args(fn: Callable) -> Union[int, float]:
     return counter
 
 
-def prepare_workspace_from(workspace: str, timeout: timedelta = timedelta(30)) -> str:
+def prepare_workspace_from(
+    workspace: str,
+    *,
+    timeout: timedelta = timedelta(30),
+    make: bool = True,
+) -> str:
     current_time = datetime.now()
     if os.path.isdir(workspace):
         for stuff in os.listdir(workspace):
@@ -165,7 +170,8 @@ def prepare_workspace_from(workspace: str, timeout: timedelta = timedelta(30)) -
             except:
                 pass
     workspace = os.path.join(workspace, current_time.strftime(TIME_FORMAT))
-    os.makedirs(workspace)
+    if make:
+        os.makedirs(workspace)
     return workspace
 
 

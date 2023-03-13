@@ -109,6 +109,9 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
 
     # optional callbacks
 
+    def before_block_build(self, block: IBlock) -> None:
+        pass
+
     def after_block_build(self, block: IBlock) -> None:
         pass
 
@@ -123,6 +126,7 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
         for block in blocks:
             check_requirement(block, previous)
             block.previous = previous
+            self.before_block_build(block)
             block.build(self.config)
             self.after_block_build(block)
             previous[block.__identifier__] = block

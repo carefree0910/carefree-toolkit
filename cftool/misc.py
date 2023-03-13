@@ -461,6 +461,11 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 TRegister = TypeVar("TRegister", bound="WithRegister", covariant=True)
 TSerializable = TypeVar("TSerializable", bound="ISerializable", covariant=True)
+TSerializableArrays = TypeVar(
+    "TSerializableArrays",
+    bound="ISerializableArrays",
+    covariant=True,
+)
 TSArrays = TypeVar("TSArrays", bound="ISerializableArrays", covariant=True)
 TSDataClass = TypeVar("TSDataClass", bound="ISerializableDataClass", covariant=True)
 TDataClass = TypeVar("TDataClass", bound="DataClassBase")
@@ -593,6 +598,11 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
     def from_json(cls: Type[TSerializable], json_string: str) -> TSerializable:
         return cls.from_pack(json.loads(json_string))
 
+    def copy(self: TSerializable) -> TSerializable:
+        copied = self.__class__()
+        copied.from_info(shallow_copy_dict(self.to_info()))
+        return copied
+
 
 class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
     @abstractmethod
@@ -602,6 +612,11 @@ class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
     @abstractmethod
     def from_npd(self, npd: np_dict_type) -> None:
         pass
+
+    def copy(self: TSerializableArrays) -> TSerializableArrays:
+        copied: TSerializableArrays = super().copy()
+        copied.from_npd(shallow_copy_dict(self.to_npd()))
+        return copied
 
 
 @dataclass

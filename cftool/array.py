@@ -3,6 +3,7 @@ import math
 import numpy as np
 
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -21,6 +22,7 @@ from .types import tensor_dict_type
 
 
 arr_type = Union[np.ndarray, torch.Tensor]
+TNormalizeResponse = Union[arr_type, Tuple[arr_type, Dict[str, Any]]]
 
 
 def is_int(arr: np.ndarray) -> bool:
@@ -53,6 +55,115 @@ def l2_normalize(arr: arr_type) -> arr_type:
     if isinstance(arr, np.ndarray):
         return arr / np.linalg.norm(arr, axis=-1, keepdims=True)
     return arr / arr.norm(dim=-1, keepdim=True)
+
+
+def normalize(
+    arr: arr_type,
+    *,
+    global_norm: bool = True,
+    return_statistics: False,
+    eps: float = 1.0e-8,
+) -> TNormalizeResponse:
+    if global_norm:
+        arr_mean, arr_std = arr.mean().item(), arr.std().item()
+        arr_std = max(eps, arr_std)
+        out = (arr - arr_mean) / arr_std
+        if not return_statistics:
+            return out
+        return out, dict(mean=arr_mean, std=arr_std)
+    if isinstance(arr, np.ndarray):
+        arr_mean, arr_std = arr.mean(axis=0), arr.std(axis=0)
+        std = np.maximum(eps, arr_std)
+    else:
+        arr_mean, arr_std = arr.mean(dim=0), arr.std(dim=0)
+        std = torch.clip(arr_std, min=eps)
+    out = (arr - arr_mean) / std
+    if not return_statistics:
+        return out
+    return out, dict(mean=arr_mean.tolist(), std=std.tolist())
+
+
+def normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
+    mean, std = statistics["mean"], statistics["std"]
+    return (arr - mean) / std
+
+
+def min_max_normalize(
+    arr: arr_type,
+    *,
+    global_norm: bool = True,
+    return_statistics: False,
+    eps: float = 1.0e-8,
+) -> TNormalizeResponse:
+    if global_norm:
+        arr_min, arr_max = arr.min().item(), arr.max().item()
+        diff = max(eps, arr_max - arr_min)
+        out = (arr - arr_min) / diff
+        if not return_statistics:
+            return out
+        return out, dict(min=arr_min, diff=diff)
+    if isinstance(arr, np.ndarray):
+        arr_min, arr_max = arr.min(axis=0), arr.max(axis=0)
+        diff = np.maximum(eps, arr_max - arr_min)
+    else:
+        arr_min, arr_max = arr.min(dim=0).values, arr.max(dim=0).values
+        diff = torch.clip(arr_max - arr_min, min=eps)
+    out = (arr - arr_min) / diff
+    if not return_statistics:
+        return out
+    return out, dict(min=arr_min.tolist(), diff=diff.tolist())
+
+
+def min_max_normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
+    arr_min, diff = statistics["min"], statistics["diff"]
+    return (arr - arr_min) / diff
+
+
+def quantile_normalize(
+    arr: arr_type,
+    *,
+    q: float = 0.01,
+    global_norm: bool = True,
+    return_statistics: False,
+    eps: float = 1.0e-8,
+) -> TNormalizeResponse:
+    # quantiles
+    if isinstance(arr, np.ndarray):
+        kw = {"axis": 0}
+        quantile_fn = np.quantile
+    else:
+        kw = {"dim": 0}
+        quantile_fn = torch.quantile
+    if global_norm:
+        arr_min = quantile_fn(arr, q)
+        arr_max = quantile_fn(arr, 1.0 - q)
+    else:
+        arr_min = quantile_fn(arr, q, **kw)
+        arr_max = quantile_fn(arr, 1.0 - q, **kw)
+    # diff
+    if global_norm:
+        diff = max(eps, arr_max - arr_min)
+    else:
+        if isinstance(arr, np.ndarray):
+            diff = np.maximum(eps, arr_max - arr_min)
+        else:
+            diff = torch.clip(arr_max - arr_min, min=eps)
+    arr = arr.clip(arr_min, arr_max)
+    out = (arr - arr_min) / diff
+    if not return_statistics:
+        return out
+    if not global_norm:
+        arr_min = arr_min.item()
+        diff = diff.item()
+    else:
+        arr_min = arr_min.tolist()
+        diff = diff.tolist()
+    return out, dict(min=arr_min, diff=diff)
+
+
+def quantile_normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
+    arr_min, diff = statistics["min"], statistics["diff"]
+    return (arr - arr_min) / diff
 
 
 # will return at least 2d
@@ -88,7 +199,9 @@ def to_device(
     return {
         k: v.to(device, **kwargs)
         if isinstance(v, torch.Tensor)
-        else [vv.to(device, **kwargs) if isinstance(vv, torch.Tensor) else vv for vv in v]
+        else [
+            vv.to(device, **kwargs) if isinstance(vv, torch.Tensor) else vv for vv in v
+        ]
         if isinstance(v, list)
         else v
         for k, v in batch.items()

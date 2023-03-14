@@ -121,6 +121,14 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     def block_mappings(self) -> Dict[str, IBlock]:
         return {b.__identifier__: b for b in self.blocks}
 
+    def remove(self, *block_names: str) -> None:
+        pop_indices = []
+        for i, block in enumerate(self.blocks):
+            if block.__identifier__ in block_names:
+                pop_indices.append(i)
+        for i in pop_indices[::-1]:
+            self.blocks.pop(i)
+
     def build(self, *blocks: IBlock) -> None:
         previous: Dict[str, IBlock] = self.block_mappings
         for block in blocks:

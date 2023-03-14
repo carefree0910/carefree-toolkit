@@ -743,9 +743,15 @@ class Serializer:
         return npd
 
     @classmethod
-    def save(cls, folder: str, serializable: ISerializable) -> None:
+    def save(
+        cls,
+        folder: str,
+        serializable: ISerializable,
+        *,
+        save_npd: bool = True,
+    ) -> None:
         cls.save_info(folder, serializable=serializable)
-        if isinstance(serializable, ISerializableArrays):
+        if save_npd and isinstance(serializable, ISerializableArrays):
             cls.save_npd(folder, serializable=serializable)
         with open(os.path.join(folder, cls.id_file), "w") as f:
             f.write(serializable.__identifier__)
@@ -758,10 +764,11 @@ class Serializer:
         *,
         swap_id: Optional[str] = None,
         swap_info: Optional[Dict[str, Any]] = None,
+        load_npd: bool = True,
     ) -> TSerializable:
         serializable = cls.load_empty(folder, base, swap_id=swap_id)
         serializable.from_info(swap_info or cls.load_info(folder))
-        if isinstance(serializable, ISerializableArrays):
+        if load_npd and isinstance(serializable, ISerializableArrays):
             serializable.from_npd(cls.load_npd(folder))
         return serializable
 

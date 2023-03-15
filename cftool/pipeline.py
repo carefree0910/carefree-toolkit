@@ -80,9 +80,6 @@ class IBlock(WithRegister["IBlock"], metaclass=ABCMeta):
     """
     previous: Dict[str, TBlock]
 
-    def __getattr__(self, __name: str) -> Optional[TBlock]:
-        return self.previous.get(__name)
-
     @abstractmethod
     def build(self, config: TConfig) -> None:
         """This method can modify the `config` inplace, which will affect the following blocks"""
@@ -90,6 +87,9 @@ class IBlock(WithRegister["IBlock"], metaclass=ABCMeta):
     @property
     def requirements(self) -> List[str]:
         return []
+
+    def get_previous_block(self, name: str) -> Optional[TBlock]:
+        return self.previous.get(name)
 
 
 class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):

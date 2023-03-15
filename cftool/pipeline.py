@@ -96,7 +96,7 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     d = pipelines
 
     config: TConfig
-    blocks: List[IBlock]
+    blocks: List[TBlock]
 
     def __init__(self) -> None:
         self.blocks = []
@@ -113,16 +113,16 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
 
     # optional callbacks
 
-    def before_block_build(self, block: IBlock) -> None:
+    def before_block_build(self, block: TBlock) -> None:
         pass
 
-    def after_block_build(self, block: IBlock) -> None:
+    def after_block_build(self, block: TBlock) -> None:
         pass
 
     # api
 
     @property
-    def block_mappings(self) -> Dict[str, IBlock]:
+    def block_mappings(self) -> Dict[str, TBlock]:
         return {b.__identifier__: b for b in self.blocks}
 
     def remove(self, *block_names: str) -> None:
@@ -133,8 +133,8 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
         for i in pop_indices[::-1]:
             self.blocks.pop(i)
 
-    def build(self, *blocks: IBlock) -> None:
-        previous: Dict[str, IBlock] = self.block_mappings
+    def build(self, *blocks: TBlock) -> None:
+        previous: Dict[str, TBlock] = self.block_mappings
         for block in blocks:
             check_requirement(block, previous)
             block.previous = previous

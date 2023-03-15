@@ -9,12 +9,10 @@ from typing import List
 from typing import Type
 from typing import TypeVar
 from typing import Optional
-from typing import OrderedDict
 from typing import ContextManager
 from zipfile import ZipFile
 from tempfile import mkdtemp
 
-from .misc import Serializer
 from .misc import WithRegister
 from .misc import DataClassBase
 from .misc import ISerializable

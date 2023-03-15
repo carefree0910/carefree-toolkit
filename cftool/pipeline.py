@@ -101,9 +101,6 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     def __init__(self) -> None:
         self.blocks = []
 
-    def __getattr__(self, __name: str) -> Optional[IBlock]:
-        return self.block_mappings.get(__name)
-
     # abstract
 
     @classmethod
@@ -124,6 +121,9 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     @property
     def block_mappings(self) -> Dict[str, TBlock]:
         return {b.__identifier__: b for b in self.blocks}
+
+    def get_block(self, name: str) -> Optional[TBlock]:
+        return self.block_mappings.get(name)
 
     def remove(self, *block_names: str) -> None:
         pop_indices = []

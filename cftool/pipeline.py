@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Type
+from typing import Union
 from typing import TypeVar
 from typing import Optional
 from typing import ContextManager
@@ -86,8 +87,16 @@ class IBlock(WithRegister["IBlock"], metaclass=ABCMeta):
     def requirements(self) -> List[str]:
         return []
 
-    def get_previous_block(self, name: str) -> Optional[TBlock]:
-        return self.previous.get(name)
+    def try_get_previous(self, block: Union[str, Type[TBlock]]) -> Optional[TBlock]:
+        if not isinstance(block, str):
+            block = block.__identifier__
+        return self.previous.get(block)
+
+    def get_previous(self, block: Union[str, Type[TBlock]]) -> TBlock:
+        b = self.try_get_previous(block)
+        if b is None:
+            raise ValueError(f"cannot find '{block}' in `previous`")
+        return b
 
 
 class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
@@ -120,8 +129,16 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     def block_mappings(self) -> Dict[str, TBlock]:
         return {b.__identifier__: b for b in self.blocks}
 
-    def get_block(self, name: str) -> Optional[TBlock]:
-        return self.block_mappings.get(name)
+    def try_get_block(self, block: Union[str, Type[TBlock]]) -> Optional[TBlock]:
+        if not isinstance(block, str):
+            block = block.__identifier__
+        return self.block_mappings.get(block)
+
+    def get_block(self, block: Union[str, Type[TBlock]]) -> TBlock:
+        b = self.try_get_block(block)
+        if b is None:
+            raise ValueError(f"cannot find '{block}' in `previous`")
+        return b
 
     def remove(self, *block_names: str) -> None:
         pop_indices = []

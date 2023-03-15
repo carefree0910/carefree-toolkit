@@ -42,7 +42,7 @@ def check_requirement(block: "IBlock", previous: Dict[str, "IBlock"]) -> None:
             )
 
 
-def get_workspace(folder: str) -> ContextManager:
+def get_workspace(folder: str, *, force_new: bool = False) -> ContextManager:
     class _:
         tmp_folder: Optional[str]
 
@@ -51,7 +51,11 @@ def get_workspace(folder: str) -> ContextManager:
 
         def __enter__(self) -> str:
             if os.path.isdir(folder):
-                return folder
+                if not force_new:
+                    return folder
+                self.tmp_folder = mkdtemp()
+                shutil.copytree(folder, self.tmp_folder, dirs_exist_ok=True)
+                return self.tmp_folder
             path = f"{folder}.zip"
             if not os.path.isfile(path):
                 raise ValueError(f"neither '{folder}' nor '{path}' exists")

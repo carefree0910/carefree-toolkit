@@ -61,14 +61,14 @@ def normalize(
     arr: arr_type,
     *,
     global_norm: bool = True,
-    return_statistics: False,
+    return_stats: False,
     eps: float = 1.0e-8,
 ) -> TNormalizeResponse:
     if global_norm:
         arr_mean, arr_std = arr.mean().item(), arr.std().item()
         arr_std = max(eps, arr_std)
         out = (arr - arr_mean) / arr_std
-        if not return_statistics:
+        if not return_stats:
             return out
         return out, dict(mean=arr_mean, std=arr_std)
     if isinstance(arr, np.ndarray):
@@ -78,13 +78,13 @@ def normalize(
         arr_mean, arr_std = arr.mean(dim=0), arr.std(dim=0)
         std = torch.clip(arr_std, min=eps)
     out = (arr - arr_mean) / std
-    if not return_statistics:
+    if not return_stats:
         return out
     return out, dict(mean=arr_mean.tolist(), std=std.tolist())
 
 
-def normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
-    mean, std = statistics["mean"], statistics["std"]
+def normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    mean, std = stats["mean"], stats["std"]
     return (arr - mean) / std
 
 
@@ -92,14 +92,14 @@ def min_max_normalize(
     arr: arr_type,
     *,
     global_norm: bool = True,
-    return_statistics: False,
+    return_stats: False,
     eps: float = 1.0e-8,
 ) -> TNormalizeResponse:
     if global_norm:
         arr_min, arr_max = arr.min().item(), arr.max().item()
         diff = max(eps, arr_max - arr_min)
         out = (arr - arr_min) / diff
-        if not return_statistics:
+        if not return_stats:
             return out
         return out, dict(min=arr_min, diff=diff)
     if isinstance(arr, np.ndarray):
@@ -109,13 +109,13 @@ def min_max_normalize(
         arr_min, arr_max = arr.min(dim=0).values, arr.max(dim=0).values
         diff = torch.clip(arr_max - arr_min, min=eps)
     out = (arr - arr_min) / diff
-    if not return_statistics:
+    if not return_stats:
         return out
     return out, dict(min=arr_min.tolist(), diff=diff.tolist())
 
 
-def min_max_normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
-    arr_min, diff = statistics["min"], statistics["diff"]
+def min_max_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    arr_min, diff = stats["min"], stats["diff"]
     return (arr - arr_min) / diff
 
 
@@ -124,7 +124,7 @@ def quantile_normalize(
     *,
     q: float = 0.01,
     global_norm: bool = True,
-    return_statistics: False,
+    return_stats: False,
     eps: float = 1.0e-8,
 ) -> TNormalizeResponse:
     # quantiles
@@ -150,7 +150,7 @@ def quantile_normalize(
             diff = torch.clip(arr_max - arr_min, min=eps)
     arr = arr.clip(arr_min, arr_max)
     out = (arr - arr_min) / diff
-    if not return_statistics:
+    if not return_stats:
         return out
     if not global_norm:
         arr_min = arr_min.item()
@@ -161,8 +161,8 @@ def quantile_normalize(
     return out, dict(min=arr_min, diff=diff)
 
 
-def quantile_normalize_from(arr: arr_type, statistics: Dict[str, Any]) -> arr_type:
-    arr_min, diff = statistics["min"], statistics["diff"]
+def quantile_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    arr_min, diff = stats["min"], stats["diff"]
     return (arr - arr_min) / diff
 
 

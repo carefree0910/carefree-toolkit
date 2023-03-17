@@ -88,6 +88,11 @@ def normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
     return (arr - mean) / std
 
 
+def recover_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    mean, std = stats["mean"], stats["std"]
+    return arr * std + mean
+
+
 def min_max_normalize(
     arr: arr_type,
     *,
@@ -117,6 +122,11 @@ def min_max_normalize(
 def min_max_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
     arr_min, diff = stats["min"], stats["diff"]
     return (arr - arr_min) / diff
+
+
+def recover_min_max_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    arr_min, diff = stats["min"], stats["diff"]
+    return arr * diff + arr_min
 
 
 def quantile_normalize(
@@ -164,6 +174,11 @@ def quantile_normalize(
 def quantile_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
     arr_min, diff = stats["min"], stats["diff"]
     return (arr - arr_min) / diff
+
+
+def recover_quantile_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr_type:
+    arr_min, diff = stats["min"], stats["diff"]
+    return arr * diff + arr_min
 
 
 # will return at least 2d

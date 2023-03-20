@@ -43,7 +43,9 @@ from functools import partial
 from itertools import product
 from collections import OrderedDict
 from dataclasses import asdict
+from dataclasses import fields
 from dataclasses import dataclass
+from dataclasses import Field
 
 from .types import configs_type
 from .types import np_dict_type
@@ -475,6 +477,18 @@ serializable_dataclasses: Dict[str, Type["ISerializableDataClass"]] = {}
 
 @dataclass
 class DataClassBase(ABC):
+    @property
+    def fields(self) -> List[Field]:
+        return fields(self)
+
+    @property
+    def field_names(self) -> List[str]:
+        return [f.name for f in self.fields]
+
+    @property
+    def attributes(self) -> List[Any]:
+        return [getattr(self, name) for name in self.field_names]
+
     def asdict(self) -> Dict[str, Any]:
         return asdict(self)
 

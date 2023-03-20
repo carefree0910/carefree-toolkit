@@ -618,6 +618,12 @@ class ISerializable(WithRegister, Generic[TSerializable], metaclass=ABCMeta):
         return copied
 
 
+class PureFromInfoMixin:
+    def from_info(self, info: Dict[str, Any]) -> None:
+        for k, v in info.items():
+            setattr(self, k, v)
+
+
 class ISerializableArrays(ISerializable, Generic[TSArrays], metaclass=ABCMeta):
     @abstractmethod
     def to_npd(self) -> np_dict_type:

@@ -15,12 +15,12 @@ from zipfile import ZipFile
 from tempfile import mkdtemp
 
 from .misc import WithRegister
-from .misc import DataClassBase
 from .misc import ISerializable
+from .misc import ISerializableDataClass
 
 
 TBlock = TypeVar("TBlock", bound="IBlock")
-TConfig = TypeVar("TConfig", bound="DataClassBase")
+TConfig = TypeVar("TConfig", bound="ISerializableDataClass")
 TPipeline = TypeVar("TPipeline", bound="IPipeline")
 
 pipelines: Dict[str, Type["IPipeline"]] = {}

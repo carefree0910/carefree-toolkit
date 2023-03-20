@@ -115,6 +115,41 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
     def init(cls: Type[TPipeline], config: TConfig) -> TPipeline:
         pass
 
+    @property
+    @abstractmethod
+    def config_base(self) -> Type[TConfig]:
+        pass
+
+    @property
+    @abstractmethod
+    def block_base(self) -> Type[TBlock]:
+        pass
+
+    # inheritance
+
+    def to_info(self) -> Dict[str, Any]:
+        using_serializable_blocks = self.using_serializable_blocks
+        return dict(
+            blocks=[
+                b.to_pack().asdict() if using_serializable_blocks else b.__identifier__
+                for b in self.blocks
+            ],
+            config=self.config.to_pack().asdict(),
+        )
+
+    def from_info(self, info: Dict[str, Any]) -> None:
+        self.config = self.config_base.from_pack(info["config"])
+        block_base = self.block_base
+        using_serializable_blocks = self.using_serializable_blocks
+        blocks: List[block_base] = []
+        for block in info["blocks"]:
+            blocks.append(
+                block_base.from_pack(block)
+                if using_serializable_blocks
+                else block_base.make(block, {})
+            )
+        self.build(*blocks)
+
     # optional callbacks
 
     def before_block_build(self, block: TBlock) -> None:
@@ -124,6 +159,10 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
         pass
 
     # api
+
+    @property
+    def using_serializable_blocks(self) -> bool:
+        return issubclass(self.block_base, ISerializable)
 
     @property
     def block_mappings(self) -> Dict[str, TBlock]:

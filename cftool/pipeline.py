@@ -27,8 +27,8 @@ pipelines: Dict[str, Type["IPipeline"]] = {}
 pipeline_blocks: Dict[str, Type["IBlock"]] = {}
 
 
-def get_req_choices(req: str) -> List[str]:
-    return [r.strip() for r in req.split("|")]
+def get_req_choices(req: TBlock) -> List[str]:
+    return [r.strip() for r in req.__identifier__.split("|")]
 
 
 def check_requirement(block: "IBlock", previous: Dict[str, "IBlock"]) -> None:
@@ -84,7 +84,7 @@ class IBlock(WithRegister["IBlock"], metaclass=ABCMeta):
         """This method can modify the `config` inplace, which will affect the following blocks"""
 
     @property
-    def requirements(self) -> List[str]:
+    def requirements(self) -> List[Type[TBlock]]:
         return []
 
     def try_get_previous(self, block: Union[str, Type[TBlock]]) -> Optional[TBlock]:

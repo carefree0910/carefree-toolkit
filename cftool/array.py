@@ -181,6 +181,13 @@ def recover_quantile_normalize_from(arr: arr_type, stats: Dict[str, Any]) -> arr
     return arr * diff + arr_min
 
 
+def clip_normalize(arr: arr_type) -> arr_type:
+    fn = np if isinstance(arr, np.ndarray) else torch
+    if arr.dtype == fn.uint8:
+        return arr
+    return fn.clip(arr, 0.0, 1.0)
+
+
 # will return at least 2d
 def squeeze(arr: arr_type) -> arr_type:
     n = arr.shape[0]

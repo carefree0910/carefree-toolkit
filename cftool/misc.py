@@ -472,8 +472,6 @@ TSArrays = TypeVar("TSArrays", bound="ISerializableArrays", covariant=True)
 TSDataClass = TypeVar("TSDataClass", bound="ISerializableDataClass", covariant=True)
 TDataClass = TypeVar("TDataClass", bound="DataClassBase")
 
-serializable_dataclasses: Dict[str, Type["ISerializableDataClass"]] = {}
-
 
 @dataclass
 class DataClassBase(ABC):
@@ -646,6 +644,11 @@ class ISerializableDataClass(
     Generic[TSDataClass],
     metaclass=ABCMeta,
 ):
+    @classmethod
+    @abstractmethod
+    def d(cls) -> Dict[str, Type["ISerializableDataClass"]]:
+        pass
+
     def to_info(self) -> Dict[str, Any]:
         return self.asdict()
 
@@ -655,15 +658,11 @@ class ISerializableDataClass(
 
     @classmethod
     def get(cls: Type[TRegister], name: str) -> Type[TRegister]:
-        return serializable_dataclasses[name]
+        return cls.d()[name]
 
     @classmethod
     def has(cls, name: str) -> bool:
-        return name in serializable_dataclasses
-
-    @classmethod
-    def make(cls: Type[TRegister], name: str, config: Dict[str, Any]) -> TRegister:
-        return cls.get(name)(**config)  # type: ignore
+        return name in cls.d()
 
     @classmethod
     def register(
@@ -677,18 +676,18 @@ class ISerializableDataClass(
 
         return register_core(
             name,
-            serializable_dataclasses,
+            cls.d(),
             allow_duplicate=allow_duplicate,
             before_register=before,
         )
 
     @classmethod
     def remove(cls, name: str) -> Callable:
-        return serializable_dataclasses.pop(name)
+        return cls.d().pop(name)
 
     @classmethod
     def check_subclass(cls, name: str) -> bool:
-        return issubclass(serializable_dataclasses[name], cls)
+        return issubclass(cls.d()[name], cls)
 
 
 class Serializer:

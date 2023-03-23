@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from io import BytesIO
@@ -16,6 +18,8 @@ from .misc import shallow_copy_dict
 from .misc import WithRegister
 from .array import torch
 from .array import arr_type
+from .array import to_torch
+from .types import torchvision
 
 try:
     from PIL import Image
@@ -143,6 +147,14 @@ def read_image(
         else:
             image = image[None].transpose(0, 3, 1, 2)
     return ReadImageResponse(image, alpha, original, (original_w, original_h))
+
+
+def save_images(arr: arr_type, path: str, n_row: Optional[int] = None) -> None:
+    if isinstance(arr, np.ndarray):
+        arr = to_torch(arr)
+    if n_row is None:
+        n_row = math.ceil(math.sqrt(len(arr)))
+    torchvision.utils.save_image(arr, path, normalize=True, nrow=n_row)
 
 
 class ImageProcessor:

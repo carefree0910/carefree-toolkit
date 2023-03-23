@@ -1,6 +1,7 @@
 import numpy as np
 
 from io import BytesIO
+from abc import abstractmethod
 from numpy import ndarray
 from typing import Any
 from typing import Dict

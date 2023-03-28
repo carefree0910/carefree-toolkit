@@ -17,8 +17,8 @@ from .misc import safe_execute
 from .misc import shallow_copy_dict
 from .misc import WithRegister
 from .array import torch
-from .array import arr_type
 from .array import to_torch
+from .types import arr_type
 from .types import torchvision
 
 try:

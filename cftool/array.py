@@ -18,10 +18,10 @@ from .misc import random_hash
 from .types import torch
 from .types import torchvision
 from .types import F
+from .types import arr_type
 from .types import tensor_dict_type
 
 
-arr_type = Union[np.ndarray, torch.Tensor]
 TNormalizeResponse = Union[arr_type, Tuple[arr_type, Dict[str, Any]]]
 
 

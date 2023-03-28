@@ -34,5 +34,6 @@ except:
 general_config_type = Optional[Union[str, Dict[str, Any]]]
 configs_type = Optional[Union[List[Dict[str, Any]], Dict[str, Any]]]
 
+arr_type = Union[np.ndarray, torch.Tensor]
 np_dict_type = Dict[str, Union[np.ndarray, Any]]
 tensor_dict_type = Dict[str, Union[torch.Tensor, Any]]

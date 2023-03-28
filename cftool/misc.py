@@ -267,6 +267,25 @@ def hash_code(code: str) -> str:
     return hashlib.md5(code).hexdigest()
 
 
+def hash_dict(d: Dict[str, Any]) -> str:
+    """Return a consistent hash code for an arbitrary dict."""
+
+    def _hash(_d: Dict[str, Any]) -> str:
+        sorted_keys = sorted(_d)
+        hashes = []
+        for k in sorted_keys:
+            v = _d[k]
+            if isinstance(v, dict):
+                hashes.append(_hash(v))
+            elif isinstance(v, set):
+                hashes.append(hash_code(str(sorted(v))))
+            else:
+                hashes.append(hash_code(str(v)))
+        return hash_code("".join(hashes))
+
+    return _hash(d)
+
+
 def random_hash() -> str:
     return hash_code(str(random.random()))
 

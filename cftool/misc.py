@@ -203,8 +203,14 @@ def parse_args(args: Any) -> Namespace:
     return Namespace(**{k: None if not v else v for k, v in args.__dict__.items()})
 
 
-def get_arguments(*, pop_class_attributes: bool = True) -> Dict[str, Any]:
+def get_arguments(
+    *,
+    num_back: int = 0,
+    pop_class_attributes: bool = True,
+) -> Dict[str, Any]:
     frame = inspect.currentframe().f_back  # type: ignore
+    for _ in range(num_back):
+        frame = frame.f_back
     if frame is None:
         raise ValueError("`get_arguments` should be called inside a frame")
     arguments = inspect.getargvalues(frame)[-1]

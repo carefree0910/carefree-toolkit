@@ -483,6 +483,10 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
     return wrapper
 
 
+def get_err_msg(err: Exception) -> str:
+    return " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+
+
 # util modules
 
 

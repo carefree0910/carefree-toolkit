@@ -70,8 +70,8 @@ class Point:
         return self.x, self.y
 
     def __rmatmul__(self, other: "Matrix2D") -> "Point":
-        a, b, c, d, e, f = [pair[1] for pair in other]
         x, y = self.x, self.y
+        a, b, c, d, e, f = other.tuple
         return Point(x=a * x + c * y + e, y=b * x + d * y + f)
 
     def inside(self, box: "Matrix2D") -> bool:
@@ -126,6 +126,10 @@ class Matrix2D(BaseModel):
         return other.__rmatmul__(self)
 
     @property
+    def tuple(self) -> Tuple[float, float, float, float, float, float]:
+        return self.a, self.b, self.c, self.d, self.e, self.f
+
+    @property
     def x(self) -> float:
         return self.e
 
@@ -162,8 +166,8 @@ class Matrix2D(BaseModel):
 
     @property
     def decompose(self) -> Dict[str, float]:
-        a, b, c, d, e, f = self
         w, h = self.wh
+        a, b, c, d, e, f = self.tuple
         return {
             "x": e,
             "y": f,
@@ -180,7 +184,7 @@ class Matrix2D(BaseModel):
 
     @property
     def inverse(self) -> "Matrix2D":
-        a, b, c, d, e, f = self.a, self.b, self.c, self.d, self.e, self.f
+        a, b, c, d, e, f = self.tuple
         ad = a * d
         bc = b * c
         return Matrix2D(

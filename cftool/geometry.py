@@ -197,20 +197,6 @@ class Matrix2D(BaseModel):
         return -math.atan2(self.b, self.a)
 
     @property
-    def decompose(self) -> Matrix2DProperties:
-        w, h = self.wh
-        a, b, c, d, e, f = self.tuple
-        return Matrix2DProperties(
-            x=e,
-            y=f,
-            w=w,
-            h=h,
-            theta=self.theta,
-            skew_x=math.atan2(a * c + b * d, w**2),
-            skew_y=0.0,
-        )
-
-    @property
     def matrix(self) -> np.ndarray:
         return np.array([[self.a, self.c, self.e], [self.b, self.d, self.f]])
 
@@ -287,6 +273,19 @@ class Matrix2D(BaseModel):
     def edges(self) -> List[Line]:
         corners = self.corner_points
         return [Line(corner, corners[(i + 1) % 4]) for i, corner in enumerate(corners)]
+
+    def decompose(self) -> Matrix2DProperties:
+        w, h = self.wh
+        a, b, c, d, e, f = self.tuple
+        return Matrix2DProperties(
+            x=e,
+            y=f,
+            w=w,
+            h=h,
+            theta=self.theta,
+            skew_x=math.atan2(a * c + b * d, w**2),
+            skew_y=0.0,
+        )
 
     @classmethod
     def skew_matrix(

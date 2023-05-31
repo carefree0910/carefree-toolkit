@@ -214,10 +214,17 @@ class Types(Generic[TTypes]):
 class ILoadableItem(Generic[TItem]):
     _item: Optional[TItem]
 
-    def __init__(self, init_fn: Callable[[], TItem], *, init: bool = False):
+    def __init__(
+        self,
+        init_fn: Callable[[], TItem],
+        *,
+        init: bool = False,
+        force_keep: bool = False,
+    ):
         self.init_fn = init_fn
         self.load_time = time.time()
-        self._item = init_fn() if init else None
+        self.force_keep = force_keep
+        self._item = init_fn() if init or force_keep else None
 
     def load(self, **kwargs: Any) -> TItem:
         self.load_time = time.time()
@@ -248,13 +255,17 @@ class ILoadablePool(Generic[TItem]):
     def __contains__(self, key: str) -> bool:
         return key in self.pool
 
+    @property
+    def num_activated(self) -> int:
+        return len([v for v in self.activated.values() if not v.force_keep])
+
     def register(self, key: str, init_fn: Callable[[bool], ILoadableItem]) -> None:
         if key in self.pool:
             raise ValueError(f"key '{key}' already exists")
-        init = self.limit < 0 or len(self.activated) < self.limit
+        init = self.limit < 0 or self.num_activated < self.limit
         loadable_item = init_fn(init)
         self.pool[key] = loadable_item
-        if init:
+        if init or loadable_item.force_keep:
             self.activated[key] = loadable_item
 
     def get(self, key: str, **kwargs: Any) -> TItem:
@@ -264,11 +275,16 @@ class ILoadablePool(Generic[TItem]):
         item = loadable_item.load(**kwargs)
         if key in self.activated:
             return item
-        load_times = {k: v.load_time for k, v in self.activated.items()}
+        load_times = {
+            key: item.load_time
+            for key, item in self.activated.items()
+            if not item.force_keep
+        }
+        print("> activated", self.activated)
+        print("> load_times", load_times)
         earliest_key = list(sort_dict_by_value(load_times).keys())[0]
         self.activated.pop(earliest_key).unload()
         self.activated[key] = loadable_item
-
         time_format = "-".join(TIME_FORMAT.split("-")[:-1])
         print_info(
             f"'{earliest_key}' is unloaded to make room for '{key}' "

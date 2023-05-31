@@ -14,6 +14,7 @@ INSTALL_REQUIRES = [
     "future",
     "psutil",
     "pathos",
+    "pydantic",
     "numpy>=1.22.3",
 ]
 

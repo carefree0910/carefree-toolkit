@@ -6,6 +6,8 @@ from enum import Enum
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Union
+from typing import TypeVar
 from typing import Optional
 from pydantic import BaseModel
 from dataclasses import dataclass
@@ -114,6 +116,9 @@ class Line:
         return d
 
 
+TMatMul = TypeVar("TMatMul", bound=Union[Point, "Matrix2D"])
+
+
 class Matrix2D(BaseModel):
     a: float
     b: float
@@ -122,8 +127,22 @@ class Matrix2D(BaseModel):
     e: float
     f: float
 
-    def __matmul__(self, other: Point) -> Point:
-        return other.__rmatmul__(self)
+    def __matmul__(self, other: TMatMul) -> TMatMul:
+        if isinstance(other, Point):
+            return other.__rmatmul__(self)
+        if isinstance(other, Matrix2D):
+            a1, b1, c1, d1, e1, f1 = self.tuple
+            a2, b2, c2, d2, e2, f2 = other.tuple
+            return Matrix2D(
+                a=a1 * a2 + c1 * b2,
+                b=b1 * a2 + d1 * b2,
+                c=a1 * c2 + c1 * d2,
+                d=b1 * c2 + d1 * d2,
+                e=a1 * e2 + c1 * f2 + e1,
+                f=b1 * e2 + d1 * f2 + f1,
+            )
+        msg = f"unsupported operand type(s) for @: 'Matrix2D' and '{type(other)}'"
+        raise TypeError(msg)
 
     @property
     def tuple(self) -> Tuple[float, float, float, float, float, float]:

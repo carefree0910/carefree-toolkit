@@ -79,6 +79,10 @@ class Point:
         x, y = (box.inverse @ self).tuple
         return 0 <= x <= 1 and 0 <= y <= 1
 
+    @classmethod
+    def origin(cls) -> "Point":
+        return cls(x=0.0, y=0.0)
+
 
 @dataclass
 class Line:

@@ -288,6 +288,50 @@ class Matrix2D(BaseModel):
         corners = self.corner_points
         return [Line(corner, corners[(i + 1) % 4]) for i, corner in enumerate(corners)]
 
+    @classmethod
+    def skew_matrix(
+        cls,
+        skew_x: float,
+        skew_y: float,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        center = center or Point.origin()
+        tx = math.tan(skew_x)
+        ty = math.tan(skew_y)
+        return cls(a=1, b=ty, c=tx, d=1, e=-tx * center.y, f=-ty * center.x)
+
+    @classmethod
+    def scale_matrix(
+        cls,
+        w: float,
+        h: float,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        center = center or Point.origin()
+        return cls(a=w, b=0, c=0, d=h, e=center.x * (1 - w), f=center.y * (1 - h))
+
+    @classmethod
+    def rotation_matrix(
+        cls,
+        theta: float,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        center = center or Point.origin()
+        sin = math.sin(theta)
+        cos = math.cos(theta)
+        return cls(
+            a=cos,
+            b=-sin,
+            c=sin,
+            d=cos,
+            e=(1.0 - cos) * center.x - center.y * sin,
+            f=(1.0 - cos) * center.y + center.x * sin,
+        )
+
+    @classmethod
+    def move_matrix(cls, x: float, y: float) -> "Matrix2D":
+        return cls(a=1, b=0, c=0, d=1, e=x, f=y)
+
 
 class HitTest:
     @staticmethod

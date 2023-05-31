@@ -3,7 +3,6 @@ import math
 import numpy as np
 
 from enum import Enum
-from typing import Dict
 from typing import List
 from typing import Tuple
 from typing import Union
@@ -116,6 +115,16 @@ class Line:
         return d
 
 
+class Matrix2DProperties(BaseModel):
+    x: float
+    y: float
+    w: float
+    h: float
+    theta: float
+    skew_x: float
+    skew_y: float
+
+
 TMatMul = TypeVar("TMatMul", bound=Union[Point, "Matrix2D"])
 
 
@@ -184,18 +193,18 @@ class Matrix2D(BaseModel):
         return -math.atan2(self.b, self.a)
 
     @property
-    def decompose(self) -> Dict[str, float]:
+    def decompose(self) -> Matrix2DProperties:
         w, h = self.wh
         a, b, c, d, e, f = self.tuple
-        return {
-            "x": e,
-            "y": f,
-            "theta": self.theta,
-            "skew_x": math.atan2(a * c + b * d, w**2),
-            "skew_y": 0.0,
-            "w": w,
-            "h": h,
-        }
+        return Matrix2DProperties(
+            x=e,
+            y=f,
+            w=w,
+            h=h,
+            theta=self.theta,
+            skew_x=math.atan2(a * c + b * d, w**2),
+            skew_y=0.0,
+        )
 
     @property
     def matrix(self) -> np.ndarray:

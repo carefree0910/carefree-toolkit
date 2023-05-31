@@ -332,6 +332,15 @@ class Matrix2D(BaseModel):
     def move_matrix(cls, x: float, y: float) -> "Matrix2D":
         return cls(a=1, b=0, c=0, d=1, e=x, f=y)
 
+    @classmethod
+    def from_properties(cls, properties: Matrix2DProperties) -> "Matrix2D":
+        return (
+            cls.move_matrix(properties.x, properties.y)
+            @ cls.rotation_matrix(properties.theta)
+            @ cls.scale_matrix(properties.w, properties.h)
+            @ cls.skew_matrix(properties.skew_x, properties.skew_y)
+        )
+
 
 class HitTest:
     @staticmethod

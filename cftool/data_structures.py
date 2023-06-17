@@ -427,6 +427,11 @@ class Workflow(Bundle[WorkNode]):
             workflow.push(WorkNode(**json))
         return workflow
 
+    def inject_caches(self, caches: Dict[str, Any]) -> "Workflow":
+        for k in caches:
+            self.push(WorkNode(key=k, endpoint="", injections={}, data={}))
+        return self
+
     def render(
         self,
         *,

@@ -436,6 +436,7 @@ class Workflow(Bundle[WorkNode]):
         self,
         *,
         target: Optional[str] = None,
+        caches: Optional[Dict[str, Any]] = None,
         fig_w_ratio: int = 4,
         fig_h_ratio: int = 3,
         dpi: int = 200,
@@ -450,11 +451,15 @@ class Workflow(Bundle[WorkNode]):
             raise ValueError("matplotlib is required for `render`")
         if Image is None:
             raise ValueError("PIL is required for `render`")
+        # setup workflow
+        workflow = self.copy()
+        if caches is not None:
+            workflow.inject_caches(caches)
         # setup graph
         G = nx.DiGraph()
         if target is None:
             target = self.last.key
-        in_edges, hierarchy, edge_labels = self.get_dependency_path(target)
+        in_edges, hierarchy, edge_labels = workflow.get_dependency_path(target)
         # setup plt
         fig_w = max(fig_w_ratio * len(hierarchy), 8)
         fig_h = fig_h_ratio * max(map(len, hierarchy))

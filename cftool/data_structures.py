@@ -354,6 +354,9 @@ class ToposortResult(NamedTuple):
 
 
 class Workflow(Bundle[WorkNode]):
+    def copy(self) -> "Workflow":
+        return Workflow.from_json(self.to_json())
+
     def push(self, node: WorkNode) -> None:
         return super().push(node.to_item())
 

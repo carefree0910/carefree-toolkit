@@ -303,11 +303,14 @@ def prefix_dict(d: Dict[str, Any], prefix: str):
 
 
 def shallow_copy_dict(d: dict) -> dict:
-    d = d.copy()
-    for k, v in d.items():
-        if isinstance(v, dict):
-            d[k] = shallow_copy_dict(v)
-    return d
+    def _copy(d_: Union[dict, list]) -> Union[dict, list]:
+        if isinstance(d_, list):
+            return [_copy(item) for item in d_]
+        if isinstance(d_, dict):
+            return {k: _copy(v) for k, v in d_.items()}
+        return d_
+
+    return _copy(d)
 
 
 def update_dict(src_dict: dict, tgt_dict: dict) -> dict:

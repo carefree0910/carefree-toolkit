@@ -69,6 +69,13 @@ class TestMisc(unittest.TestCase):
         dc2 = d.copy()
         dc2["a"]["b"] = 2
         self.assertEqual(d["a"]["b"], 2)
+        d = {"a": {"b": [{"c": 1}]}}
+        dc1 = shallow_copy_dict(d)
+        dc1["a"]["b"][0]["c"] = 2
+        self.assertEqual(d["a"]["b"][0]["c"], 1)
+        dc2 = d.copy()
+        dc2["a"]["b"][0]["c"] = 2
+        self.assertEqual(d["a"]["b"][0]["c"], 2)
 
     def test_update_dict(self):
         src_dict = {"a": 1, "b": {"c": 2}}

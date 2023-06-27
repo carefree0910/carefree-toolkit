@@ -318,7 +318,7 @@ class ILoadablePool(Generic[TItem]):
 
 
 class InjectionPack(BaseModel):
-    index: int
+    index: Optional[int]
     field: str
 
 

@@ -12,14 +12,16 @@ from typing import Tuple
 from typing import Union
 from typing import Optional
 from typing import NamedTuple
+from dataclasses import dataclass
 
 from .misc import safe_execute
 from .misc import shallow_copy_dict
 from .misc import WithRegister
-from .array import torch
 from .array import to_torch
-from .types import arr_type
+from .types import torch
 from .types import torchvision
+from .types import arr_type
+from .types import TNumberPair
 
 try:
     from PIL import Image
@@ -155,6 +157,89 @@ def save_images(arr: arr_type, path: str, n_row: Optional[int] = None) -> None:
     if n_row is None:
         n_row = math.ceil(math.sqrt(len(arr)))
     torchvision.utils.save_image(arr, path, normalize=True, nrow=n_row)
+
+
+@dataclass
+class ImageBox:
+    l: int
+    t: int
+    r: int
+    b: int
+
+    @property
+    def tuple(self) -> Tuple[int, int, int, int]:
+        return self.l, self.t, self.r, self.b
+
+    def copy(self) -> "ImageBox":
+        return ImageBox(*self.tuple)
+
+    def crop(self, image: ndarray) -> ndarray:
+        return image[self.t : self.b, self.l : self.r]
+
+    def crop_tensor(self, image: torch.Tensor) -> torch.Tensor:
+        return image[..., self.t : self.b, self.l : self.r]
+
+    def pad(
+        self,
+        padding: int,
+        *,
+        w: Optional[int] = None,
+        h: Optional[int] = None,
+    ) -> "ImageBox":
+        l, t, r, b = self.tuple
+        l = max(0, l - padding)
+        r += padding
+        if w is not None:
+            r = min(r, w)
+        t = max(0, t - padding)
+        b += padding
+        if h is not None:
+            b = min(b, h)
+        return ImageBox(l, t, r, b)
+
+    def to_square(
+        self,
+        *,
+        w: Optional[int] = None,
+        h: Optional[int] = None,
+        expand: bool = True,
+    ) -> "ImageBox":
+        l, t, r, b = self.tuple
+        bw, bh = r - l, b - t
+        diff = abs(bw - bh)
+        if diff == 0:
+            return self.copy()
+        if expand:
+            if bw > bh:
+                t = max(0, t - diff // 2)
+                b = t + bw
+                if h is not None:
+                    b = min(b, h)
+            else:
+                l = max(0, l - diff // 2)
+                r = l + bh
+                if w is not None:
+                    r = min(r, w)
+        else:
+            if bw > bh:
+                l += diff // 2
+                r = l + bh
+                if w is not None:
+                    r = min(r, w)
+            else:
+                t += diff // 2
+                b = t + bw
+                if h is not None:
+                    b = min(b, h)
+        return ImageBox(l, t, r, b)
+
+    @classmethod
+    def from_mask(cls, uint8_mask: ndarray, threshold: Optional[int]) -> "ImageBox":
+        ys, xs = np.where(uint8_mask > (threshold or 0))
+        ys, xs = np.where(uint8_mask)
+        if len(ys) == 0:
+            return cls(0, 0, 0, 0)
+        return cls(xs.min().item(), ys.min().item(), xs.max().item(), ys.max().item())
 
 
 class ImageProcessor:

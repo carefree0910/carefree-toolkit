@@ -346,6 +346,9 @@ class WorkNode(BaseModel):
     def to_item(self) -> Item["WorkNode"]:
         return Item(self.key, self)
 
+    class Config:
+        smart_union = True
+
 
 class ToposortResult(NamedTuple):
     in_edges: Dict[str, Set[str]]

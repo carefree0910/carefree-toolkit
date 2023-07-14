@@ -323,8 +323,7 @@ class CV2NS(Padding):
         if cv2 is None:
             raise ValueError("`cv2` is needed for `CV2NS`")
         img_arr = np.array(image.convert("RGB"))[..., ::-1]
-        mask_arr = np.array(alpha)
-        rs = cv2.inpaint(img_arr, 255 - mask_arr, radius, cv2.INPAINT_NS)
+        rs = cv2.inpaint(img_arr, np.array(alpha), radius, cv2.INPAINT_NS)
         return Image.fromarray(rs[..., ::-1])
 
 
@@ -341,6 +340,5 @@ class CV2Telea(Padding):
         if cv2 is None:
             raise ValueError("`cv2` is needed for `CV2Telea`")
         img_arr = np.array(image.convert("RGB"))[..., ::-1]
-        mask_arr = np.array(alpha)
-        rs = cv2.inpaint(img_arr, 255 - mask_arr, radius, cv2.INPAINT_TELEA)
+        rs = cv2.inpaint(img_arr, np.array(alpha), radius, cv2.INPAINT_TELEA)
         return Image.fromarray(rs[..., ::-1])

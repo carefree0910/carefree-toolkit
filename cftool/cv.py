@@ -102,6 +102,7 @@ def read_image(
     resample: Any = Image.LANCZOS,
     normalize: bool = True,
     padding_mode: Optional[str] = None,
+    padding_mask: Optional[TImage] = None,
     padding_kwargs: Optional[Dict[str, Any]] = None,
     to_torch_fmt: bool = True,
 ) -> ReadImageResponse:
@@ -112,14 +113,14 @@ def read_image(
     alpha = None
     original = image
     if image.mode == "RGBA":
-        alpha = image.split()[3]
+        alpha = padding_mask = image.split()[3]
     if not to_mask and not to_gray:
-        if alpha is None or padding_mode is None:
+        if padding_mask is None or padding_mode is None:
             image = to_rgb(image)
         else:
             padding = Padding.make(padding_mode, {})
             padding_kw = shallow_copy_dict(padding_kwargs or {})
-            padding_kw.update(dict(image=image, alpha=alpha))
+            padding_kw.update(dict(image=image, alpha=padding_mask))
             image = safe_execute(padding.pad, padding_kw)
     else:
         if to_mask and to_gray:

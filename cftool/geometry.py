@@ -274,6 +274,64 @@ class Matrix2D(BaseModel):
         corners = self.corner_points
         return [Line(corner, corners[(i + 1) % 4]) for i, corner in enumerate(corners)]
 
+    @property
+    def css_property(self) -> str:
+        return f"matrix({self.a},{self.b},{self.c},{self.d},{self.e},{self.f})"
+
+    def scale(
+        self,
+        scale: float,
+        scale_y: Optional[float] = None,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        if scale_y is None:
+            scale_y = scale
+        if center is None:
+            return Matrix2D(
+                a=self.a * scale,
+                b=self.b * scale,
+                c=self.c * scale_y,
+                d=self.d * scale_y,
+                e=self.e,
+                f=self.f,
+            )
+        return Matrix2D.scale_matrix(scale, scale_y, center=center) @ self
+
+    def scale_to(
+        self,
+        scale: float,
+        scale_y: Optional[float] = None,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        if scale_y is None:
+            scale_y = scale
+        w, h = self.wh
+        return self.scale(scale / w, scale_y / h, center=center)
+
+    def flip(
+        self,
+        flip_x: bool,
+        flip_y: bool,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        return Matrix2D.flip_matrix(flip_x, flip_y, center) @ self
+
+    def rotate(self, theta: float, center: Optional[Point] = None) -> "Matrix2D":
+        if math.isclose(theta, 0.0):
+            return self.copy()
+        return Matrix2D.rotation_matrix(theta, center) @ self
+
+    def rotate_to(self, theta: float, center: Optional[Point] = None) -> "Matrix2D":
+        return self.rotate(theta - self.theta, center)
+
+    def move(self, point: Point) -> "Matrix2D":
+        a, b, c, d, e, f = self.tuple
+        return Matrix2D(a, b, c, d, point.x + e, point.y + f)
+
+    def move_to(self, point: Point) -> "Matrix2D":
+        a, b, c, d, _, _ = self.tuple
+        return Matrix2D(a, b, c, d, point.x, point.y)
+
     def decompose(self) -> Matrix2DProperties:
         w, h = self.wh
         a, b, c, d, e, f = self.tuple
@@ -330,6 +388,21 @@ class Matrix2D(BaseModel):
     @classmethod
     def move_matrix(cls, x: float, y: float) -> "Matrix2D":
         return cls(a=1, b=0, c=0, d=1, e=x, f=y)
+
+    @classmethod
+    def flip_matrix(
+        self,
+        flip_x: bool,
+        flip_y: bool,
+        center: Optional[Point] = None,
+    ) -> "Matrix2D":
+        fx = -1 if flip_x else 1
+        fy = -1 if flip_y else 1
+        return Matrix2D.scale_matrix(fx, fy, center)
+
+    @classmethod
+    def identical(cls) -> "Matrix2D":
+        return cls(a=1, b=0, c=0, d=1, e=0, f=0)
 
     @classmethod
     def from_properties(cls, properties: Matrix2DProperties) -> "Matrix2D":

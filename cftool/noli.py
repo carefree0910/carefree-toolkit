@@ -60,7 +60,7 @@ class Group(BaseModel):
 class INode(BaseModel):
     type: INodeType
     alias: str
-    bboxFields: Matrix2D
+    bboxFields: Optional[Matrix2D]  # only for single node
     layerParams: Optional[LayerParams]  # only for single node
     params: Optional[Dict[str, Any]]  # only for single node
     renderParams: Optional[RenderParams]  # only for single node
@@ -70,6 +70,9 @@ class INode(BaseModel):
         d = super().dict(**kwargs)
         d.pop("type")
         return dict(className=type2class_name[self.type], info=d)
+
+
+Group.update_forward_refs()
 
 
 class Graph(BaseModel):

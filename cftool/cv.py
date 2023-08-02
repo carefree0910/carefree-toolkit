@@ -1,4 +1,5 @@
 import math
+import base64
 
 import numpy as np
 
@@ -21,7 +22,6 @@ from .array import to_torch
 from .types import torch
 from .types import torchvision
 from .types import arr_type
-from .types import TNumberPair
 
 try:
     from PIL import Image
@@ -158,6 +158,13 @@ def save_images(arr: arr_type, path: str, n_row: Optional[int] = None) -> None:
     if n_row is None:
         n_row = math.ceil(math.sqrt(len(arr)))
     torchvision.utils.save_image(arr, path, normalize=True, nrow=n_row)
+
+
+def to_base64(image: TImage) -> str:
+    buffered = BytesIO()
+    image.save(buffered, format="PNG")
+    img_str = base64.b64encode(buffered.getvalue()).decode()
+    return f"data:image/png;base64,{img_str}"
 
 
 @dataclass

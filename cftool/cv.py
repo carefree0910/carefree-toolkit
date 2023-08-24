@@ -167,6 +167,13 @@ def to_base64(image: TImage) -> str:
     return f"data:image/png;base64,{img_str}"
 
 
+def from_base64(base64_string: str) -> TImage:
+    if Image is None:
+        raise ValueError("`pillow` is needed for `from_base64`")
+    base64_string = base64_string.split("base64,")[1]
+    return Image.open(BytesIO(base64.b64decode(base64_string)))
+
+
 @dataclass
 class ImageBox:
     l: int

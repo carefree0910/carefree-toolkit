@@ -92,7 +92,7 @@ class Graph(BaseModel):
             for node in nodes:
                 if node.alias == alias:
                     return node
-                if isinstance(node, Group):
+                if node.nodes is not None:
                     result = _search(node.nodes)
                     if result is not None:
                         return result

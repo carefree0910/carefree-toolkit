@@ -73,6 +73,7 @@ class INode(BaseModel):
     params: Optional[Dict[str, Any]]  # only for single node
     renderParams: Optional[RenderParams]  # only for single node
     nodes: Optional[List["INode"]]  # only for group
+    transform: Optional[Matrix2D]  # only for group
 
     def dict(self, **kwargs: Any) -> Dict[str, Any]:
         d = super().dict(**kwargs)

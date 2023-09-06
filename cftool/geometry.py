@@ -138,6 +138,12 @@ class Matrix2DProperties(BaseModel):
 TMatMul = TypeVar("TMatMul", bound=Union[Point, "Matrix2D"])
 
 
+class ExpandType(str, Enum):
+    IOU = "iou"
+    FIX_W = "fix_w"
+    FIX_H = "fix_h"
+
+
 class Matrix2D(BaseModel):
     a: float
     b: float
@@ -337,6 +343,47 @@ class Matrix2D(BaseModel):
     def move_to(self, point: Point) -> "Matrix2D":
         a, b, c, d, _, _ = self.tuple
         return Matrix2D(a, b, c, d, point.x, point.y)
+
+    def set_w(self, w: float) -> "Matrix2D":
+        properties = self.decompose()
+        properties.w = w
+        return Matrix2D.from_properties(properties)
+
+    def set_h(self, h: float) -> "Matrix2D":
+        properties = self.decompose()
+        properties.h = h
+        return Matrix2D.from_properties(properties)
+
+    def set_wh(self, w: float, h: float) -> "Matrix2D":
+        properties = self.decompose()
+        properties.w = w
+        properties.h = h
+        return Matrix2D.from_properties(properties)
+
+    def set_wh_ratio(
+        self,
+        wh_ratio: float,
+        *,
+        type: ExpandType = ExpandType.IOU,
+        pivot: PivotType = PivotType.CENTER,
+    ) -> "Matrix2D":
+        o_pivot = self.pivot(pivot)
+        w, h = self.wh
+        abs_h = abs(h)
+        h_sign = math.copysign(1.0, h)
+        if type == "fix_w":
+            new_w = w
+            new_h = h_sign * w / wh_ratio
+        elif type == "fix_h":
+            new_w = abs_h * wh_ratio
+            new_h = h
+        else:
+            area = w * abs_h
+            new_w = math.sqrt(area * wh_ratio)
+            new_h = h_sign * area / new_w
+        bbox = self.set_wh(new_w, new_h)
+        delta = o_pivot - bbox.pivot(pivot)
+        return bbox.move(delta)
 
     def decompose(self) -> Matrix2DProperties:
         w, h = self.wh

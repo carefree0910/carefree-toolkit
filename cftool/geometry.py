@@ -70,6 +70,10 @@ class Point:
     def tuple(self) -> Tuple[float, float]:
         return self.x, self.y
 
+    @property
+    def theta(self) -> float:
+        return math.atan2(self.y, self.x)
+
     def __add__(self, other: "Point") -> "Point":
         return Point(self.x + other.x, self.y + other.y)
 
@@ -80,6 +84,11 @@ class Point:
         x, y = self.x, self.y
         a, b, c, d, e, f = other.tuple
         return Point(x=a * x + c * y + e, y=b * x + d * y + f)
+
+    def rotate(self, theta: float) -> "Point":
+        l = math.sqrt(self.x**2 + self.y**2)
+        theta += self.theta
+        return Point(l * math.cos(theta), l * math.sin(theta))
 
     def inside(self, box: "Matrix2D") -> bool:
         x, y = (box.inverse @ self).tuple

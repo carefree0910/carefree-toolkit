@@ -22,6 +22,8 @@ from .array import to_torch
 from .types import torch
 from .types import torchvision
 from .types import arr_type
+from .geometry import Matrix2D
+from .geometry import Matrix2DProperties
 
 try:
     from PIL import Image
@@ -182,8 +184,28 @@ class ImageBox:
     b: int
 
     @property
+    def w(self) -> int:
+        return self.r - self.l
+
+    @property
+    def h(self) -> int:
+        return self.b - self.t
+
+    @property
+    def wh_ratio(self) -> float:
+        return self.w / self.h
+
+    @property
     def tuple(self) -> Tuple[int, int, int, int]:
         return self.l, self.t, self.r, self.b
+
+    @property
+    def matrix(self) -> Matrix2D:
+        return Matrix2D.from_properties(
+            Matrix2DProperties(
+                x=self.l, y=self.t, w=self.w, h=self.h, theta=0, skew_x=0, skew_y=0
+            )
+        )
 
     def copy(self) -> "ImageBox":
         return ImageBox(*self.tuple)

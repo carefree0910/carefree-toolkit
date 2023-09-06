@@ -354,11 +354,11 @@ class Matrix2D(BaseModel):
 
     def move(self, point: Point) -> "Matrix2D":
         a, b, c, d, e, f = self.tuple
-        return Matrix2D(a, b, c, d, point.x + e, point.y + f)
+        return Matrix2D(a=a, b=b, c=c, d=d, e=point.x + e, f=point.y + f)
 
     def move_to(self, point: Point) -> "Matrix2D":
         a, b, c, d, _, _ = self.tuple
-        return Matrix2D(a, b, c, d, point.x, point.y)
+        return Matrix2D(a=a, b=b, c=c, d=d, e=point.x, f=point.y)
 
     def set_w(self, w: float) -> "Matrix2D":
         properties = self.decompose()

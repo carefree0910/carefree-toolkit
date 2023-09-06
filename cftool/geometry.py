@@ -70,6 +70,12 @@ class Point:
     def tuple(self) -> Tuple[float, float]:
         return self.x, self.y
 
+    def __add__(self, other: "Point") -> "Point":
+        return Point(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other: "Point") -> "Point":
+        return Point(self.x - other.x, self.y - other.y)
+
     def __rmatmul__(self, other: "Matrix2D") -> "Point":
         x, y = self.x, self.y
         a, b, c, d, e, f = other.tuple

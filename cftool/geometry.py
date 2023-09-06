@@ -200,6 +200,22 @@ class Matrix2D(BaseModel):
         return w, h
 
     @property
+    def abs_wh(self) -> Tuple[float, float]:
+        w, h = self.wh
+        return w, abs(h)
+
+    @property
+    def wh_ratio(self) -> float:
+        w, h = self.wh
+        h_sign = math.copysign(1.0, h)
+        return w / max(abs(h), 1.0e-12) * h_sign
+
+    @property
+    def abs_wh_ratio(self) -> float:
+        w, h = self.abs_wh
+        return w / max(h, 1.0e-12)
+
+    @property
     def area(self) -> float:
         w, h = self.wh
         return w * abs(h)

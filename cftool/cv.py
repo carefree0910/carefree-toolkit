@@ -337,6 +337,25 @@ class ImageProcessor:
             transformed_channels.append(transformed)
         return np.stack(transformed_channels, axis=2)
 
+    @classmethod
+    def harmonization(cls, fg: TImage, bg: TImage, num_fade_pixels: int = 50) -> TImage:
+        if Image is None:
+            raise ValueError("`pillow` is needed for `harmonization`")
+        if fg.mode != "RGBA":
+            fg = fg.convert("RGBA")
+        if bg.mode != "RGBA":
+            bg = bg.convert("RGBA")
+        fg_array = np.array(fg)
+        alpha_channel = fg_array[:, :, 3]
+        mat = cv2.distanceTransform(alpha_channel, cv2.DIST_L2, 3)
+        ring_mask = mat <= num_fade_pixels
+        inv_ring_mask = ~ring_mask
+        mat[inv_ring_mask] = alpha_channel[inv_ring_mask]
+        ring_max = mat[ring_mask].max()
+        mat[ring_mask] = 255 * mat[ring_mask] / ring_max
+        fg_array[:, :, 3] = mat
+        return Image.alpha_composite(bg, Image.fromarray(fg_array))
+
 
 class Padding(WithRegister):
     d = padding_modes

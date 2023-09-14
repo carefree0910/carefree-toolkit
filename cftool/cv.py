@@ -202,9 +202,7 @@ class ImageBox:
     @property
     def matrix(self) -> Matrix2D:
         return Matrix2D.from_properties(
-            Matrix2DProperties(
-                x=self.l, y=self.t, w=self.w, h=self.h, theta=0, skew_x=0, skew_y=0
-            )
+            Matrix2DProperties(x=self.l, y=self.t, w=self.w, h=self.h)
         )
 
     def copy(self) -> "ImageBox":

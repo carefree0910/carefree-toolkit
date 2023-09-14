@@ -139,9 +139,9 @@ class Matrix2DProperties(BaseModel):
     y: float
     w: float
     h: float
-    theta: float
-    skew_x: float
-    skew_y: float
+    theta: float = 0.0
+    skew_x: float = 0.0
+    skew_y: float = 0.0
 
 
 TMatMul = TypeVar("TMatMul", bound=Union[Point, "Matrix2D"])

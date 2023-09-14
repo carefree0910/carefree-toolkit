@@ -342,7 +342,7 @@ class ImageProcessor:
         return np.stack(transformed_channels, axis=2)
 
     @classmethod
-    def harmonization(cls, fg: TImage, bg: TImage, num_fade_pixels: int = 50) -> TImage:
+    def paste(cls, fg: TImage, bg: TImage, *, num_fade_pixels: int = 50) -> TImage:
         if Image is None:
             raise ValueError("`pillow` is needed for `harmonization`")
         if fg.mode != "RGBA":

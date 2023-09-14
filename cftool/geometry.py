@@ -153,6 +153,14 @@ class ExpandType(str, Enum):
     FIX_H = "fix_h"
 
 
+@dataclass
+class Box:
+    left: Point
+    top: Point
+    right: Point
+    bottom: Point
+
+
 class Matrix2D(BaseModel):
     a: float
     b: float
@@ -226,12 +234,25 @@ class Matrix2D(BaseModel):
 
     @property
     def area(self) -> float:
-        w, h = self.wh
-        return w * abs(h)
+        w, h = self.abs_wh
+        return w * h
 
     @property
     def theta(self) -> float:
         return -math.atan2(self.b, self.a)
+
+    @property
+    def shear(self) -> float:
+        a, b, c, d = self.a, self.b, self.c, self.d
+        return math.atan2(a * c + b * d, a**2 + b**2)
+
+    @property
+    def translation(self) -> Point:
+        return Point(self.e, self.f)
+
+    @property
+    def determinant(self) -> float:
+        return self.a * self.d - self.b * self.c
 
     @property
     def matrix(self) -> np.ndarray:
@@ -312,8 +333,59 @@ class Matrix2D(BaseModel):
         return [Line(corner, corners[(i + 1) % 4]) for i, corner in enumerate(corners)]
 
     @property
+    def outer_most(self) -> Box:
+        corner_points = self.corner_points
+        xs = np.array([point.x for point in corner_points])
+        ys = np.array([point.y for point in corner_points])
+        left = corner_points[xs.argmin().item()]
+        right = corner_points[xs.argmax().item()]
+        top = corner_points[ys.argmin().item()]
+        bottom = corner_points[ys.argmax().item()]
+        return Box(left, top, right, bottom)
+
+    @property
+    def bounding(self) -> "Matrix2D":
+        box = self.outer_most
+        return Matrix2D.from_properties(
+            Matrix2DProperties(
+                x=box.left.x,
+                y=box.top.y,
+                w=box.right.x - box.left.x,
+                h=box.bottom.y - box.top.y,
+            )
+        )
+
+    @property
     def css_property(self) -> str:
         return f"matrix({self.a},{self.b},{self.c},{self.d},{self.e},{self.f})"
+
+    @property
+    def no_move(self) -> "Matrix2D":
+        return Matrix2D(a=self.a, b=self.b, c=self.c, d=self.d, e=0.0, f=0.0)
+
+    @property
+    def no_skew(self) -> "Matrix2D":
+        return self @ Matrix2D.skew_matrix(-self.shear, 0.0, Point.origin())
+
+    @property
+    def no_scale(self) -> "Matrix2D":
+        a, b, c, d, e, f = self.tuple
+        w, h = self.wh
+        return Matrix2D(a=a / w, b=b / w, c=c / h, d=d / h, e=e, f=f)
+
+    @property
+    def no_scale_but_flip(self) -> "Matrix2D":
+        a, b, c, d, e, f = self.tuple
+        w, h = self.abs_wh
+        return Matrix2D(a=a / w, b=b / w, c=c / h, d=d / h, e=e, f=f)
+
+    @property
+    def no_rotation(self) -> "Matrix2D":
+        return self.rotate(-self.theta, self.translation)
+
+    @property
+    def no_move_scale_but_flip(self) -> "Matrix2D":
+        return self.no_scale_but_flip.no_move
 
     def scale(
         self,
@@ -420,7 +492,6 @@ class Matrix2D(BaseModel):
             h=h,
             theta=self.theta,
             skew_x=math.atan2(a * c + b * d, w**2),
-            skew_y=0.0,
         )
 
     @classmethod
@@ -489,6 +560,25 @@ class Matrix2D(BaseModel):
             @ cls.rotation_matrix(properties.theta)
             @ cls.scale_matrix(properties.w, properties.h)
             @ cls.skew_matrix(properties.skew_x, properties.skew_y)
+        )
+
+    @classmethod
+    def from_css_property(cls, css_property: str) -> "Matrix2D":
+        css_property = css_property.replace("matrix(", "").replace(")", "")
+        a, b, c, d, e, f = [float(x.strip()) for x in css_property.split(",")]
+        return cls(a=a, b=b, c=c, d=d, e=e, f=f)
+
+    @classmethod
+    def get_bounding_of(cls, bboxes: List["Matrix2D"]) -> "Matrix2D":
+        if not bboxes:
+            return cls.identical()
+        boxes = [bbox.outer_most for bbox in bboxes]
+        lx = min(box.left.x for box in boxes)
+        rx = max(box.right.x for box in boxes)
+        ty = min(box.top.y for box in boxes)
+        by = max(box.bottom.y for box in boxes)
+        return Matrix2D.from_properties(
+            Matrix2DProperties(x=lx, y=ty, w=rx - lx, h=by - ty)
         )
 
 

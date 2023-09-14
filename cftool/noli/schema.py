@@ -7,7 +7,7 @@ from typing import Optional
 from typing import Generator
 from pydantic import BaseModel
 
-from .geometry import Matrix2D
+from ..geometry import Matrix2D
 
 
 class SingleNodeType(str, Enum):
@@ -78,7 +78,7 @@ class INode(BaseModel):
     def dict(self, **kwargs: Any) -> Dict[str, Any]:
         d = super().dict(**kwargs)
         d.pop("type")
-        return dict(className=type2class_name[self.type], info=d)
+        return dict(className=get_class_name(self.type), info=d)
 
 
 Group.update_forward_refs()
@@ -124,7 +124,7 @@ class Graph(BaseModel):
         return None
 
 
-class_name2type = {
+_class_name2type = {
     "PolygonShapeNode": SingleNodeType.POLYGON,
     "EllipseShapeNode": SingleNodeType.ELLIPSE,
     "RectangleShapeNode": SingleNodeType.RECTANGLE,
@@ -139,72 +139,15 @@ class_name2type = {
     "Group": GroupType.GROUP,
     "Frame": GroupType.FRAME,
 }
-type2class_name = {v: k for k, v in class_name2type.items()}
+_type2class_name = {v: k for k, v in _class_name2type.items()}
 
 
-def _parse_single_node(info: Dict[str, Any]) -> SingleNode:
-    core_info = info["info"]
-    return SingleNode(type=class_name2type[info["className"]], **core_info)
+def get_node_type(class_name: str) -> INodeType:
+    return _class_name2type[class_name]
 
 
-def _parse_group(info: Dict[str, Any]) -> Group:
-    core_info = info["info"]
-    return Group(
-        type=GroupType.GROUP,
-        alias=core_info["alias"],
-        transform=Matrix2D(**core_info["transform"]),
-        nodes=list(map(parse_node, core_info["nodes"])),
-    )
-
-
-def parse_node(info: Dict[str, Any]) -> INode:
-    class_name = info["className"]
-    if class_name == "Group":
-        return _parse_group(info)
-    return _parse_single_node(info)
-
-
-def parse_graph(render_info_list: List[Dict[str, Any]]) -> Graph:
-    return Graph(root_nodes=list(map(parse_node, render_info_list)))
-
-
-# specific utility functions
-
-DEFAULT_RENDER_TYPE = RenderType.COVER
-
-
-def get_img_transform(w: float, h: float, render_params: RenderParams) -> Matrix2D:
-    img_transform = Matrix2D.scale_matrix(w, h)
-    crop_transform = render_params.cropFields
-    if crop_transform is None:
-        return img_transform
-    return img_transform @ crop_transform
-
-
-def get_img_render_transform(
-    bbox: Matrix2D,
-    img_w: float,
-    img_h: float,
-    render_params: RenderParams,
-) -> Matrix2D:
-    img_transform = get_img_transform(img_w, img_h, render_params)
-    render_transform = img_transform.inverse
-    render_type = render_params.renderType or DEFAULT_RENDER_TYPE
-    if render_type == RenderType.FILL:
-        return render_transform
-    w, h = bbox.wh
-    h = max(1.0e-8, abs(h))
-    area_wh_ratio = w / h
-    img_wh_ratio = img_w / img_h
-    ratio = img_wh_ratio / area_wh_ratio
-    is_fit = render_type == RenderType.FIT
-    if (ratio >= 1.0 and not is_fit) or (ratio < 1.0 and is_fit):
-        w_scale, h_scale = ratio, 1.0
-    else:
-        w_scale, h_scale = 1.0, 1.0 / ratio
-    scale_center = Matrix2D.identical().center
-    render_transform = render_transform.scale(w_scale, h_scale, scale_center)
-    return render_transform
+def get_class_name(node_type: INodeType) -> str:
+    return _type2class_name[node_type]
 
 
 __all__ = [
@@ -218,8 +161,6 @@ __all__ = [
     "Group",
     "INode",
     "Graph",
-    "parse_node",
-    "parse_graph",
-    "get_img_transform",
-    "get_img_render_transform",
+    "get_node_type",
+    "get_class_name",
 ]

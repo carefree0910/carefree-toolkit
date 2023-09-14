@@ -67,6 +67,12 @@ def to_uint8(normalized_img: arr_type) -> arr_type:
     return torch.clamp(normalized_img * 255.0, 0.0, 255.0).to(torch.uint8)
 
 
+def to_alpha_channel(image: TImage) -> TImage:
+    if image.mode == "RGBA":
+        return image.split()[3]
+    return image.convert("L")
+
+
 def np_to_bytes(img_arr: ndarray) -> bytes:
     if Image is None:
         raise ValueError("`pillow` is needed for `np_to_bytes`")

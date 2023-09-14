@@ -342,6 +342,10 @@ class ImageProcessor:
         return np.stack(transformed_channels, axis=2)
 
     @classmethod
+    def get_distances_mat(cls, alpha_channel: ndarray) -> ndarray:
+        return cv2.distanceTransform(alpha_channel, cv2.DIST_L2, 3)
+
+    @classmethod
     def paste(cls, fg: TImage, bg: TImage, *, num_fade_pixels: int = 50) -> TImage:
         if Image is None:
             raise ValueError("`pillow` is needed for `harmonization`")
@@ -351,7 +355,7 @@ class ImageProcessor:
             bg = bg.convert("RGBA")
         fg_array = np.array(fg)
         alpha_channel = fg_array[:, :, 3]
-        mat = cv2.distanceTransform(alpha_channel, cv2.DIST_L2, 3)
+        mat = cls.get_distances_mat(alpha_channel)
         ring_mask = mat <= num_fade_pixels
         inv_ring_mask = ~ring_mask
         mat[inv_ring_mask] = alpha_channel[inv_ring_mask]

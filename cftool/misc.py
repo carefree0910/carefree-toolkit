@@ -34,6 +34,7 @@ from typing import Callable
 from typing import Iterable
 from typing import Optional
 from typing import Protocol
+from typing import Coroutine
 from typing import NamedTuple
 from argparse import Namespace
 from datetime import datetime
@@ -60,6 +61,7 @@ dill._dill._reverse_typemap["ClassType"] = type
 
 
 TFnResponse = TypeVar("TFnResponse")
+TRetryResponse = TypeVar("TRetryResponse")
 
 
 class Fn(Protocol):
@@ -488,6 +490,34 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 def get_err_msg(err: Exception) -> str:
     return " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+
+
+async def retry(
+    fn: Callable[[], Coroutine[None, None, TRetryResponse]],
+    num_retry: Optional[int] = None,
+    *,
+    health_check: Optional[Callable[[TRetryResponse], bool]] = None,
+    error_verbose_fn: Optional[Callable[[TRetryResponse], None]] = None,
+) -> TRetryResponse:
+    counter = 0
+    if num_retry is None:
+        num_retry = 1
+    while counter < num_retry:
+        try:
+            res = await fn()
+            if health_check is None or health_check(res):
+                if counter > 0:
+                    print_info(f"succeeded after {counter} retries")
+                return res
+            if error_verbose_fn is not None:
+                error_verbose_fn(res)
+            else:
+                raise ValueError("response did not pass health check")
+        except Exception as e:
+            print_warning(f"{e}, retrying ({counter + 1})")
+        finally:
+            counter += 1
+    raise ValueError(f"failed after {num_retry} retries")
 
 
 # util modules

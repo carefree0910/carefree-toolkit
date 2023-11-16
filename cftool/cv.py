@@ -383,7 +383,7 @@ class Padding(WithRegister):
     d = padding_modes
 
     @abstractmethod
-    def pad(self, image: Image.Image, alpha: Image.Image, **kwargs: Any) -> Image.Image:
+    def pad(self, image: TImage, alpha: TImage, **kwargs: Any) -> TImage:
         pass
 
 
@@ -391,12 +391,12 @@ class Padding(WithRegister):
 class CV2NS(Padding):
     def pad(
         self,
-        image: Image.Image,
-        alpha: Image.Image,
+        image: TImage,
+        alpha: TImage,
         *,
         radius: int = 5,
         **kwargs: Any,
-    ) -> Image.Image:
+    ) -> TImage:
         if cv2 is None:
             raise ValueError("`cv2` is needed for `CV2NS`")
         img_arr = np.array(image.convert("RGB"))[..., ::-1]
@@ -408,12 +408,12 @@ class CV2NS(Padding):
 class CV2Telea(Padding):
     def pad(
         self,
-        image: Image.Image,
-        alpha: Image.Image,
+        image: TImage,
+        alpha: TImage,
         *,
         radius: int = 5,
         **kwargs: Any,
-    ) -> Image.Image:
+    ) -> TImage:
         if cv2 is None:
             raise ValueError("`cv2` is needed for `CV2Telea`")
         img_arr = np.array(image.convert("RGB"))[..., ::-1]

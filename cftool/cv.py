@@ -124,7 +124,9 @@ def read_image(
     alpha = None
     original = image
     if image.mode == "RGBA":
-        alpha = padding_mask = image.split()[3]
+        alpha = image.split()[3]
+        if padding_mask is None:
+            padding_mask = Image.fromarray(255 - np.array(alpha))
     if not to_mask and not to_gray:
         if padding_mask is None or padding_mode is None:
             image = to_rgb(image)

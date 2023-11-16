@@ -45,7 +45,9 @@ class ReadImageResponse(NamedTuple):
     image: np.ndarray
     alpha: Optional[np.ndarray]
     original: TImage
+    anchored: TImage
     original_size: Tuple[int, int]
+    anchored_size: Tuple[int, int]
 
 
 def to_rgb(image: TImage, color: Tuple[int, int, int] = (255, 255, 255)) -> TImage:
@@ -145,6 +147,8 @@ def read_image(
     if anchor is not None:
         w, h = map(get_suitable_size, (w, h), (anchor, anchor))
     image = image.resize((w, h), resample=resample)
+    anchored = image
+    anchored_size = w, h
     image = np.array(image)
     if normalize:
         image = image.astype(np.float32) / 255.0
@@ -157,7 +161,14 @@ def read_image(
             image = image[None, None]
         else:
             image = image[None].transpose(0, 3, 1, 2)
-    return ReadImageResponse(image, alpha, original, (original_w, original_h))
+    return ReadImageResponse(
+        image,
+        alpha,
+        original,
+        anchored,
+        (original_w, original_h),
+        anchored_size,
+    )
 
 
 def save_images(arr: arr_type, path: str, n_row: Optional[int] = None) -> None:

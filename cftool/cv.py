@@ -46,6 +46,7 @@ class ReadImageResponse(NamedTuple):
     alpha: Optional[np.ndarray]
     original: TImage
     anchored: TImage
+    to_masked: Optional[TImage]
     original_size: Tuple[int, int]
     anchored_size: Tuple[int, int]
 
@@ -140,6 +141,7 @@ def read_image(
         else:
             image = image.convert("L")
     original_w, original_h = image.size
+    to_masked = image if to_mask else None
     if max_wh is None:
         w, h = original_w, original_h
     else:
@@ -166,6 +168,7 @@ def read_image(
         alpha,
         original,
         anchored,
+        to_masked,
         (original_w, original_h),
         anchored_size,
     )

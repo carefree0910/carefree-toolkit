@@ -14,6 +14,7 @@ from typing import ContextManager
 from zipfile import ZipFile
 from tempfile import mkdtemp
 
+from .misc import shallow_copy_dict
 from .misc import WithRegister
 from .misc import ISerializable
 from .misc import ISerializableDataClass
@@ -191,7 +192,7 @@ class IPipeline(ISerializable["IPipeline"], metaclass=ABCMeta):
         previous: Dict[str, TBlock] = self.block_mappings
         for block in blocks:
             check_requirement(block, previous)
-            block.previous = previous
+            block.previous = shallow_copy_dict(previous)
             self.before_block_build(block)
             block.build(self.config)
             self.after_block_build(block)

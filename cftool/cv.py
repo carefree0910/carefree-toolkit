@@ -29,9 +29,11 @@ try:
     from PIL import Image
 
     TImage = Image.Image
+    LANCZOS = Image.Resampling.LANCZOS
 except:
     Image = None
     TImage = None
+    LANCZOS = None
 try:
     import cv2
 except:
@@ -110,7 +112,7 @@ def read_image(
     anchor: Optional[int],
     to_gray: bool = False,
     to_mask: bool = False,
-    resample: Any = Image.LANCZOS,
+    resample: Any = LANCZOS,
     normalize: bool = True,
     padding_mode: Optional[str] = None,
     padding_mask: Optional[TImage] = None,

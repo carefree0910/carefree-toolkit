@@ -7,6 +7,7 @@ import time
 import errno
 import random
 import shutil
+import asyncio
 import decimal
 import inspect
 import logging
@@ -47,6 +48,7 @@ from dataclasses import asdict
 from dataclasses import fields
 from dataclasses import dataclass
 from dataclasses import Field
+from concurrent.futures import ThreadPoolExecutor
 
 from .types import configs_type
 from .types import np_dict_type
@@ -62,6 +64,7 @@ dill._dill._reverse_typemap["ClassType"] = type
 
 TFnResponse = TypeVar("TFnResponse")
 TRetryResponse = TypeVar("TRetryResponse")
+TFutureResponse = TypeVar("TFutureResponse")
 
 
 class Fn(Protocol):
@@ -518,6 +521,17 @@ async def retry(
         finally:
             counter += 1
     raise ValueError(f"failed after {num_retry} retries")
+
+
+async def offload(future: Coroutine[Any, Any, TFutureResponse]) -> TFutureResponse:
+    loop = asyncio.get_event_loop()
+    with ThreadPoolExecutor() as executor:
+        return await loop.run_in_executor(
+            executor,
+            lambda new_loop, f: new_loop.run_until_complete(f),
+            asyncio.new_event_loop(),
+            future,
+        )
 
 
 # util modules

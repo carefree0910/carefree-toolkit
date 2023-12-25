@@ -14,6 +14,7 @@ import logging
 import hashlib
 import zipfile
 import operator
+import importlib
 import threading
 import unicodedata
 
@@ -37,6 +38,7 @@ from typing import Optional
 from typing import Protocol
 from typing import Coroutine
 from typing import NamedTuple
+from pathlib import Path
 from argparse import Namespace
 from datetime import datetime
 from datetime import timedelta
@@ -493,6 +495,21 @@ def check(constraints: Dict[str, Union[str, List[str]]], *, raise_error: bool = 
 
 def get_err_msg(err: Exception) -> str:
     return " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
+
+
+def import_modules(path: Union[str, Path], prefix: str) -> None:
+    if isinstance(path, str):
+        path = Path(path)
+    _globals = inspect.stack()[1][0].f_globals
+    for path in path.parent.glob("*.py"):
+        if path.stem == "__init__":
+            continue
+        module = importlib.import_module(f"{prefix}.{path.stem}")
+        if "__all__" in module.__dict__:
+            names = module.__dict__["__all__"]
+        else:
+            names = [x for x in module.__dict__ if not x.startswith("_")]
+        _globals.update({k: getattr(module, k) for k in names})
 
 
 async def retry(

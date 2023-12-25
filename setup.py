@@ -10,6 +10,7 @@ with open("README.md") as f:
 
 INSTALL_REQUIRES = [
     "dill",
+    "rich",
     "tqdm",
     "future",
     "psutil",

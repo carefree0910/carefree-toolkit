@@ -497,13 +497,14 @@ def get_err_msg(err: Exception) -> str:
     return " | ".join(map(repr, sys.exc_info()[:2] + (str(err),)))
 
 
-def import_modules(prefix: str) -> None:
+def import_modules() -> None:
     previous = inspect.stack()[1][0]
     _globals = previous.f_globals
+    package = _globals["__package__"]
     for path in Path(inspect.getfile(previous)).parent.glob("*.py"):
         if path.stem == "__init__":
             continue
-        module = importlib.import_module(f"{prefix}.{path.stem}")
+        module = importlib.import_module(f".{path.stem}", package)
         if "__all__" in module.__dict__:
             names = module.__dict__["__all__"]
         else:

@@ -84,6 +84,9 @@ class Bundle(Generic[TItemData]):
     def __iter__(self) -> Iterator[Item[TItemData]]:
         return iter(self._items)
 
+    def __contains__(self, key: str) -> bool:
+        return self.get(key) is not None
+
     @property
     def first(self) -> Optional[Item[TItemData]]:
         if self.is_empty:

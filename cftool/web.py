@@ -113,7 +113,7 @@ async def post(
 
 
 def log_endpoint(endpoint: str, data: BaseModel) -> None:
-    msg = f"{endpoint} endpoint entered with kwargs : {json.dumps(data.dict(), ensure_ascii=False)}"
+    msg = f"{endpoint} endpoint entered with kwargs : {json.dumps(data.model_dump(), ensure_ascii=False)}"
     logging.debug(msg)
 
 

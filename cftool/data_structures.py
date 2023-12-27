@@ -418,7 +418,7 @@ class Workflow(Bundle[WorkNode]):
         return ToposortResult(in_edges, hierarchy, edge_labels)
 
     def to_json(self) -> List[Dict[str, Any]]:
-        return [node.data.dict() for node in self]
+        return [node.data.model_dump() for node in self]
 
     @classmethod
     def from_json(cls, data: List[Dict[str, Any]]) -> "Workflow":

@@ -7,7 +7,8 @@ from typing import Tuple
 from typing import Union
 from typing import Callable
 from typing import Optional
-from typing import NamedTuple
+from dataclasses import dataclass
+
 
 try:
     import torch
@@ -15,20 +16,21 @@ try:
     import torch.nn.functional as F
 except:
 
-    class _torch(NamedTuple):
-        device: Any
-        Tensor: Any
-        from_numpy: Callable
+    @dataclass
+    class torch:
+        device: Any = None
+        Tensor: Any = None
+        from_numpy: Callable = None
 
-    class _torchvision_utils(NamedTuple):
-        make_grid: Callable
-        save_image: Callable
+    @dataclass
+    class torchvision_utils:
+        make_grid: Callable = None
+        save_image: Callable = None
 
-    class _torchvision(NamedTuple):
-        utils: _torchvision_utils
+    @dataclass
+    class torchvision:
+        utils: torchvision_utils
 
-    torch = _torch(None, None, lambda: None)
-    torchvision = _torchvision_utils(lambda: None, lambda: None)
     F = None
 
 

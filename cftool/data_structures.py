@@ -216,11 +216,39 @@ class Types(Generic[TTypes]):
 
 
 class IPoolItem:
+    """
+    Life cycle of a pool item:
+
+        (without context) init -> collect
+        (with context)    init -> (everytime) load -> (everytime) unload -> collect
+
+    """
+
     def load(self, **kwargs: Any) -> None:
-        """Will be called evertime the pool requires the item"""
+        """Will be called everytime the pool loads the item with context"""
 
     def unload(self) -> None:
-        """Will be called when the pool unloads the item"""
+        """Will be called everytime the pool finishes using the item with context"""
+
+    def collect(self) -> None:
+        """Will be called when the pool removes the item"""
+
+
+class PoolItemContext:
+    def __init__(self, item: Any, **kwargs: Any) -> None:
+        self.item = item
+        self.kwargs = kwargs
+
+    def __enter__(self) -> Any:
+        load_fn = getattr(self.item, "load", None)
+        if load_fn is not None:
+            load_fn(**self.kwargs)
+        return self.item
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        unload_fn = getattr(self.item, "unload", None)
+        if unload_fn is not None:
+            unload_fn()
 
 
 class PoolItemManager(Generic[TPoolItem]):
@@ -234,33 +262,30 @@ class PoolItemManager(Generic[TPoolItem]):
         force_keep: bool = False,
     ):
         self.init_fn = init_fn
-        self.load_time = datetime.now()
+        self.use_time = datetime.now()
         self.force_keep = force_keep
         self._item = init_fn() if init or force_keep else None
 
     @property
-    def item(self) -> TPoolItem:
-        if self._item is None:
-            raise ValueError("item is not loaded")
-        return self._item
-
-    @property
-    def loaded(self) -> bool:
+    def ready(self) -> bool:
         return self._item is not None
 
-    def load(self, **kwargs: Any) -> TPoolItem:
-        self.load_time = datetime.now()
+    def get(self) -> TPoolItem:
+        self.use_time = datetime.now()
         if self._item is None:
             self._item = self.init_fn()
-        load_fn = getattr(self._item, "load", None)
-        if load_fn is not None:
-            load_fn(**kwargs)
         return self._item
 
-    def unload(self) -> None:
-        unload_fn = getattr(self._item, "unload", None)
-        if unload_fn is not None:
-            unload_fn()
+    def use(self, **kwargs: Any) -> PoolItemContext:
+        self.use_time = datetime.now()
+        if self._item is None:
+            self._item = self.init_fn()
+        return PoolItemContext(self._item, **kwargs)
+
+    def collect(self) -> None:
+        collect_fn = getattr(self._item, "collect", None)
+        if collect_fn is not None:
+            collect_fn()
         del self._item
         self._item = None
         gc.collect()
@@ -287,9 +312,15 @@ class Pool(Generic[TPoolItem]):
 
     @property
     def activated(self) -> Dict[str, PoolItemManager[TPoolItem]]:
-        return {k: m for k, m in self.pool.items() if m.loaded and not m.force_keep}
+        return {k: m for k, m in self.pool.items() if m.ready and not m.force_keep}
 
     def register(self, key: str, init_fn: PItemInit, **kwargs: Any) -> None:
+        """
+        Register a new item to the pool.
+
+        This method will create a new item manager and store it in the pool.
+        > `kwargs` will be passed to the item manager's constructor.
+        """
         if key in self.pool:
             if self.allow_duplicate:
                 return
@@ -298,19 +329,44 @@ class Pool(Generic[TPoolItem]):
         manager = self.t_manager(init_fn, init=init, **kwargs)
         self.pool[key] = manager
 
-    def get(self, key: str, **kwargs: Any) -> TPoolItem:
+    def get(self, key: str) -> TPoolItem:
+        """
+        Get a registered item from the pool without context.
+
+        - If `limit` is reached, this method will try to remove the 'earliest' item.
+        """
+
+        return self._fetch(key).get()
+
+    def use(self, key: str, **kwargs: Any) -> PoolItemContext:
+        """
+        Use a registered item from the pool with context.
+
+        - If `limit` is reached, this method will try to remove the 'earliest' item.
+        > `kwargs` will be passed to the item's `load` method, if it exists.
+        """
+
+        return self._fetch(key).use(**kwargs)
+
+    def _fetch(self, key: str) -> PoolItemManager:
+        """
+        Fetch the item manager from the pool.
+
+        - If `limit` is reached, this method will try to remove the 'earliest' item.
+        """
+
         target = self.pool.get(key)
         if target is None:
             raise ValueError(f"key '{key}' does not exist")
-        if not target.loaded:
-            # need to unload earliest item before loading the target
-            load_times = {k: m.load_time for k, m in self.activated.items()}
-            earliest_key = list(sort_dict_by_value(load_times).keys())[0]
+        if not target.ready:
+            # need to remove earliest item before using the target
+            use_times = {k: m.use_time for k, m in self.activated.items()}
+            earliest_key = list(sort_dict_by_value(use_times).keys())[0]
             earliest = self.pool[earliest_key]
-            earliest.unload()
-            get_time_str = lambda m: datetime.strftime(m.load_time, TIME_FORMAT)
+            earliest.collect()
+            get_time_str = lambda m: datetime.strftime(m.use_time, TIME_FORMAT)
             print_info(
-                f"'{earliest_key}' (last updated: {get_time_str(earliest)}) is unloaded "
+                f"'{earliest_key}' (last updated: {get_time_str(earliest)}) is collected "
                 f"to make room for '{key}' (last updated: {get_time_str(target)})"
             )
-        return target.load(**kwargs)
+        return target

@@ -2104,7 +2104,7 @@ class OPTBase(ABC):
     def update_from_env(self) -> None:
         env_opt_json = os.environ.get(self.env_key)
         if env_opt_json is not None:
-            self._opt.update(json.loads(env_opt_json))
+            update_dict(json.loads(env_opt_json), self._opt)
 
     def opt_context(self, increment: Dict[str, Any]) -> Any:
         class _:
@@ -2113,10 +2113,10 @@ class OPTBase(ABC):
                 self._backup = shallow_copy_dict(instance._opt)
 
             def __enter__(self) -> None:
-                instance._opt.update(self._increment)
+                update_dict(self._increment, instance._opt)
 
             def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
-                instance._opt.update(self._backup)
+                instance._opt = self._backup
 
         instance = self
         return _()

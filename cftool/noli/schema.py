@@ -75,13 +75,13 @@ class INode(BaseModel):
     nodes: Optional[List["INode"]]  # only for group
     transform: Optional[Matrix2D]  # only for group
 
-    def dict(self, **kwargs: Any) -> Dict[str, Any]:
-        d = super().dict(**kwargs)
+    def model_dump(self, **kwargs: Any) -> Dict[str, Any]:
+        d = super().model_dump(**kwargs)
         d.pop("type")
         return dict(className=get_class_name(self.type), info=d)
 
 
-Group.update_forward_refs()
+Group.model_rebuild()
 
 
 class Graph(BaseModel):

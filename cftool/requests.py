@@ -11,7 +11,7 @@ try:
     from aiohttp import ClientResponse
     from aiohttp.typedefs import LooseHeaders
 except:
-    ClientSession = None
+    ClientSession = None  # type: ignore
 
 
 @dataclass
@@ -116,6 +116,7 @@ class Requests:
             return self._intercept_response_error(res)
         except Exception as e:
             self._intercept_request_error(e)
+            raise
 
     async def _request_json(
         self,
@@ -147,7 +148,6 @@ class Requests:
     def _intercept_request_error(self, e: Exception) -> None:
         if self.request_error is not None:
             self.request_error(e)
-        raise e
 
     def _intercept_response(self, r: ClientResponse) -> ClientResponse:
         if self.before_response is None:

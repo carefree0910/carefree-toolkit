@@ -326,7 +326,7 @@ class Pool(Generic[TPoolItem]):
                 return
             raise ValueError(f"key '{key}' already exists")
         init = self.limit < 0 or len(self.activated) < self.limit
-        manager = self.t_manager(init_fn, init=init, **kwargs)
+        manager: PoolItemManager = self.t_manager(init_fn, init=init, **kwargs)
         self.pool[key] = manager
 
     def get(self, key: str) -> TPoolItem:

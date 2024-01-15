@@ -171,11 +171,11 @@ class Matrix2D(BaseModel):
 
     def __matmul__(self, other: TMatMul) -> TMatMul:
         if isinstance(other, Point):
-            return other.__rmatmul__(self)
+            return other.__rmatmul__(self)  # type: ignore
         if isinstance(other, Matrix2D):
             a1, b1, c1, d1, e1, f1 = self.tuple
             a2, b2, c2, d2, e2, f2 = other.tuple
-            return Matrix2D(
+            return Matrix2D(  # type: ignore
                 a=a1 * a2 + c1 * b2,
                 b=b1 * a2 + d1 * b2,
                 c=a1 * c2 + c1 * d2,

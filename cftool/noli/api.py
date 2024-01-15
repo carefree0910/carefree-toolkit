@@ -14,7 +14,7 @@ from ..geometry import Matrix2D
 
 def _parse_single_node(info: Dict[str, Any]) -> SingleNode:
     core_info = info["info"]
-    return SingleNode(type=get_node_type(info["className"]), **core_info)
+    return SingleNode(type=get_node_type(info["className"]), **core_info)  # type: ignore
 
 
 def _parse_group(info: Dict[str, Any]) -> Group:
@@ -30,8 +30,8 @@ def _parse_group(info: Dict[str, Any]) -> Group:
 def parse_node(info: Dict[str, Any]) -> INode:
     class_name = info["className"]
     if class_name == "Group":
-        return _parse_group(info)
-    return _parse_single_node(info)
+        return _parse_group(info)  # type: ignore
+    return _parse_single_node(info)  # type: ignore
 
 
 def parse_graph(render_info_list: List[Dict[str, Any]]) -> Graph:

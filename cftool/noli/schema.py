@@ -108,7 +108,7 @@ class Graph(BaseModel):
         def _generate(nodes: List[INode]) -> Generator[SingleNode, None, None]:
             for node in nodes:
                 if node.type in SingleNodeType:
-                    yield node
+                    yield node  # type: ignore
                 elif node.type in GroupType:
                     if node.nodes is None:
                         raise ValueError(f"`Group` '{node.alias}' has no nodes")
@@ -143,7 +143,7 @@ _type2class_name = {v: k for k, v in _class_name2type.items()}
 
 
 def get_node_type(class_name: str) -> INodeType:
-    return _class_name2type[class_name]
+    return _class_name2type[class_name]  # type: ignore
 
 
 def get_class_name(node_type: INodeType) -> str:

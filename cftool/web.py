@@ -21,7 +21,7 @@ try:
     from PIL import ImageOps
 except:
 
-    class Image:
+    class Image:  # type: ignore
         Image = None
 
     ImageOps = None
@@ -31,11 +31,11 @@ try:
     from pydantic import BaseModel
 except:
     Response = HTTPException = None
-    BaseModel = object
+    BaseModel = object  # type: ignore
 try:
     from aiohttp import ClientSession
 except:
-    ClientSession = None
+    ClientSession = None  # type: ignore
 
 
 TResponse = TypeVar("TResponse")
@@ -145,7 +145,7 @@ async def download_image(session: ClientSession, url: str, **kw: Any) -> Image.I
             try:
                 msg = raw_data.decode("utf-8")
             except:
-                msg = f"raw | {raw_data[:20]} | err | {err}"
+                msg = f"raw | {raw_data[:20]!r} | err | {err}"
         raise ValueError(msg)
 
 
